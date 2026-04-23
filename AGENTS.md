@@ -1,5 +1,10 @@
 # AGENTS.md — DCS Ops Center
 
+> **⚠️ Before working on this repo, read `IMPLEMENTATION_PLAN.md` at repo root first.**
+> It contains the phase status, hard invariants, and session protocols. Do not begin work without following the starting-work protocol in `IMPLEMENTATION_PLAN.md`.
+>
+> Authoritative spec: [`docs/superpowers/plans/2026-04-23-master-remediation-plan.md`](docs/superpowers/plans/2026-04-23-master-remediation-plan.md)
+
 > This file is for AI assistants (OpenAI Codex, GitHub Copilot Workspace, etc.).
 > It contains the same critical project context as CLAUDE.md, written in
 > AI-assistant-neutral language.

@@ -1,3 +1,13 @@
+> **🛑 SUPERSEDED — DO NOT USE**
+>
+> This plan has been superseded by [`../2026-04-23-master-remediation-plan.md`](../2026-04-23-master-remediation-plan.md).
+>
+> The new master plan incorporates Ataybia's 2026-04-21 feedback (Callouts/Attendance-Exceptions removal, leave type changes, self-service scope) and the forensic XLSX/DOCX deep-dive. Source-of-truth location is now `source-of-truth/` at repo root (unzipped from `ndma-source-of-truth-full.zip`), not `category-zips/`.
+>
+> Retained here for historical reference only. Do not reference from new code or docs.
+
+---
+
 # Master Implementation Directive
 
 Source of truth: `C:\Users\admin\Documents\karetech\ndma-dcs-ops-center\category-zips`

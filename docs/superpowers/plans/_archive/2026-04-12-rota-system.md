@@ -1,3 +1,13 @@
+> **🛑 SUPERSEDED — DO NOT USE**
+>
+> This plan has been superseded by [`../2026-04-23-master-remediation-plan.md`](../2026-04-23-master-remediation-plan.md).
+>
+> The on-call rota system is being unified with the NOC roster system into a single **Scheduling** module (Phase 3 of the new master plan). `rota.ts`, `roster.ts`, and `noc-shifts.ts` will be merged into `scheduling.ts` with subrouters.
+>
+> Retained here for historical reference only. Do not reference from new code or docs.
+
+---
+
 # On-Call Rota System — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

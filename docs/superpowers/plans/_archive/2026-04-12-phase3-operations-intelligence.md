@@ -1,3 +1,16 @@
+> **🛑 SUPERSEDED — DO NOT USE**
+>
+> This plan has been superseded by [`../2026-04-23-master-remediation-plan.md`](../2026-04-23-master-remediation-plan.md).
+>
+> The concepts in this document (Plane-style cycles, work visibility, automation) have been folded into the new 15-phase master plan. Specifically:
+> - Cycles → Phase 11 (Work register refactor) + existing `cycles.ts`
+> - Work intelligence & visibility → Phase 11
+> - Automation → existing `automation.ts` router (extended in Phase 10)
+>
+> Retained here for historical reference only. Do not reference from new code or docs.
+
+---
+
 # Phase 3 — Operations Intelligence Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
