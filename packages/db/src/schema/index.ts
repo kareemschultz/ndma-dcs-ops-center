@@ -21,7 +21,7 @@ export * from "./calendar-events";
 export * from "./company-forms";
 export * from "./company-policies";
 export * from "./certification-budgets";
-export * from "./exam-dates";
+export * from "./exam-schedule";
 export * from "./leave";
 export * from "./notifications";
 export * from "./onboarding-tasks";
