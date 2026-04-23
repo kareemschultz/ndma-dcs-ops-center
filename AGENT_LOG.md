@@ -10,6 +10,86 @@
 
 ---
 
+## Phase 0 — Reconciliation decisions + migration plan — 🔵 In Progress [WIP]
+
+- **Agent:** Claude Code (opusplan)
+- **Model:** claude-opus-4-7 (1M context)
+- **Date:** 2026-04-23
+- **Branch:** `phase/0-stabilise` (from origin/main @ 93ac57f)
+- **Gate commit:** (this commit — reconciliation only, migrations not yet written)
+- **Baseline commit:** 93ac57f (plan: approved master remediation plan + agent coordination layer)
+
+### What shipped this session
+
+- **Pre-flight (master plan §2.5):** ✅ source-of-truth/ unzipped from `ndma-source-of-truth-full.zip` (229MB) to main repo root. Verified 200 XLSX + 29 DOCX + 17 TXT. `.gitignore` updated to exclude source archive + zips + category-zips + WorkUpdate.
+- **5 open questions resolved** (see `docs/plan-questions.md` for decisions):
+  - Q1 temp-tracker → archive with SUPERSEDED banner
+  - Q2 appraisal signatures → per-cycle toggle
+  - Q3 biometric sync → manual entry only
+  - Q4 schema reconciliation → walk-through (done this session)
+  - Q5 Slack/WhatsApp webhook → deferred to Phase 15 stretch
+- **Schema reconciliation audit complete** — 9 real extras (not 11; `attendance-time.ts` and `policy.ts` were false positives)
+- **Kareem-approved decisions** per schema (see `docs/superpowers/plans/phase-0-stabilise.md` §2):
+  - Replace: `exam-dates` → `exam_schedule` (migration 0012)
+  - Rename: `operational-overlays` → `routine_maintenance` (migration 0013)
+  - Keep as-is: `certification-budgets`, `company-forms`, `staff-promotions`, `company-policies`
+  - Extend (self-contained): `leave-policies` (migration 0014), `calendar-events` enum (migration 0015)
+  - Defer to Phase 7: `onboarding-tasks` FK addition (target table doesn't exist yet)
+- **Archived:** `docs/superpowers/plans/temp-tracker.md` → `_archive/` with SUPERSEDED banner
+- **Phase 0 detailed plan:** `docs/superpowers/plans/phase-0-stabilise.md` (9 sections: pre-flight result, reconciliation decisions, open question answers, migration plan 0008-0015 with UP/DOWN, phase deferrals, master plan addenda, acceptance criteria, risks, next-session handoff)
+- **Coordination files updated:**
+  - `IMPLEMENTATION_PLAN.md` phase status table: Phase 0 → 🔵 In Progress
+  - `CURRENT_PHASE.md` claimed for Phase 0
+  - `docs/plan-questions.md` all 5 questions marked [ANSWERED] with decision text
+
+### Architectural principle established (applies going forward)
+
+> **Phase scope principle:** Phase 0 only does self-contained structural work (new columns, new enum values, no new FKs to not-yet-existing tables). Extensions requiring cross-phase dependencies are deferred to the phase that creates the dependency. Document the decision now, do the work then.
+
+Also: channel-adapter pattern for notifications (Phase 10 AC), master plan section rename for `operational_overlays` → `routine_maintenance` (follow-up addenda commit).
+
+### Deferred to later phases
+
+- `certification-budgets` integration with `trainingEvents` → Phase 7
+- `onboarding-tasks.template_id` FK → Phase 7
+- `exam_schedule.certification_id` + `voucher_id` FK constraints → Phase 7
+- Slack/WhatsApp/SMS webhook adapters → Phase 15 stretch
+- `company-forms` master plan text alignment → follow-up addenda commit
+
+### Blockers / risks identified (for next session)
+
+- `callout_legacy` enum value must be added to `tosd_records` type enum BEFORE migration 0009 runs
+- Postgres enum one-way widening (migration 0015 DOWN is no-op)
+- `operational_overlays` → `routine_maintenance` rename cascade (grep all code references before writing migration 0013)
+- Compassionate leave type rows: remap to 'emergency'/'special' or preserve?
+- `departments.parent_id` orphan values must be NULLed before FK constraint applies
+- `node_modules` not installed in worktree — next session runs `bun install` first
+
+### Files changed (this commit)
+
+- `docs/superpowers/plans/phase-0-stabilise.md` (new — 9 sections, full migration plan)
+- `docs/superpowers/plans/_archive/temp-tracker.md` (renamed + SUPERSEDED banner)
+- `IMPLEMENTATION_PLAN.md` (phase status table: Phase 0 row updated)
+- `CURRENT_PHASE.md` (claimed for Phase 0)
+- `AGENT_LOG.md` (this entry appended)
+- `docs/plan-questions.md` (5 questions marked [ANSWERED])
+- `.gitignore` (source-of-truth + zips excluded)
+
+### Next-phase handoff (to whoever writes the migrations)
+
+- **Branch:** continue on `phase/0-stabilise` (do NOT merge to main yet — migrations still needed)
+- **Starting prompt:** see `CURRENT_PHASE.md` handoff section
+- **Pre-migration pre-checks** (4 items in `phase-0-stabilise.md` §8 risks table) must resolve before any migration SQL
+- **After all 8 migrations pass locally:** push, typecheck, e2e, **stop and surface to Kareem for review before merge to main**
+
+### Tests
+
+- ❌ typecheck — deferred; node_modules not installed
+- ❌ e2e — deferred; needs install + dev server
+- N/A RBAC matrix — no router changes this session
+
+---
+
 ## Planning session — Master plan approved — 🟢 Done
 
 - **Agents:**

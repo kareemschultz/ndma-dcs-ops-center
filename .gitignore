@@ -41,5 +41,13 @@ DCS\ OPS/
 *.csv
 AccountManagement*.xlsx
 
+# Source-of-truth archive — read-only reference, never commit (229MB)
+source-of-truth/
+/ndma-source-of-truth-*.zip
+/category-zips/
+/WorkUpdate_*.xlsx
+/files.zip
+/1.zip
+
 # Claude local settings
 .claude/settings.local.json
