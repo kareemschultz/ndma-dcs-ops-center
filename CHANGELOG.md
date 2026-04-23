@@ -4,6 +4,33 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
+## [Phase 0] — 2026-04-23
+
+### Removed
+- Callouts Register (schema, router, routes, UI)
+- Attendance Exceptions (schema, router, routes, UI)
+- Compassionate leave type
+
+### Fixed
+- appraisalStatusEnum collapsed from 13 mixed-case to 7 canonical lowercase values
+- staff_profiles.team_lead_id removed (superseded by reportsTo)
+- departments.parent_id FK constraint added
+- leave_policies table now exists in DB (was schema-only pre-Phase 0)
+- e2e auth credentials corrected to match seed script
+- CORS origin env var corrected for dev environment
+- Appraisals page Button/Link nativeButton violation fixed
+
+### Changed
+- exam_dates replaced by exam_schedule (richer schema)
+- operational_overlays renamed to routine_maintenance
+- calendar_event_type enum extended from 3 to 12 values
+
+### Technical notes
+- For production DB: use DATABASE_URL=$PROD_DATABASE_URL bun run db:migrate
+- Migrations 0008-0015 are in packages/db/src/migrations/
+
+---
+
 ## [Unreleased]
 
 ### Security hardening + Phase 0 + Phase 1 start (2026-04-17)

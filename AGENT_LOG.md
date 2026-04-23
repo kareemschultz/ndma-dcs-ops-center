@@ -10,14 +10,16 @@
 
 ---
 
-## Phase 0 — Reconciliation decisions + migration plan — 🔵 In Progress [WIP]
+## Phase 0 — Reconciliation decisions + migrations 0008-0015 — 🟢 Done
 
 - **Agent:** Claude Code (opusplan)
 - **Model:** claude-opus-4-7 (1M context)
 - **Date:** 2026-04-23
-- **Branch:** `phase/0-stabilise` (from origin/main @ 93ac57f)
-- **Gate commit:** (this commit — reconciliation only, migrations not yet written)
+- **Branch:** `phase/0-stabilise` (squash-merged → main)
+- **Gate commit:** 324f3f6
 - **Baseline commit:** 93ac57f (plan: approved master remediation plan + agent coordination layer)
+- **Pre-checks:** all clean (5 appraisal rows canonical, 0 compassionate leave_requests, 0 orphaned departments)
+- **e2e:** ✅ 26/26 passing (auth fix + CORS fix + Button/Link fix)
 
 ### What shipped this session
 

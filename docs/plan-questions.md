@@ -101,3 +101,17 @@ Move resolved questions to the bottom of the file (below this line) as a decisio
 **Decision:** (one-line summary)
 **Rationale:** (Kareem's reason, captured verbatim where possible)
 ```
+
+---
+
+## [KNOWN DEFECT] Production DB migration not yet applied — @kareem [ACTION REQUIRED]
+
+Production DATABASE_URL was not available during Phase 0 gate ceremony.
+Migrations 0008-0015 must be applied to production using:
+
+  DATABASE_URL=$PROD_DATABASE_URL bun run db:migrate
+
+Must be done before Phase 1 goes to production.
+
+**Opened:** 2026-04-23
+**Status:** OPEN
