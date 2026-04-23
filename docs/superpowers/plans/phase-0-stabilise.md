@@ -141,8 +141,8 @@ Per master plan §10.7 — each migration is independently revertable. Order mat
 | # | File | Purpose | UP | DOWN | Notes |
 |---|---|---|---|---|---|
 | **0008** | `0008_enum_fix.sql` | Collapse `appraisalStatusEnum` to single lowercase casing | `CASE WHEN status IN ('Draft','draft') THEN 'draft' WHEN status IN ('Completed','completed') THEN 'completed' ... END` update; alter enum to have lowercase values only | Restore mixed-case enum values; map back via reverse CASE | Pre-migration snapshot required; post-migration row count check |
-| **0009** | `0009_delete_legacy_features.sql` | Drop `callouts`, `attendance_exceptions` tables; migrate callout rows to `tosd_records` with `type='callout_legacy'` | 1. `INSERT INTO tosd_records (staff_id, date, type, hours, reason_text) SELECT staff_id, date, 'callout_legacy', hours, comments FROM callouts;` 2. `DROP TABLE callouts;` 3. `DROP TABLE attendance_exceptions;` 4. Drop related enums | Recreate tables from schema definitions; restore rows from `tosd_records WHERE type='callout_legacy'` into `callouts`; remove the `callout_legacy` rows | `tosd_records` schema must accept `'callout_legacy'` — add this value to the type enum if not present |
-| **0010** | `0010_staff_cleanup.sql` | Drop `staff.team_lead_id`; remove Compassionate leave type | 1. `ALTER TABLE staff DROP COLUMN team_lead_id;` 2. `DELETE FROM leave_types WHERE code='compassionate';` 3. `ALTER TYPE leave_type_code DROP VALUE 'compassionate';` (if applicable) | Re-add `team_lead_id` column (data unrecoverable); re-insert Compassionate leave type | Pre-check: any `reports_to` values that depended on `team_lead_id` — already migrated in migration 0005 per repo history |
+| **0009** | `0009_delete_legacy_features.sql` | **DROP `callouts` + `attendance_exceptions`.** No migration to `tosd_records` — live `callouts` is incident-response logging (phone/sms/email callouts to respond to outages), **NOT** time-off data. See §8.5 for the two-lineage distinction. | 1. `SELECT COUNT(*), MAX(created_at) FROM callouts;` — log result. 2. If count > 0: export rows as JSONL to `docs/phase-0-callouts-final-export.jsonl` (one JSON line per row; include all columns + related_incidents join for traceability). 3. `DROP TABLE callouts;` 4. `DROP TABLE attendance_exceptions;` 5. `DROP TYPE callout_type;` `DROP TYPE callout_status;` `DROP TYPE attendance_exception_type;` `DROP TYPE attendance_exception_status;` | Recreate empty `callouts` + `attendance_exceptions` tables + enums from schema snapshot. **Data not restored** (structural DOWN only; documented in migration header comment). JSONL export preserved in repo. | Migration header must include two-lineage comment block. JSONL export is for one-time reference; deletable in cleanup commit 6 months post-Phase-14. |
+| **0010** | `0010_staff_cleanup.sql` | Drop `staff.team_lead_id`; remove Compassionate leave type (TABLE row, not enum value) | 1. `ALTER TABLE staff DROP COLUMN team_lead_id;` 2. Find Compassionate `leave_types.id` + count referencing `leave_requests`. 3. If refs > 0: `UPDATE leave_requests SET leave_type_id = (SELECT id FROM leave_types WHERE code='SP') WHERE leave_type_id = :compassionate_id;` + write one `audit_logs` entry per remapped request with `action='leave.type_migration'`, `beforeValue='{"type":"compassionate"}'`, `afterValue='{"type":"special_leave","reason":"Compassionate type deprecated 2026-04-23 per master plan"}'`. 4. `DELETE FROM leave_types WHERE id = :compassionate_id;` | Re-add `team_lead_id` column (data unrecoverable); re-insert Compassionate leave type row; reverse audit-log entries NOT possible (audit is append-only). Documented as structural-only DOWN. | **Remap target:** `special_leave` (not emergency) — matches `seed-leave.ts:100` legacy mapping + handoff §2 "covered by Emergency or Special Leave" + semantic fit (discretionary, no-deduction). **No ALTER TYPE needed** — `leave_types` is a table, not an enum. |
 | **0011** | `0011_departments_fk.sql` | Add `departments.parent_id` FK (raw SQL, not Drizzle — circular FK) | `ALTER TABLE departments ADD CONSTRAINT fk_departments_parent FOREIGN KEY (parent_id) REFERENCES departments(id);` | `ALTER TABLE departments DROP CONSTRAINT fk_departments_parent;` | Pre-check: all existing `parent_id` values resolve to existing `departments.id`; orphans must be NULLed before FK applies |
 | **0012** | `0012_exam_schedule_rename.sql` | Replace `exam_dates` → `exam_schedule` with richer shape (Kareem spec §3.4) | `CREATE TABLE exam_schedule`; `INSERT ... SELECT FROM exam_dates` with column/enum mapping; `DROP TABLE exam_dates` | Recreate `exam_dates` from `exam_schedule` projection (reduce enum to 3, drop FK columns). Data fidelity imperfect on rollback — acceptable per Kareem | FK columns (`certification_id`, `voucher_id`) are nullable in Phase 0; constraints added in Phase 7 migration |
 | **0013** | `0013_operational_overlays_rename.sql` | Rename `operational_overlays` schema/tables to `routine_maintenance` | `ALTER TABLE overlay_types RENAME TO routine_maintenance_types;` `ALTER TABLE operational_overlays RENAME TO routine_maintenance;` (and related indexes/constraints) | Reverse rename | Also rename router file + all TS imports in follow-up code changes (non-migration) |
@@ -224,6 +224,11 @@ The following updates to `docs/superpowers/plans/2026-04-23-master-remediation-p
 9. **§3 defect register correction:**
    > 2 of the 11 "extra schemas" listed in §3.5 (`attendance-time.ts` + `policy.ts`) do not actually exist in the worktree. Real count: 9. Update table.
 
+10. **§10.2 or §14 — "Two-lineage distinction (callouts)" named note:**
+    > There are two unrelated "callouts" concepts in this system. (1) The live `callouts` table — an incident-response log (phone/sms/whatsapp to respond to outages) — was dropped in Phase 0 migration 0009. (2) The historical XLSX 2023-Callout sheet contains operational time-off data, which Phase 14 seed ingests into `tosd_records` with `type='callout_legacy'`. These share vocabulary but are different data. Any future agent writing parsers, queries, or docs about "callouts" must specify which lineage.
+
+    Full detail in `docs/superpowers/plans/phase-0-stabilise.md §8.5`.
+
 ---
 
 ## 7. Phase 0 acceptance criteria (before merging to main)
@@ -260,9 +265,28 @@ The following updates to `docs/superpowers/plans/2026-04-23-master-remediation-p
 | Postgres enum widening is one-way (can't DROP VALUE in migration 0015 DOWN) | Low | Document as "forward-compat only"; accept imperfect rollback |
 | `operational_overlays` → `routine_maintenance` rename may cascade through many files | Medium | Grep pass before migration: list all files referencing `operationalOverlays` / `operational_overlays` / `OverlayType`; include rename in same commit |
 | Compassionate leave type removal may orphan historical leave_requests rows | Medium | Pre-check: `SELECT COUNT(*) FROM leave_requests lr JOIN leave_types lt ON lr.leave_type_id = lt.id WHERE lt.code = 'compassionate';` — if > 0, either (a) remap to 'emergency' or 'special', or (b) keep the leave_type row but remove from enum values visible in UI. Decide before migration 0010. |
-| `callout_legacy` type enum value — must exist in `tosd_records` type enum before migration 0009 migrates rows | High | Migration 0009 Step 0: `ALTER TYPE tosd_type ADD VALUE 'callout_legacy';` BEFORE the INSERT. Or use migration 0008 to extend the enum first. |
+| ~~`callout_legacy` enum value dependency~~ **RESOLVED 2026-04-23** | — | **Obviated by corrected 0009 scope.** Migration 0009 no longer migrates to `tosd_records`; the two-lineage confusion surfaced during pre-check has been eliminated. See §8.5. |
 | Pre-commit hook runs `bat` which may not be installed (per CLAUDE.md gotchas) | Low | Use `git commit -m` with repeated `-m` flags (not heredoc) |
 | node_modules not installed in this worktree — typecheck baseline couldn't run | Low | Phase 0 migration-writing agent runs `bun install` as first step |
+
+---
+
+## 8.5 Two-lineage distinction — "callouts" vocabulary
+
+**Critical note for any agent reading migration history, writing parsers, or editing docs about "callouts":** There are **two unrelated concepts** sharing the word:
+
+| Lineage | What it is | Schema | Status |
+|---|---|---|---|
+| **Live `callouts` table** | Incident-response callout log (phone / SMS / WhatsApp / email / manual callouts to respond to outages). Columns: `calloutType`, `relatedIncidentId`, `reason`, `outcome`, `status`. | `packages/db/src/schema/callouts.ts` | **DROPPED in Phase 0 migration 0009.** Rows exported to `docs/phase-0-callouts-final-export.jsonl` if any existed. |
+| **Historical `2023-Callout` XLSX sheet** | Operational time-off data — staff called out to work outside normal hours. Columns: Name, Date, Start, End, Hours, Comments. | `source-of-truth/04-shared-leave/TimeOffSickDays_20251010_v01.xlsx > 2023-Callout` | **Seeded in Phase 14 into `tosd_records` with `type='callout_legacy'`.** Live table is unrelated. |
+
+**These share vocabulary but are different data.** Do not conflate. Handoff §14 step 20's "legacy callouts → tosd_records" refers **only** to the XLSX sheet seeding — NOT to any migration of the live `callouts` table.
+
+If you need to reference "callouts" in new code, comments, or docs, **always specify which lineage**. Preferred vocabulary going forward:
+- `incident_callouts` → the deprecated live table (use past tense: "was dropped in Phase 0")
+- `legacy_callouts` → the `tosd_records.type='callout_legacy'` subset seeded from 2023-Callout XLSX
+
+This note is mirrored in the master plan addenda (§6 of this doc) for propagation to §10.2 or §14 of the master remediation plan.
 
 ---
 
