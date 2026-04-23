@@ -237,56 +237,181 @@ source_file text  -- 'QuestionsToAskStaff_20240618_v01.txt'
 seq         int
 ```
 
-### 5.2 Access control (Phase 1)
+### 5.2 Access control — 3-layer hybrid sync model (Phase 1)
 
-**`service_access_registry` (new):**
+> **IMPORTANT — Subsumed tables (do NOT recreate):**
+> The following tables from earlier planning iterations are explicitly replaced by the 3-layer model below. Do not create them. Do not import them. Do not reference them in new code.
+>
+> | Retired table | Replaced by |
+> |---|---|
+> | `vpn_groups` | `service_access_registry.privilege_groups[]` on platforms with `category='vpn'` (e.g. 'MikroTik VPN', 'Fortigate VPN') |
+> | `uportal_accounts` | `service_access_registry` rows on platform 'Uportal'; `account_username` stores the account_number, `account_type` derived from user_type |
+> | `biometric_registration` | Platforms with `category='access_control'` (one platform per biometric system); per-staff enrollment stored in `service_access_registry` |
+> | `physical_access_register` | Same pattern — each door or door group is a platform row; `privilege_level` encodes access level; `authorized_for_server_room` is represented as `privilege_level='admin'` on a platform named 'Server Room — Liliendaal' |
+>
+> If you find references to these tables in existing migrations or code during Phase 1, migrate the data into `service_access_registry` and drop the legacy tables. The migration numbering is flexible — land it in Phase 1's migration range, not Phase 0 (out of scope there).
+
+**Scope clarification (2026-04-23 refinement):** the access registry is a documentation and configuration tracking system, not an enforcement or identity-provider system. Its purpose is to answer "who has what access on which platform, at what privilege level, via what account type" for all 281 staff across all NDMA platforms (Zabbix, Grafana, Fortigate, IPAM, eSight, IVSneteco, NCE-FAN, Neteco, LTE/Generator Grafana, Plum, Kibana, Radius, Forticlient, MiFi VPN, Uportal, door/biometric systems, and others added later).
+
+The registry is **hybrid by design**: manual entry is the baseline for every platform, optional sync adapters exist per-platform where APIs allow, and hybrid mode handles platforms where APIs expose some fields but not others.
+
+#### 5.2.1 Three-layer data model
+
+> **Repo type convention (applies to all schemas in this section):**
+> PKs and FKs use `text` columns storing UUID strings, generated via `$defaultFn(() => crypto.randomUUID())`. This matches the existing convention in `packages/db/src/schema/staff.ts`, `departments.ts`, and every other schema in the repo. Do NOT use Postgres `uuid` type — migrations will fail against existing tables. Timestamps use `timestamp` type. Enums use Postgres native enums via `pgEnum()`.
+
+**Layer 1 — `platforms` (reference table)**
+
+Canonical list of platforms the registry tracks. Seeded from `AccountManagementMarch_20260312.xlsx` column headers during Phase 14, extensible via admin UI thereafter.
+
 ```
-id              serial PK
-staff_id        int FK → staff.id
-service_name    enum('ipam','zabbix','esight','ivsneteco','nce_fan','neteco','lte_grafana','generator_grafana','plum','kibana','radius','forticlient','mifi_vpn')
-access          boolean  -- has access?
-role            text      -- free text role / permission level
-access_level    text      -- admin / user / readonly / etc.
-notes           text
-last_reviewed   timestamptz
-unique(staff_id, service_name)
+platforms
+  id text PK                              -- $defaultFn crypto.randomUUID()
+  name text UNIQUE                        -- 'Zabbix', 'Grafana', 'Fortigate', 'IPAM', 'MikroTik VPN', 'Uportal', etc.
+  category enum                           -- 'monitoring' | 'vpn' | 'portal' | 'identity' | 'access_control' | 'other'
+  auth_type enum                          -- 'local' | 'ad_ldap' | 'saml' | 'oauth' | 'hybrid' | 'unknown'
+  sync_mode enum                          -- 'manual_only' | 'api_full' | 'api_partial' | 'api_read_only'
+  sync_adapter_id text FK nullable        -- references sync_adapters(id) when sync_mode != 'manual_only'
+  api_capabilities jsonb nullable         -- {canListUsers, canListGroups, canReadPrivileges, canWriteUsers, canReadMFAStatus}
+  notes text nullable                     -- human-readable: known limitations, API quirks, contact for access provisioning
+  active bool default true                -- soft-delete without breaking historical access records
+  created_at, updated_at, created_by, updated_by
 ```
 
-**`vpn_groups` (new):**
+**Layer 2 — `sync_adapters` (empty in Phase 1; populated in Phase 15 stretch)**
+
+One row per configured sync integration. A platform has zero or one active adapter; historical adapters kept as inactive for audit.
+
 ```
-id          serial PK
-staff_id    int FK
-system      enum('fortigate','mikrotik')
-group_name  text  -- e.g. NOCUsers1, CPUsers1, PME_Users1, Deny_VPN_Users
+sync_adapters
+  id text PK
+  platform_id text FK platforms(id)
+  adapter_type enum                       -- 'rest_api' | 'ldap_bind' | 'ssh_command' | 'csv_export_scrape' | 'custom'
+  connection_config jsonb                 -- endpoint URL, secret manager path (NOT raw credentials), timeout, retry policy
+  sync_frequency enum                     -- 'hourly' | 'daily' | 'weekly' | 'manual_trigger_only'
+  enabled bool default false
+  last_successful_sync_at timestamp nullable
+  last_sync_error text nullable
+  created_at, updated_at, created_by, updated_by
+  UNIQUE (platform_id) WHERE enabled = true   -- partial unique index; only one active adapter per platform
 ```
 
-**`uportal_accounts` (new):**
+**Layer 3 — `service_access_registry` (the actual access records)**
+
+One row per (staff, platform) pair. Per-field provenance tracks whether each piece of data came from manual entry, sync, or hybrid verification.
+
 ```
-id              serial PK
-staff_id        int FK
-account_number  text
-dept            text
-user_type       text
+service_access_registry
+  id text PK
+  staff_id text FK staff(id)
+  platform_id text FK platforms(id)
+
+  -- account identity
+  account_username text                   -- username on that platform
+  account_type enum                       -- 'local' | 'ad_ldap' | 'saml' | 'oauth' | 'service_account' | 'shared' | 'unknown'
+  account_active bool default true
+
+  -- privilege
+  privilege_level enum                    -- 'admin' | 'operator' | 'read_only' | 'auditor' | 'custom' | 'none'
+  privilege_groups text[] default '{}'    -- platform-specific: ['NOCUsers1','PME_Users1'] for MikroTik, ['Zabbix admins'] for Zabbix, etc.
+  privilege_custom_notes text nullable    -- human description when privilege_level = 'custom'
+
+  -- per-field provenance
+  username_source enum('manual','synced','hybrid_verified') default 'manual'
+  account_type_source enum('manual','synced','hybrid_verified') default 'manual'
+  privilege_source enum('manual','synced','hybrid_verified') default 'manual'
+  groups_source enum('manual','synced','hybrid_verified') default 'manual'
+
+  -- sync tracking
+  last_synced_at timestamp nullable
+  last_sync_adapter_run_id text FK nullable   -- references sync_adapter_runs(id)
+
+  -- manual override (populated when operator overrides synced value)
+  manual_override_reason text nullable
+  manual_overridden_at timestamp nullable
+  manual_overridden_by text FK staff(id) nullable
+
+  -- audit
+  created_at, created_by, updated_at, updated_by
+
+  UNIQUE (staff_id, platform_id)
 ```
 
-**`biometric_registration` (new):**
+**Layer 2b — `sync_adapter_runs` (empty in Phase 1; populated in Phase 15 stretch)**
+
+Every sync execution logged. Provides audit trail for "when did this field last update, and did sync try to change something that operator had overridden."
+
 ```
-id               serial PK
-staff_id         int FK
-system_name      enum('data_centre_fingerprint','liliendaal_door','main_door_server_room')
-registered       boolean
-registered_at    timestamptz
-comments         text
+sync_adapter_runs
+  id text PK
+  sync_adapter_id text FK sync_adapters(id)
+  started_at timestamp
+  finished_at timestamp nullable
+  status enum('running','success','partial','failed','cancelled')
+  records_processed int default 0
+  records_added int default 0
+  records_updated int default 0
+  records_conflicted int default 0        -- manual override prevented sync update
+  error_detail text nullable
+  triggered_by enum('schedule','manual','webhook')
+  triggered_by_staff_id text FK staff(id) nullable
 ```
 
-**`physical_access_register` (new):**
+#### 5.2.2 Sync conflict resolution policy
+
+When a sync adapter runs and finds a synced field was manually overridden since last sync:
+
+1. The sync **does not overwrite** the manual value
+2. The conflict is counted in `sync_adapter_runs.records_conflicted`
+3. A notification fires to Ataybia (or configured recipient) summarising conflicts
+4. The conflict is visible in the review UI at `/access/sync-conflicts` where operator can: accept sync value (clears override), keep manual value (updates override timestamp), or investigate further
+
+**Policy: manual data is authoritative until the operator explicitly clears the override.** Same philosophy as the broader source-of-truth cutover principle — humans win over automation, with a full audit trail.
+
+#### 5.2.3 Per-field provenance example
+
+A Zabbix account for Kareem might look like:
+
 ```
-id                           serial PK
-staff_id                     int FK
-door                         enum('all_doors','main_door_only')
-authorized_for_server_room   boolean
-comments                     text
+staff: Kareem Schultz
+platform: Zabbix
+account_username: 'kschultz'           username_source: 'synced'
+account_type: 'ad_ldap'                account_type_source: 'synced'
+privilege_level: 'admin'               privilege_source: 'manual'     ← API doesn't expose this
+privilege_groups: ['Zabbix admins']    groups_source: 'synced'
+account_active: true
+last_synced_at: 2026-04-20 03:00 UTC
 ```
+
+If next week Zabbix's API gains privilege export, the sync adapter updates `privilege_level` (provided no manual override is set) and flips `privilege_source` to `'synced'` without re-entering the other fields.
+
+If Ataybia disagrees with what sync says about `privilege_groups` for a specific user, she sets `manual_override_reason` + `manual_overridden_at` + `manual_overridden_by`, the field becomes `groups_source = 'hybrid_verified'`, and subsequent syncs log the disagreement as a conflict without overwriting.
+
+#### 5.2.4 Phase 1 vs Phase 15 stretch scope
+
+| Component | Phase 1 | Phase 15 stretch |
+|---|---|---|
+| `platforms` reference table + seed data | ✅ | — |
+| `sync_adapters` table (schema only, no rows) | ✅ | Populated |
+| `service_access_registry` with all provenance fields | ✅ | — |
+| `sync_adapter_runs` ledger (schema only, no rows) | ✅ | Populated |
+| Manual entry UI (`_source` defaults to `'manual'`) | ✅ | — |
+| Staff directory integration (show platform access on staff profile) | ✅ | — |
+| Bulk import from AccountManagement XLSX | ✅ (Phase 14 seed) | — |
+| Per-platform sync adapter implementations | — | ✅ |
+| Conflict detection logic on sync run | — | ✅ |
+| `/access/sync-conflicts` review UI | — | ✅ |
+| Sync adapter scheduling (cron) | — | ✅ |
+
+**Rationale for the split:** Phase 1 manual-only mode generates zero conflicts — there's no sync to disagree with manual entry. Building the review UI and detection logic in Phase 1 is wasted effort. Schema support is essentially free (nullable columns), so the Phase 1 shape is forward-compatible with the Phase 15 stretch work. Full stretch scope in §13.1.
+
+The existing `packages/api/src/lib/sync/connectors/ldap.ts` becomes the reference pattern for the first Phase 15 stretch adapter (LDAP-backed platforms: Fortigate, any AD-integrated system).
+
+#### 5.2.5 Migration path
+
+Phase 14 historical seed ingests `AccountManagementMarch_20260312.xlsx > Services` sheet into `service_access_registry` with all `_source` fields = `'manual'` and `created_by = 'seed_historical'`. Post-seed, operators edit records in the app directly — the XLSX is frozen per the source-of-truth cutover principle (DB is authoritative once seed lands).
+
+When Phase 15 stretch adapters come online, they sync *additional* fields or *updates* to existing fields, flipping `_source` values from `'manual'` to `'synced'` where operator hasn't set an override.
 
 ### 5.3 Appraisals (Phase 4)
 
@@ -1197,6 +1322,81 @@ See `IMPLEMENTATION_PLAN.md` §§ starting, ending, blocked, escalation.
 Empty at plan approval. Phase 13 populates with deleted / archived / rewritten entries + git SHAs.
 
 See `docs/cleanup-log.md` (created by Phase 13).
+
+---
+
+## 13. Phase 15 Stretch Goals
+
+Scope items that are intentionally out of the core 15-phase plan but architecturally supported and documented here so future sessions don't re-derive the design. Each stretch goal is independent — they can ship in any order or be deprioritised entirely.
+
+### 13.1 Sync connector family
+
+The access registry is built with manual entry as the baseline (Phase 1) but its schema supports per-field synchronization from platform APIs. This stretch goal implements the sync-adapter family.
+
+#### Scope
+
+- **Adapter implementations per platform** — one `SyncAdapter` class per platform with an API. Each implements a common interface: `listAccounts()`, `readAccount(username)`, `listGroups()`, `readPrivileges(username)` (where available).
+- **Conflict detection** — when adapter runs, compare synced values against current `service_access_registry` row. If a `_source` field is `'hybrid_verified'` or has `manual_override_reason` set, increment `sync_adapter_runs.records_conflicted` and do NOT overwrite.
+- **Conflict review UI at `/access/sync-conflicts`** — list of (staff, platform, field) tuples where sync disagreed with manual override. Per-row actions: accept sync, keep manual, investigate.
+- **Scheduling** — per-adapter cron based on `sync_adapters.sync_frequency`. Manual trigger available from adapter config page.
+- **Secrets management** — `sync_adapters.connection_config` stores secret paths, not raw credentials. Secrets live in the secrets manager (Vault, Doppler, 1Password CLI, etc. — TBD by NDMA ops).
+- **Notifications** — on conflict detection, fire notification to platform's configured `accountable_staff_id` (typically Ataybia for admin platforms, platform lead for specialised ones).
+
+#### Pilot adapter — LDAP
+
+`packages/api/src/lib/sync/connectors/ldap.ts` already exists. Promote it to a `SyncAdapter` implementation:
+
+- **Target platforms:** Fortigate, any AD-integrated platform
+- **Fields synced:** `account_username`, `account_type` (= `'ad_ldap'`), `privilege_groups` (from AD group membership), `account_active`
+- **Fields left manual:** `privilege_level` (AD groups don't map 1:1 to platform privilege), `privilege_custom_notes`
+- **Sync mode:** `'api_partial'` — expected 60-70% automation, remainder manual
+- **Frequency:** daily overnight
+
+LDAP is the low-risk pilot because: read-only, no write-back to platform, existing connector code, well-understood AD schema at NDMA.
+
+#### Subsequent adapters (priority order)
+
+1. **Fortigate REST API** — can replace LDAP sync for Fortigate-specific fields (privilege_level via FortiGate admin roles)
+2. **Zabbix API** — `user.get`, `usergroup.get` — partial (privilege mapping manual)
+3. **Grafana API** — `/api/users`, `/api/teams` — near-full automation
+4. **Unifi / Radius** — via database read-only connector
+5. **Others as prioritised by Ataybia**
+
+#### Acceptance criteria
+
+- Each adapter ships with integration tests using a mocked API (no live platform calls in CI)
+- Each adapter has a documented "what fields are synced vs what stays manual" table in `docs/access-registry/adapters/{platform}.md`
+- Sync runs are idempotent (re-running yields same state, zero diff)
+- Failed syncs do not leave partial data — transactional per-staff update
+- Manual overrides always win — tested explicitly per adapter
+- Conflict review UI renders gracefully with 0, 1, 100+ conflicts
+
+#### Out of scope for this stretch
+
+- **Write-back to platforms** (create/disable accounts from this system). Would make this an identity-provider adjacent system, which it isn't. Staff onboarding still involves platform-specific admin actions — the registry records what was done, doesn't do it.
+- **Just-in-time access provisioning.** Separate feature, separate decision.
+- **SSO / SAML IdP functionality.** This system documents SAML/SSO platforms; it doesn't act as one.
+
+### 13.2 External notification channels
+
+Deferred from Phase 10 during 2026-04-23 planning. Slack webhook, WhatsApp Business API (or Twilio), SMS (if NDMA has an SMS gateway). Build as pluggable channel adapters on top of the Phase 10 notification engine's adapter-pattern architecture (see §8 Phase 10 acceptance criteria — core engine ships with `NotificationChannel` interface + `InAppChannel` + `EmailChannel` so additional channels slot in without schema change).
+
+Reason for deferral: external channels add procurement/credential/API dependencies unrelated to reminder correctness. Shipping core reminders first, channels later, keeps the Phase 10 deliverable tight.
+
+### 13.3 Nice-to-haves (from original handoff §17)
+
+To be populated if/when items from the planning handoff's nice-to-have section are promoted to stretch goals. Currently:
+
+- Training ROI dashboard (trainingEvents cost × participant count × subsequent appraisal scores)
+- Exam voucher burn-rate alerts (voucher wasted if not booked within window)
+- Biometric access visualiser (flag terminated staff still in access list)
+- Shift coverage heatmap
+- Workload forecasting (WorkUpdate + DCS on-call + NOC shifts + planned leave → headroom)
+- Slack bot (daily shift handover, weekly DCS on-call summary)
+- EoM voting / panel review before computed winner is finalised
+- Performance journal mobile-friendly entry form
+
+Any promotion from this list into active work requires a scope decision captured in `docs/plan-questions.md`.
 
 ---
 
