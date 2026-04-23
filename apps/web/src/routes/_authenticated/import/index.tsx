@@ -19,8 +19,6 @@ import {
   History,
   XCircle,
   HardHat,
-  Clock,
-  PhoneCall,
   Download,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -66,8 +64,6 @@ type ImportType =
   | "roster"
   | "leave"
   | "ppe"
-  | "attendance"
-  | "callouts"
   | "appraisals"
   | "calendar_events"
   | "promotions"
@@ -422,35 +418,6 @@ const IMPORT_TARGETS: ImportTarget[] = [
     ],
     notes:
       "ppeItemCode: long_boots, overalls, mousepad, safety_boots, bag, screwdriver, db9_rj45, db9_usb, monitor, hdmi_cable, laptop, mifi, cug_phone, cug_sim, ndma_shirts, usb_ethernet, umbrella. status: issued|returned|damaged|lost|replaced",
-  },
-  {
-    id: "attendance",
-    title: "Attendance Exceptions",
-    description: "Import sick days, lateness, WFH, and other attendance exceptions.",
-    icon: Clock,
-    columns: ["staffEmail", "exceptionDate", "exceptionType", "reason", "hours", "minutesLate", "notes"],
-    requiredColumns: ["staffEmail", "exceptionDate", "exceptionType"],
-    sampleRows: [
-      ["joel@ndma.gov.gh", "2025-01-06", "reported_sick", "", "8", "", ""],
-      ["timothy@ndma.gov.gh", "2025-02-14", "lateness", "Traffic", "", "45", ""],
-      ["richie@ndma.gov.gh", "2025-03-01", "wfh", "Remote work approved", "8", "", ""],
-    ],
-    notes:
-      "exceptionType: reported_sick, medical, absent, lateness, wfh, early_leave, other. minutesLate only for lateness type.",
-  },
-  {
-    id: "callouts",
-    title: "Callout Register",
-    description: "Import emergency callout records.",
-    icon: PhoneCall,
-    columns: ["staffEmail", "date", "startTime", "endTime", "hours", "comments", "relatedIncidentRef"],
-    requiredColumns: ["staffEmail", "date", "hours"],
-    sampleRows: [
-      ["sachin@ndma.gov.gh", "2023-11-13", "06:00", "09:00", "3", "Livestreaming Cenotaph", ""],
-      ["kevin@ndma.gov.gh", "2023-12-03", "18:00", "19:00", "1", "Timehri Fibre Cut", ""],
-    ],
-    notes:
-      "startTime/endTime in HH:MM 24h format. hours is the total duration worked. relatedIncidentRef is optional.",
   },
   {
     id: "roster",

@@ -7,8 +7,6 @@ import {
   companyForms,
   companyPolicies,
   db,
-  attendanceExceptions,
-  callouts,
   contracts,
   departments,
   examDates,
@@ -823,25 +821,6 @@ const ppeRowSchema = z.object({
   notes: z.string().optional(),
 });
 
-const attendanceRowSchema = z.object({
-  staffEmail: z.string().email(),
-  exceptionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  exceptionType: z.enum(["reported_sick", "medical", "absent", "lateness", "wfh", "early_leave", "other"]),
-  reason: z.string().optional(),
-  hours: z.string().optional(),
-  minutesLate: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-const calloutRowSchema = z.object({
-  staffEmail: z.string().email(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  startTime: z.string().optional(),
-  endTime: z.string().optional(),
-  hours: z.string().regex(/^\d+(\.\d+)?$/, "hours must be a number"),
-  comments: z.string().optional(),
-  relatedIncidentRef: z.string().optional(),
-});
 
 async function processPpeRow(
   rawRow: Record<string, string>,
@@ -889,83 +868,6 @@ async function processPpeRow(
   return { success: true };
 }
 
-async function processAttendanceRow(
-  rawRow: Record<string, string>,
-  rowIdx: number,
-  _actorUserId: string,
-): Promise<{ success: boolean; error?: { row: number; field?: string; message: string } }> {
-  const parse = attendanceRowSchema.safeParse({
-    staffEmail: rawRow.staffEmail,
-    exceptionDate: rawRow.exceptionDate ?? rawRow.date,
-    exceptionType: rawRow.exceptionType ?? rawRow.type,
-    reason: rawRow.reason || undefined,
-    hours: rawRow.hours || undefined,
-    minutesLate: rawRow.minutesLate || undefined,
-    notes: rawRow.notes || undefined,
-  });
-  if (!parse.success) {
-    return { success: false, error: { row: rowIdx, message: parse.error.issues[0]?.message ?? "Validation failed" } };
-  }
-  const data = parse.data;
-
-  const staffProfileId = await findStaffByEmail(data.staffEmail);
-  if (!staffProfileId) {
-    return { success: false, error: { row: rowIdx, field: "staffEmail", message: `Staff not found: ${data.staffEmail}` } };
-  }
-
-  await db
-    .insert(attendanceExceptions)
-    .values({
-      staffProfileId,
-      exceptionDate: data.exceptionDate,
-      exceptionType: data.exceptionType,
-      reason: data.reason ?? null,
-      hours: data.hours ?? null,
-      minutesLate: data.minutesLate ? parseInt(data.minutesLate, 10) : null,
-      notes: data.notes ?? null,
-    })
-    .onConflictDoNothing();
-
-  return { success: true };
-}
-
-async function processCalloutRow(
-  rawRow: Record<string, string>,
-  rowIdx: number,
-  _actorUserId: string,
-): Promise<{ success: boolean; error?: { row: number; field?: string; message: string } }> {
-  const parse = calloutRowSchema.safeParse({
-    staffEmail: rawRow.staffEmail,
-    date: rawRow.date,
-    startTime: rawRow.startTime || undefined,
-    endTime: rawRow.endTime || undefined,
-    hours: rawRow.hours,
-    comments: rawRow.comments || undefined,
-    relatedIncidentRef: rawRow.relatedIncidentRef || undefined,
-  });
-  if (!parse.success) {
-    return { success: false, error: { row: rowIdx, message: parse.error.issues[0]?.message ?? "Validation failed" } };
-  }
-  const data = parse.data;
-
-  const staffProfileId = await findStaffByEmail(data.staffEmail);
-  if (!staffProfileId) {
-    return { success: false, error: { row: rowIdx, field: "staffEmail", message: `Staff not found: ${data.staffEmail}` } };
-  }
-
-  await db
-    .insert(callouts)
-    .values({
-      staffProfileId,
-      calloutAt: new Date(`${data.date}T${data.startTime ?? "00:00"}:00`),
-      calloutType: "manual",
-      reason: data.comments ?? "Imported callout",
-      outcome: data.endTime ? `End: ${data.endTime}, Hours: ${data.hours}` : `Hours: ${data.hours}`,
-    })
-    .onConflictDoNothing();
-
-  return { success: true };
-}
 
 async function processRosterRow(
   rawRow: Record<string, string>,
@@ -1365,8 +1267,6 @@ export const importRouter = {
           "roster",
           "leave",
           "ppe",
-          "attendance",
-          "callouts",
           "appraisals",
           "calendar_events",
           "promotions",
@@ -1436,12 +1336,6 @@ export const importRouter = {
               break;
             case "ppe":
               result = await processPpeRow(row, i + 1, context.session.user.id);
-              break;
-            case "attendance":
-              result = await processAttendanceRow(row, i + 1, context.session.user.id);
-              break;
-            case "callouts":
-              result = await processCalloutRow(row, i + 1, context.session.user.id);
               break;
             case "appraisals":
               result = await processAppraisalRow(row, i + 1, context.session.user.id);
@@ -1563,8 +1457,6 @@ export const importRouter = {
           "platform_accounts",
           "leave",
           "ppe",
-          "attendance",
-          "callouts",
           "appraisals",
           "calendar_events",
           "promotions",

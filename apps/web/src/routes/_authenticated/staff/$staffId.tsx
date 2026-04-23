@@ -728,7 +728,7 @@ function StaffProfilePage() {
                       PPE & Tools
                     </Link>
                     <Link
-                      to="/hr/attendance"
+                      to="/timesheets"
                       className="flex items-center gap-3 rounded-xl border px-3 py-2 text-sm hover:bg-accent"
                     >
                       <Clock3 className="size-4 text-muted-foreground" />
@@ -813,16 +813,10 @@ function StaffProfilePage() {
                   Issuance, due dates, and replacements.
                 </p>
               </Link>
-              <Link to="/hr/attendance" className="rounded-xl border p-4 hover:bg-accent">
+              <Link to="/timesheets" className="rounded-xl border p-4 hover:bg-accent">
                 <h3 className="font-semibold">Attendance</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Sick leave, lateness, WFH, and other exceptions.
-                </p>
-              </Link>
-              <Link to="/hr/callouts" className="rounded-xl border p-4 hover:bg-accent">
-                <h3 className="font-semibold">Callouts</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Emergency callout activity and outcomes.
                 </p>
               </Link>
               <Link to="/timesheets" className="rounded-xl border p-4 hover:bg-accent">

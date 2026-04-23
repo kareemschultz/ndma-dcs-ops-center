@@ -9,7 +9,6 @@ import { complianceRouter } from "./compliance";
 import { policyRouter } from "./policy";
 import { attendanceTimeRouter } from "./attendance-time";
 import { contractsRouter } from "./contracts";
-import { attendanceExceptionsRouter } from "./attendance-exceptions";
 import { departmentAssignmentsRouter } from "./department-assignments";
 import { departmentsRouter } from "./departments";
 import { dashboardRouter } from "./dashboard";
@@ -27,7 +26,6 @@ import { rotaRouter } from "./rota";
 import { servicesRouter } from "./services";
 import { staffRouter } from "./staff";
 import { tempChangesRouter } from "./temp-changes";
-import { calloutsRouter } from "./callouts";
 import { timesheetsRouter } from "./timesheets";
 import { workRouter } from "./work";
 import { cyclesRouter } from "./cycles";
@@ -51,7 +49,6 @@ export type AppRouter = {
   audit: typeof auditRouter;
   compliance: typeof complianceRouter;
   policy: typeof policyRouter;
-  attendance: typeof attendanceExceptionsRouter;
   attendanceTime: typeof attendanceTimeRouter;
   contracts: typeof contractsRouter;
   departmentAssignments: typeof departmentAssignmentsRouter;
@@ -71,7 +68,6 @@ export type AppRouter = {
   services: typeof servicesRouter;
   staff: typeof staffRouter;
   tempChanges: typeof tempChangesRouter;
-  callouts: typeof calloutsRouter;
   import: typeof importRouter;
   work: typeof workRouter;
   timesheets: typeof timesheetsRouter;
@@ -91,7 +87,6 @@ export const appRouter: AppRouter = {
   audit: auditRouter,
   compliance: complianceRouter,
   policy: policyRouter,
-  attendance: attendanceExceptionsRouter,
   attendanceTime: attendanceTimeRouter,
   contracts: contractsRouter,
   departmentAssignments: departmentAssignmentsRouter,
@@ -111,7 +106,6 @@ export const appRouter: AppRouter = {
   services: servicesRouter,
   staff: staffRouter,
   tempChanges: tempChangesRouter,
-  callouts: calloutsRouter,
   import: importRouter,
   work: workRouter,
   timesheets: timesheetsRouter,

@@ -64,6 +64,13 @@
       "when": 1776960000000,
       "tag": "0008_enum_fix",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1776963600000,
+      "tag": "0009_drop_callouts_attendance",
+      "breakpoints": true
     }
   ]
 }
