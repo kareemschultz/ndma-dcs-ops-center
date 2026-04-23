@@ -6,7 +6,7 @@ import {
   appraisals,
   appraisalFollowups,
   appraisalTracker,
-  examDates,
+  examSchedule,
   db,
   staffProfiles,
   staffPromotions,
@@ -852,18 +852,18 @@ export const appraisalsRouter = {
         z.object({
           staffProfileId: z.string().optional(),
           team: z.enum(["DCS", "NOC"]).optional(),
-          status: z.enum(["Scheduled", "Passed", "Failed"]).optional(),
+          status: z.enum(["scheduled", "passed", "failed", "cancelled", "rescheduled"]).optional(),
         }),
       )
       .handler(async ({ input, context }) => {
         const conditions = [];
         if (input.staffProfileId) {
           await assertVisibleOrThrow(context, input.staffProfileId);
-          conditions.push(eq(examDates.staffId, input.staffProfileId));
+          conditions.push(eq(examSchedule.staffProfileId, input.staffProfileId));
         } else if (input.team) {
           const teamStaffIds = await getTeamStaffIds(input.team);
           if (teamStaffIds.length === 0) return [];
-          conditions.push(inArray(examDates.staffId, teamStaffIds));
+          conditions.push(inArray(examSchedule.staffProfileId, teamStaffIds));
         } else {
           const role = context.userRole ?? "";
           if (role !== "admin" && role !== "hrAdminOps") {
@@ -871,16 +871,16 @@ export const appraisalsRouter = {
             const caller = await getCallerStaffProfile(context);
             if (caller?.id) managed.add(caller.id);
             if (managed.size === 0) return [];
-            conditions.push(inArray(examDates.staffId, [...managed]));
+            conditions.push(inArray(examSchedule.staffProfileId, [...managed]));
           }
         }
 
-        if (input.status) conditions.push(eq(examDates.status, input.status));
+        if (input.status) conditions.push(eq(examSchedule.status, input.status));
 
-        return db.query.examDates.findMany({
+        return db.query.examSchedule.findMany({
           where: conditions.length > 0 ? and(...conditions) : undefined,
           with: { staffProfile: { with: { user: true, department: true } } },
-          orderBy: [asc(examDates.scheduledDate), asc(examDates.examName)],
+          orderBy: [asc(examSchedule.scheduledDate), asc(examSchedule.examName)],
         });
       }),
   },

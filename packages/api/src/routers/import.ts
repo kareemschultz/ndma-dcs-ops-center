@@ -9,7 +9,7 @@ import {
   db,
   contracts,
   departments,
-  examDates,
+  examSchedule,
   importJobs,
   leaveRequests,
   leaveTypes,
@@ -180,7 +180,7 @@ const examDateRowSchema = z.object({
   staffEmail: z.string().email(),
   examName: z.string().min(1),
   scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  status: z.enum(["Scheduled", "Passed", "Failed"]).optional(),
+  status: z.enum(["scheduled", "passed", "failed", "cancelled", "rescheduled"]).optional(),
 });
 
 const onboardingTaskRowSchema = z.object({
@@ -1161,11 +1161,11 @@ async function processExamDateRow(
   if (!staffProfileId) {
     return { success: false, error: { row: rowIdx, field: "staffEmail", message: `Staff not found: ${data.staffEmail}` } };
   }
-  await db.insert(examDates).values({
-    staffId: staffProfileId,
+  await db.insert(examSchedule).values({
+    staffProfileId,
     examName: data.examName,
     scheduledDate: data.scheduledDate,
-    status: data.status ?? "Scheduled",
+    status: data.status ?? "scheduled",
   });
   return { success: true };
 }
@@ -1269,7 +1269,7 @@ export const importRouter = {
           "appraisals",
           "calendar_events",
           "promotions",
-          "exam_dates",
+          "exam_schedule",
           "onboarding",
           "policy",
           "forms",
@@ -1345,7 +1345,7 @@ export const importRouter = {
             case "promotions":
               result = await processPromotionRow(row, i + 1);
               break;
-            case "exam_dates":
+            case "exam_schedule":
               result = await processExamDateRow(row, i + 1);
               break;
             case "onboarding":
@@ -1458,7 +1458,7 @@ export const importRouter = {
           "appraisals",
           "calendar_events",
           "promotions",
-          "exam_dates",
+          "exam_schedule",
           "onboarding",
           "policy",
           "forms",

@@ -67,7 +67,7 @@ type ImportType =
   | "appraisals"
   | "calendar_events"
   | "promotions"
-  | "exam_dates"
+  | "exam_schedule"
   | "onboarding"
   | "policy"
   | "forms";
@@ -562,17 +562,17 @@ const IMPORT_TARGETS: ImportTarget[] = [
     notes: "Attach the scanned letter URL where available. Leave letter_date blank if the letter is missing.",
   },
   {
-    id: "exam_dates",
-    title: "Exam Dates",
+    id: "exam_schedule",
+    title: "Exam Schedule",
     description: "Import certification exam schedules for staff members.",
     icon: GraduationCap,
-    columns: ["staff_email", "exam_name", "scheduled_date", "status"],
-    requiredColumns: ["staff_email", "exam_name", "scheduled_date"],
+    columns: ["staffEmail", "examName", "scheduledDate", "status"],
+    requiredColumns: ["staffEmail", "examName", "scheduledDate"],
     sampleRows: [
-      ["example.staff@ndma.gov", "CCNA", "2026-05-18", "Scheduled"],
-      ["example.staff@ndma.gov", "Huawei HCIA", "2026-06-11", "Passed"],
+      ["example.staff@ndma.gov", "CCNA", "2026-05-18", "scheduled"],
+      ["example.staff@ndma.gov", "Huawei HCIA", "2026-06-11", "passed"],
     ],
-    notes: "status should be Scheduled, Passed, or Failed.",
+    notes: "status: scheduled, passed, failed, cancelled, rescheduled.",
   },
   {
     id: "onboarding",
