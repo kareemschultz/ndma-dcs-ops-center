@@ -1,5 +1,10 @@
 # CLAUDE.md — DCS Ops Center
 
+> **⚠️ Before working on this repo, read `IMPLEMENTATION_PLAN.md` at repo root first.**
+> It contains the phase status, hard invariants, and session protocols. Do not begin work without following the starting-work protocol in `IMPLEMENTATION_PLAN.md`.
+>
+> Authoritative spec: [`docs/superpowers/plans/2026-04-23-master-remediation-plan.md`](docs/superpowers/plans/2026-04-23-master-remediation-plan.md)
+
 ## Project Overview
 Enterprise internal operations platform for NDMA Data Centre Services (DCS).
 Modules: Work Management · Incident Management · On-Call Rota · Procurement · Leave · Staff/Compliance · Audit · Access Management · Temporary Changes · Analytics · Import Pipeline.
