@@ -1,3 +1,13 @@
+> **🛑 SUPERSEDED — DO NOT USE**
+>
+> This plan has been superseded by [`../2026-04-23-master-remediation-plan.md`](../2026-04-23-master-remediation-plan.md).
+>
+> The Temporary Tracker feature's schema (`temp_changes`) and router remain in production and are preserved as-is. Decision on further development (if any) deferred until after Phase 9 (self-service) per Phase 0 reconciliation in `docs/superpowers/plans/phase-0-stabilise.md`.
+>
+> Retained here for historical reference only. Do not reference from new code or docs.
+
+---
+
 # Temporary Tracker System — Full Implementation Plan
 
 > **Status:** In progress (session 3, 2026-04-13)

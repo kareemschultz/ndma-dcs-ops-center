@@ -1,76 +1,56 @@
 # Current Phase
 
-**Active phase:** — (none)
-**Status:** 🟡 Not Started
-**Branch:** —
-**Agent:** —
-**Model:** —
-**Started:** —
-**Last update:** 2026-04-23 (plan approved by Kareem)
+**Active phase:** 0 — Stabilise & delete
+**Status:** 🔵 In Progress (reconciliation complete; migrations not yet written)
+**Branch:** `phase/0-stabilise`
+**Agent:** Claude Code (opusplan)
+**Model:** claude-opus-4-7 (1M context)
+**Started:** 2026-04-23
+**Last update:** 2026-04-23
 
 ## What's done this session
 
-- Master plan approved at `docs/superpowers/plans/2026-04-23-master-remediation-plan.md`
-- Agent coordination files created at repo root (this file, `IMPLEMENTATION_PLAN.md`, `AGENT_LOG.md`)
-- Open questions seeded in `docs/plan-questions.md`
-- 3 prior superpowers plans archived with SUPERSEDED banners
+- ✅ §11.3 starting-work protocol executed (git fetch, branch from origin/main)
+- ✅ Pre-flight check passed (master plan §2.5): source-of-truth/ unzipped to main repo root, 200 XLSX + 29 DOCX + 17 TXT verified readable
+- ✅ `.gitignore` updated — added `source-of-truth/`, `/ndma-source-of-truth-*.zip`, `/category-zips/`, `/WorkUpdate_*.xlsx`, `/files.zip`, `/1.zip`
+- ✅ All 5 open questions in `docs/plan-questions.md` resolved with Kareem
+- ✅ Schema reconciliation audit complete — **correction: 9 real extra schemas (not 11 — `attendance-time.ts` and `policy.ts` were false positives)**
+- ✅ Decisions documented in `docs/superpowers/plans/phase-0-stabilise.md`:
+  - `exam-dates` → replace with `exam_schedule` (new migration 0012, copy + drop)
+  - `operational-overlays` → rename to `routine_maintenance` (new migration 0013)
+  - `certification-budgets` → keep as-is, defer integration to Phase 7
+  - `company-forms` → keep as-is, align master plan text to match in follow-up
+  - `leave-policies` → extend with `blocked_months` + `allow_rollover` (migration 0014)
+  - `calendar-events` → extend enum with 9 new values (migration 0015)
+  - `onboarding-tasks` → **DEFER** FK addition to Phase 7 (target table doesn't exist)
+  - `staff-promotions`, `company-policies` → keep as-is
+- ✅ `docs/superpowers/plans/temp-tracker.md` archived with SUPERSEDED banner
+- ✅ `IMPLEMENTATION_PLAN.md` phase status updated (Phase 0 → 🔵 In Progress)
+- ✅ `docs/plan-questions.md` updated with Kareem's answers for all 5 questions
 
-## What's next
+## What's next (next session or same session continuation — Kareem to decide)
 
-**Phase 0 — Stabilise & delete.** Follow `docs/superpowers/plans/phase-0-stabilise.md` (to be created at phase start).
+**Write 8 migrations** (0008-0015) per `phase-0-stabilise.md` §4. DO NOT start before Kareem approves this reconciliation commit.
 
-**Before starting Phase 0:**
-1. Unpack `ndma-source-of-truth-full.zip` to `source-of-truth/` at repo root if not already
-2. Run pre-flight check (master plan §2.5):
-   ```bash
-   test -d source-of-truth && \
-   test -r source-of-truth/10-handoff-docs/DEEP_DIVE_ANALYSIS.md && \
-   test -r source-of-truth/10-handoff-docs/CLAUDE_CODE_PLANNING_HANDOFF.md && \
-   test $(find source-of-truth -name '*.xlsx' | wc -l) -ge 200 && \
-   test $(find source-of-truth -name '*.docx' | wc -l) -ge 29 && \
-   echo "✅ Pre-flight passed"
-   ```
-3. Review master plan §3.5 and record schema reconciliation decisions (11 extra schemas) as Phase 0 Step 1
-4. Answer open questions in `docs/plan-questions.md` where they block Phase 0 (questions 1, 4 especially)
+Before writing migrations:
+1. `bun install` (node_modules not present in worktree)
+2. Resolve open risk: `callout_legacy` enum value — must be added to `tosd_records` type enum BEFORE migration 0009 runs. Decide: fold into migration 0008 or create 0008.5?
+3. Pre-check: how many `leave_requests` rows reference Compassionate leave type? (blocks migration 0010 design)
+4. Pre-check: any orphan `departments.parent_id` values? (blocks migration 0011)
 
 ## Handoff notes
 
-- Plan approved 2026-04-23 by Kareem
-- Source of truth must be unzipped at `source-of-truth/` at repo root (NOT in worktree)
-- No agent currently active
-- Next agent: **overwrite this file** with your session details using the template below
+**Architectural principle established this session (apply going forward):**
+> Phase 0 only does self-contained structural work — new columns, new enum values, no new FKs to not-yet-existing tables. Extensions requiring cross-phase dependencies are deferred to the phase that creates the dependency.
 
----
+**Master plan addenda pending** (list in `phase-0-stabilise.md` §6). These changes propagate back to `docs/superpowers/plans/2026-04-23-master-remediation-plan.md` in a separate follow-up commit after Phase 0 merges.
 
-## Template — on session start, REPLACE this file with:
+**Open risks to surface at migration-writing time** (full list in `phase-0-stabilise.md` §8):
+- `callout_legacy` enum dependency ordering
+- Postgres enum one-way widening (migration 0015 DOWN is no-op)
+- `operational_overlays` → `routine_maintenance` rename cascade (many files)
+- Compassionate leave type rows — remap or preserve?
+- pre-commit hook's `bat` dependency (per CLAUDE.md gotchas) — use `git commit -m` with repeated `-m` flags, not heredoc
 
-```markdown
-# Current Phase
-
-**Active phase:** 0 — Stabilise & delete
-**Status:** 🔵 In Progress
-**Branch:** `phase/0-stabilise`
-**Agent:** Claude Code  (or: Codex / human contributor)
-**Model:** claude-opus-4-7 (opusplan)  (or equivalent)
-**Started:** 2026-04-__ HH:MM UTC
-**Last update:** 2026-04-__ HH:MM UTC
-
-## What's done this session
-
-- Pre-flight check passed (or: failed — see plan-questions.md)
-- Schema reconciliation decisions recorded for 11 extra schemas
-- Migration 0008 drafted (not yet applied)
-- ...
-
-## What's next
-
-- Apply migration 0008 in staging
-- Delete callouts + attendance-exceptions schemas + routers + route files
-- Update sidebar-data.ts
-
-## Handoff notes for next agent
-
-- Migration 0008 needs UP/DOWN symmetry verification before apply
-- Callout legacy rows are 47 in prod — migration plan has them going to `tosd_records` with `type='callout_legacy'`
-- RBAC matrix needs no changes in Phase 0 (no new routers)
-```
+**Next agent — resume migrations with:**
+> Resuming Phase 0 migrations. Follow §11.3 starting-work protocol. Read `docs/superpowers/plans/phase-0-stabilise.md` §4 for the migration plan (0008-0015). Continue on branch `phase/0-stabilise`. Run `bun install` first. Resolve 4 pre-checks before writing any migration. Implement UP + DOWN for each, test on disposable local DB. After all 8 apply cleanly, push + typecheck + e2e + report for Kareem review before merge.

@@ -14,94 +14,79 @@
 **Resolution:** (filled in by Kareem; include date)
 ```
 
----
-
-## [OPEN] — temp-tracker.md fate — @kareem [DECISION]
-
-**Opened:** 2026-04-23 by Claude Code (planning session)
-**Context:** `docs/superpowers/plans/temp-tracker.md` (7.3 KB) is an in-progress design for temporary infrastructure changes. The master plan §4.3 flagged it as "review / migrate". Blocks: Phase 1 scope decision.
-
-**Question:** Three options:
-1. **Fold into Phase 1** — expand temp-tracker spec into the Phase 1 checklist. The `temp_changes` schema + router already exist and Phase 1 extends them.
-2. **Keep as standalone pending plan** — leave the file in place; revisit after Phase 9 (self-service).
-3. **Archive** — move to `_archive/` with SUPERSEDED banner; the feature is abandoned / subsumed by scheduling.
-
-**Recommendation:** Option 1 — the existing `temp_changes` schema is already wired into the codebase and the sticky-note feedback didn't ask to remove it.
-
-**Resolution:** _(pending)_
+<!-- Template at bottom of file, not a real question — ignore when grepping [OPEN] -->
 
 ---
 
-## [OPEN] — Appraisal signature model — @kareem [DECISION]
+## [ANSWERED] — temp-tracker.md fate — @kareem [DECISION]
 
 **Opened:** 2026-04-23 by Claude Code (planning session)
-**Context:** Planning handoff §2 says "design for both digital and wet-sign placeholder". Master plan §5.3 models `appraisal_signatures` with optional `signature_svg`. Blocks: Phase 4 UX decisions (signature pad component choice, print flow).
-
-**Question:** Is the signature policy:
-1. **Per-org (single toggle):** NDMA-wide choice — either all appraisals are digital (SVG signature pad) or all are wet-sign (blank placeholder printed for manual signing)
-2. **Per-cycle toggle:** each appraisal cycle can be configured digital or wet-sign independently
-3. **Per-signatory toggle:** employee signs digitally, GM/DGM/HR sign wet (hybrid)
-
-**Recommendation:** Option 1 initially, with Option 3 as a Phase 15 enhancement if Kareem decides during Phase 4 pilot that hybrid is useful.
-
-**Resolution:** _(pending)_
+**Answered:** 2026-04-23
+**Decision:** **Archive with SUPERSEDED banner.**
+**Action taken:** File moved to `docs/superpowers/plans/_archive/temp-tracker.md` with banner in Phase 0 reconciliation commit (2026-04-23).
+**Rationale (Kareem):** The `temp_changes` schema + router already exist in the codebase and work fine. The planning doc was in-progress spec; feature ships without needing that doc. Schema/router stay as-is; further development (if any) deferred until after Phase 9 (self-service).
 
 ---
 
-## [OPEN] — Biometric + physical door sync — @kareem [DECISION]
+## [ANSWERED] — Appraisal signature model — @kareem [DECISION]
 
 **Opened:** 2026-04-23 by Claude Code (planning session)
-**Context:** Master plan §5.2 models `biometric_registration` + `physical_access_register` tables. Phase 1 populates them. Blocks: Phase 1 scope (connector vs manual entry UI).
-
-**Question:** Are biometric + physical door records:
-1. **Manual entry only** — Admin + Ataybia enter data via UI; source of truth stays in NDMA's existing systems (door controller DB, Liliendaal access DB); our tables are snapshots
-2. **Synced from door controller via connector** — Phase 1 builds a connector similar to `packages/api/src/lib/sync/connectors/ldap.ts`; our tables are mirror
-3. **Synced one-way XLSX import** — Ataybia uploads the AccountManagement XLSX monthly; import job updates our tables
-
-**Recommendation:** Option 1 initially (manual entry + audit log). Phase 1 delivers the UI. Option 2 or 3 can be added later as a stretch goal (planning handoff §17 "Biometric access visualizer").
-
-**Resolution:** _(pending)_
+**Answered:** 2026-04-23
+**Decision:** **Per-cycle toggle.** Each appraisal cycle can be configured independently as digital-signature or wet-sign-placeholder.
+**Action:** Phase 4 implementation must model `appraisal_cycles.signature_mode enum('digital','wet_sign')` and render signature block accordingly. Design in Phase 4 kickoff.
+**Rationale (Kareem):** Preserves flexibility — earlier cycles may have been wet-sign in practice; newer cycles can opt into digital. Per-org toggle was too coarse; per-signatory hybrid was too complex.
 
 ---
 
-## [OPEN] — Extra schemas in worktree (reconciliation) — @kareem [INFO / PER-SCHEMA DECISION]
+## [ANSWERED] — Biometric + physical door registry sync — @kareem [DECISION]
 
 **Opened:** 2026-04-23 by Claude Code (planning session)
-**Context:** 11 schemas exist in the worktree that the planning handoff did not mention. Phase 0 Step 1 is the schema reconciliation audit. Master plan §3.5 proposes defaults:
+**Answered:** 2026-04-23
+**Decision:** **Manual entry only** — Admin + Ataybia enter via UI; audit-logged.
+**Action:** Phase 1 builds data entry UI only. Tables are snapshots. Connector / import can be added later as stretch goals.
+**Rationale (Kareem):** Simplest Phase 1 scope. No procurement / credential / connector work. Can evolve to connector (Option 2) or monthly XLSX import (Option 3) in Phase 15 or beyond if Ataybia asks.
 
-| Schema | Default decision | Rationale |
+---
+
+## [ANSWERED] — Extra schemas in worktree (reconciliation) — @kareem [INFO / PER-SCHEMA DECISION]
+
+**Opened:** 2026-04-23 by Claude Code (planning session)
+**Answered:** 2026-04-23 (walk-through with Kareem)
+**Correction:** Master plan §3.5 listed 11 extras; 2 were false positives (`attendance-time.ts` + `policy.ts` do not exist). Real count: **9 schemas**.
+**Decision (per-schema):** See [`phase-0-stabilise.md §2`](./superpowers/plans/phase-0-stabilise.md#2-schema-reconciliation-decisions-9-extras--temp_changes--10-schemas) for full reconciliation table. Summary:
+
+| # | Schema | Decision |
 |---|---|---|
-| `exam-dates.ts` | Extend | Handoff §6.10 specifies `examSchedule` — reuse this table |
-| `company-forms.ts` | Keep | Handoff §6.12 references companyForms catalogue |
-| `company-policies.ts` | Keep | Handoff §6.12 references companyPolicies |
-| `certification-budgets.ts` | Review | Not in handoff; may be pre-existing work unrelated |
-| `attendance-time.ts` | Review | Overlaps with §6.8 attendanceLogs |
-| `leave-policies.ts` | Extend | Handoff §6.6 specifies leavePolicies table |
-| `policy.ts` | Merge | Review against companyPolicies; may be duplicate |
-| `calendar-events.ts` | Extend | Handoff §6.12 adds eventType enum |
-| `staff-promotions.ts` | Extend | Handoff §6.5 references staffPromotions |
-| `onboarding-tasks.ts` | Extend | Handoff §6.11 references onboardingTasks |
-| `operational-overlays.ts` | Review | Not in handoff; preserve if feature is live |
+| 1 | `exam-dates.ts` | Replace with `exam_schedule` (migration 0012) |
+| 2 | `operational-overlays.ts` | Rename to `routine_maintenance` (migration 0013) |
+| 3 | `certification-budgets.ts` | Keep as-is; defer integration to Phase 7 |
+| 4 | `company-forms.ts` | Keep as-is; align master plan text in follow-up |
+| 5 | `leave-policies.ts` | Extend (migration 0014 adds blocked_months + allow_rollover) |
+| 6 | `calendar-events.ts` | Extend enum (migration 0015 adds 9 new values) |
+| 7 | `onboarding-tasks.ts` | DEFER — FK requires onboarding_task_templates (Phase 7) |
+| 8 | `staff-promotions.ts` | Keep as-is |
+| 9 | `company-policies.ts` | Keep as-is |
 
-**Question:** Confirm or override per-schema defaults. Particularly `certification-budgets.ts` and `operational-overlays.ts` — do these feature areas exist in production and matter?
-
-**Resolution:** _(pending — Phase 0 agent will follow up on each "Review" default)_
+**Rationale (Kareem):** Established a new architectural principle — Phase 0 only does self-contained structural work (no new FKs to not-yet-existing tables). Extensions requiring cross-phase dependencies are deferred to the phase that creates the dependency.
 
 ---
 
-## [OPEN] — Slack/WhatsApp webhook priority — @kareem [DECISION]
+## [ANSWERED] — Slack/WhatsApp webhook priority — @kareem [DECISION]
 
 **Opened:** 2026-04-23 by Claude Code (planning session)
-**Context:** Planning handoff §12 + master plan §6.6 mention Slack/WhatsApp as "optional" notification channels. Phase 10 scope decision.
+**Answered:** 2026-04-23
+**Decision:** **Deferred to Phase 15 stretch.** Phase 10 ships in-app + email only.
+**Architectural addition (new requirement for Phase 10):** Build notification dispatch as **channel-adapter pattern** from day one — `NotificationChannel` interface with `InAppChannel`, `EmailChannel` implementations. Future channels (Slack, WhatsApp, SMS, webhook) slot in without schema change or changes to reminder logic. Store channel preferences per-user.
 
-**Question:**
-1. **In Phase 10** — build the webhook as part of the notification engine
-2. **Deferred to Phase 15 or stretch** — core notifications (in-app + email) in Phase 10; webhooks later
-3. **Not needed** — remove from plan entirely; NDMA uses email + in-app only
+**Rationale (Kareem):** External channels add procurement/credential/API dependencies unrelated to reminder correctness. Shipping core reminders first, channels later, keeps Phase 10 deliverable tight. But the adapter pattern must be designed now to prevent a future scramble.
 
-**Recommendation:** Option 2 — core engine ships Phase 10; webhook is a Phase 15 stretch.
+**Action:** Add to master plan §8 Phase 10 acceptance criterion (follow-up addenda commit):
+> Notification dispatch uses channel-adapter pattern. Adding a new channel post-Phase-10 requires only a new adapter implementation + registration, no changes to reminder logic, schema, or existing channels.
 
-**Resolution:** _(pending)_
+**Phase 15 stretch items** (add to master plan §16):
+- Slack webhook channel adapter
+- WhatsApp Business API channel adapter (or Twilio)
+- SMS channel adapter (if NDMA has an SMS gateway)
 
 ---
 
