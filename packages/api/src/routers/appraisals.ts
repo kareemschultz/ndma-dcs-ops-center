@@ -117,7 +117,7 @@ async function fetchAppraisal(id: string) {
   return db.query.appraisals.findFirst({
     where: eq(appraisals.id, id),
     with: {
-      staffProfile: { with: { user: true, department: true, teamLead: true } },
+      staffProfile: { with: { user: true, department: true } },
       reviewer: { with: { user: true } },
       teamLead: { with: { user: true } },
       scores: true,
@@ -275,7 +275,7 @@ export const appraisalsRouter = {
       return db.query.appraisals.findMany({
         where: conditions.length > 0 ? and(...conditions) : undefined,
         with: {
-          staffProfile: { with: { user: true, department: true, teamLead: true } },
+          staffProfile: { with: { user: true, department: true } },
           reviewer: { with: { user: true } },
           teamLead: { with: { user: true } },
           cycle: true,
@@ -332,7 +332,7 @@ export const appraisalsRouter = {
 
       const staffProfile = await db.query.staffProfiles.findFirst({
         where: eq(staffProfiles.id, input.staffProfileId),
-        with: { user: true, department: true, teamLead: true },
+        with: { user: true, department: true },
       });
       if (!staffProfile) {
         throw new ORPCError("NOT_FOUND", { message: "Staff profile not found." });
@@ -986,7 +986,7 @@ export const appraisalsRouter = {
     return db.query.appraisals.findMany({
       where: and(...conditions),
       with: {
-        staffProfile: { with: { user: true, department: true, teamLead: true } },
+        staffProfile: { with: { user: true, department: true } },
         reviewer: { with: { user: true } },
         teamLead: { with: { user: true } },
       },
@@ -1041,7 +1041,7 @@ export const appraisalsRouter = {
           year: input.year ?? Number(input.periodStart.slice(0, 4)),
           period: input.period ?? `${input.periodStart} - ${input.periodEnd}`,
           totalScore: input.totalScore ?? null,
-          teamLeadId: staffProfile.teamLeadId ?? null,
+          teamLeadId: null,
           periodStart: input.periodStart,
           periodEnd: input.periodEnd,
           scheduledDate: input.scheduledDate ?? null,

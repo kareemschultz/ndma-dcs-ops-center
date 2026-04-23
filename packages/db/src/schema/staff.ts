@@ -62,10 +62,7 @@ export const staffProfiles = pgTable(
       .default(false)
       .notNull(),
     isOnCallEligible: boolean("is_on_call_eligible").default(true).notNull(),
-    // Reporting relationship: this staff member's direct team lead.
-    // teamLeadId is kept for legacy compatibility.
-    // reportsTo is constrained at the database level by migration 0005.
-    teamLeadId: text("team_lead_id"),
+    // Reporting relationship — team_lead_id dropped in migration 0010.
     reportsTo: text("reports_to"),
     emergencyContacts: jsonb("emergency_contacts")
       .$type<{ name: string; phone: string; relation?: string }[]>()
@@ -82,12 +79,11 @@ export const staffProfiles = pgTable(
     index("staff_profiles_userId_idx").on(table.userId),
     index("staff_profiles_departmentId_idx").on(table.departmentId),
     index("staff_profiles_role_idx").on(table.role),
-    index("staff_profiles_teamLeadId_idx").on(table.teamLeadId),
     index("staff_profiles_reportsTo_idx").on(table.reportsTo),
   ],
 );
 
-export const staffProfileRelations = relations(staffProfiles, ({ one, many }) => ({
+export const staffProfileRelations = relations(staffProfiles, ({ one }) => ({
   user: one(user, {
     fields: [staffProfiles.userId],
     references: [user.id],
@@ -96,10 +92,4 @@ export const staffProfileRelations = relations(staffProfiles, ({ one, many }) =>
     fields: [staffProfiles.departmentId],
     references: [departments.id],
   }),
-  teamLead: one(staffProfiles, {
-    fields: [staffProfiles.teamLeadId],
-    references: [staffProfiles.id],
-    relationName: "teamLead",
-  }),
-  directReports: many(staffProfiles, { relationName: "teamLead" }),
 }));

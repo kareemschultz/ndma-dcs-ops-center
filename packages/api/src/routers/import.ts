@@ -441,7 +441,6 @@ async function processStaffRow(
     role: data.role ?? "Staff",
     phoneNumber: data.phoneNumber ?? null,
     reportsTo: reportsToId,
-    teamLeadId: reportsToId,
     emergencyContacts:
       data.emergencyContactName || data.emergencyContactPhone
         ? [
@@ -1400,7 +1399,6 @@ export const importRouter = {
             .update(staffProfiles)
             .set({
               reportsTo: reportsToId,
-              teamLeadId: reportsToId,
               updatedAt: new Date(),
             })
             .where(eq(staffProfiles.id, staged.profileId));

@@ -71,6 +71,13 @@
       "when": 1776963600000,
       "tag": "0009_drop_callouts_attendance",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1776967200000,
+      "tag": "0010_staff_cleanup",
+      "breakpoints": true
     }
   ]
 }

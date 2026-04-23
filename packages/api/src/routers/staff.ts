@@ -227,15 +227,15 @@ export const staffRouter = {
 
       if (input.teamLeadId === before.id) {
         throw new ORPCError("CONFLICT", {
-          message: "A staff member cannot be their own team lead.",
+          message: "A staff member cannot report to themselves.",
         });
       }
 
       if (input.teamLeadId) {
-        const teamLead = await db.query.staffProfiles.findFirst({
+        const lead = await db.query.staffProfiles.findFirst({
           where: eq(staffProfiles.id, input.teamLeadId),
         });
-        if (!teamLead) {
+        if (!lead) {
           throw new ORPCError("NOT_FOUND", {
             message: "Team lead staff profile not found.",
           });
@@ -245,7 +245,7 @@ export const staffRouter = {
       const updatedRows = await db
         .update(staffProfiles)
         .set({
-          teamLeadId: input.teamLeadId,
+          reportsTo: input.teamLeadId,
           updatedAt: new Date(),
         })
         .where(eq(staffProfiles.id, input.id))
