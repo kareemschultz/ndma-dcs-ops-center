@@ -1,6 +1,8 @@
 # Phase 1 Kickoff — Session Prompt Template
 
 > Paste the content below into a fresh Claude Code session **after** Phase 0 is 🟢 Done in `IMPLEMENTATION_PLAN.md` and merged to `main`. Do not use this prompt before Phase 0's gate ceremony is complete.
+>
+> **⏸ Planned work pause:** Phase 1 is the end of the current work cycle. **Phases 2-15 are deferred** and will resume in a future session / sprint. When Phase 1 completes (gate ceremony done, merged to main, `IMPLEMENTATION_PLAN.md` shows Phase 1 → 🟢 Done), **STOP**. Do NOT auto-chain into Phase 2. The Phase 2 kickoff will be scheduled separately by Kareem.
 
 ---
 
@@ -100,7 +102,7 @@ DO NOT:
 - Skip the 3-layer model (don't "simplify" by collapsing platforms + sync_adapters)
 - Remove per-field provenance fields ("we can add them later") — schema is forward-compatible by design
 - Merge to main without gate ceremony
-- Start Phase 2
+- **Start Phase 2** — Phase 1 is the end of the current work cycle. After Phase 1 gate ceremony, STOP and await Kareem's scheduling for Phase 2+.
 
 Confirm pre-reads complete, paste Phase 0 completion status from IMPLEMENTATION_PLAN.md, then begin with the data model migrations.
 ```
