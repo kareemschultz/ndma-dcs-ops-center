@@ -35,7 +35,6 @@ const ratingMatrixSchema = z.object({
 
 const appraisalStatusSchema = z.enum([
   "draft",
-  "scheduled",
   "in_progress",
   "submitted",
   "approved",
@@ -147,17 +146,15 @@ function parseAverageScore(rows: Array<{ totalScore: number | null }>) {
   return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
 }
 
-function normalizeKpiStatus(status: string | null | undefined) {
-  const normalized = normalizeKey(String(status ?? ""));
-  if (!normalized) return "Other";
-  if (normalized.includes("draft")) return "Draft";
-  if (normalized.includes("pending") || normalized.includes("submit")) return "Pending_Approval";
-  if (normalized.includes("approved")) return "Approved_By_Manager";
-  if (normalized.includes("processed")) return "Processed_By_PA";
-  if (normalized.includes("complete")) return "Completed";
-  if (normalized.includes("reject")) return "Rejected";
-  if (normalized.includes("overdue")) return "Overdue";
-  return "Other";
+function normalizeKpiStatus(status: string | null | undefined): string {
+  const s = String(status ?? "").toLowerCase();
+  if (s === "draft" || s === "in_progress") return "draft";
+  if (s === "submitted") return "submitted";
+  if (s === "approved") return "approved";
+  if (s === "completed") return "completed";
+  if (s === "rejected") return "rejected";
+  if (s === "overdue") return "overdue";
+  return "other";
 }
 
 async function resolveAppraisalScope(
@@ -438,7 +435,7 @@ export const appraisalsRouter = {
         for (const appraisal of appraisalRows) {
           const bucket = normalizeKpiStatus(appraisal.status);
           statusCounts.set(bucket, (statusCounts.get(bucket) ?? 0) + 1);
-          if (bucket === "Completed" || bucket === "Processed_By_PA") {
+          if (bucket === "completed" || bucket === "approved") {
             completedFinal += 1;
           }
 
@@ -460,7 +457,7 @@ export const appraisalsRouter = {
             averageScore: null,
           };
           existing.total += 1;
-          if (bucket === "Completed" || bucket === "Processed_By_PA") {
+          if (bucket === "completed" || bucket === "approved") {
             existing.completed += 1;
           }
           if (typeof appraisal.totalScore === "number") {
@@ -511,11 +508,11 @@ export const appraisalsRouter = {
           totalEvaluations,
           averageScore,
           completionRate,
-          pendingCount: statusCounts.get("Pending_Approval") ?? 0,
-          approvedCount: statusCounts.get("Approved_By_Manager") ?? 0,
-          processedCount: statusCounts.get("Processed_By_PA") ?? 0,
-          completedCount: statusCounts.get("Completed") ?? 0,
-          overdueCount: statusCounts.get("Overdue") ?? 0,
+          pendingCount: statusCounts.get("submitted") ?? 0,
+          approvedCount: statusCounts.get("approved") ?? 0,
+          processedCount: statusCounts.get("approved") ?? 0,
+          completedCount: statusCounts.get("completed") ?? 0,
+          overdueCount: statusCounts.get("overdue") ?? 0,
           dueSoonFollowups,
           overdueFollowups,
           scoreBands: [...scoreBands.entries()].map(([label, count]) => ({ label, count })),
@@ -661,11 +658,11 @@ export const appraisalsRouter = {
           team: z.enum(["DCS", "NOC"]).optional(),
           status: z
             .enum([
-              "Draft",
-              "Pending_Approval",
-              "Approved_By_Manager",
-              "Processed_By_PA",
-              "Completed",
+              "draft",
+              "in_progress",
+              "submitted",
+              "approved",
+              "completed",
             ])
             .optional(),
         }),
@@ -682,12 +679,8 @@ export const appraisalsRouter = {
         } else {
           conditions.push(
             inArray(appraisals.status, [
-              "Draft",
-              "Pending_Approval",
-              "Approved_By_Manager",
-              "Processed_By_PA",
-              "Completed",
               "draft",
+              "in_progress",
               "submitted",
               "approved",
               "completed",
@@ -725,7 +718,7 @@ export const appraisalsRouter = {
         const [updated] = await db
           .update(appraisals)
           .set({
-            status: "Pending_Approval",
+            status: "submitted",
             submittedAt: new Date(),
             submittedById: context.session.user.id,
             updatedAt: new Date(),
@@ -771,7 +764,7 @@ export const appraisalsRouter = {
         const [updated] = await db
           .update(appraisals)
           .set({
-            status: "Approved_By_Manager",
+            status: "approved",
             approvedAt: new Date(),
             approvedById: context.session.user.id,
             updatedAt: new Date(),
@@ -817,7 +810,7 @@ export const appraisalsRouter = {
         const [updated] = await db
           .update(appraisals)
           .set({
-            status: "Processed_By_PA",
+            status: "completed",
             updatedAt: new Date(),
           })
           .where(eq(appraisals.id, input.id))
@@ -1052,7 +1045,7 @@ export const appraisalsRouter = {
           periodStart: input.periodStart,
           periodEnd: input.periodEnd,
           scheduledDate: input.scheduledDate ?? null,
-          status: input.scheduledDate ? "scheduled" : "draft",
+          status: "draft",
           objectives: input.objectives ?? null,
           achievements: input.achievements ?? null,
           goals: input.goals ?? null,

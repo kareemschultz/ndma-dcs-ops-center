@@ -19,13 +19,7 @@ import { user } from "./auth";
 import { staffProfiles } from "./staff";
 
 export const appraisalStatusEnum = pgEnum("appraisal_status", [
-  "Draft",
-  "Pending_Approval",
-  "Approved_By_Manager",
-  "Processed_By_PA",
-  "Completed",
   "draft",
-  "scheduled",
   "in_progress",
   "submitted",
   "approved",
@@ -66,7 +60,7 @@ export const appraisals = pgTable(
     periodEnd: date("period_end").notNull(),
     scheduledDate: date("scheduled_date"),
     completedDate: date("completed_date"),
-    status: appraisalStatusEnum("status").notNull().default("scheduled"),
+    status: appraisalStatusEnum("status").notNull().default("draft"),
     submittedAt: timestamp("submitted_at"),
     submittedById: text("submitted_by_id").references(() => user.id, {
       onDelete: "set null",

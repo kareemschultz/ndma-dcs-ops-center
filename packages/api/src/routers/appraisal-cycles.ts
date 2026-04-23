@@ -204,7 +204,7 @@ export const appraisalCyclesRouter = {
             periodStart: cycle.startDate,
             periodEnd: cycle.endDate,
             scheduledDate: input.scheduledDate ?? cycle.startDate,
-            status: "scheduled",
+            status: "draft",
           })
           .returning();
         if (row) {

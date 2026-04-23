@@ -146,7 +146,8 @@ const appraisalRowSchema = z.object({
   periodEnd: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   evaluationType: z.enum(["Standard", "Employee of the Month"]).optional(),
   status: z
-    .enum(["Draft", "Pending_Approval", "Approved_By_Manager", "Processed_By_PA", "Completed"])
+    .enum(["draft", "in_progress", "submitted", "approved", "rejected", "completed", "overdue",
+           "Draft", "Pending_Approval", "Approved_By_Manager", "Processed_By_PA", "Completed"])
     .optional(),
   totalScore: z.string().optional(),
   scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -1084,13 +1085,7 @@ async function processAppraisalRow(
     periodStart: rawRow.periodStart || rawRow.period_start,
     periodEnd: rawRow.periodEnd || rawRow.period_end,
     evaluationType: (rawRow.evaluationType || rawRow.evaluation_type) as "Standard" | "Employee of the Month" | undefined,
-    status: (rawRow.status || rawRow.workflow_status) as
-      | "Draft"
-      | "Pending_Approval"
-      | "Approved_By_Manager"
-      | "Processed_By_PA"
-      | "Completed"
-      | undefined,
+    status: (rawRow.status || rawRow.workflow_status) as string | undefined,
     totalScore: rawRow.totalScore || rawRow.total_score || undefined,
     scheduledDate: rawRow.scheduledDate || rawRow.scheduled_date || undefined,
     completedDate: rawRow.completedDate || rawRow.completed_date || undefined,
@@ -1114,7 +1109,12 @@ async function processAppraisalRow(
   }
 
   const reviewerId = data.reviewerEmail ? await findStaffByEmail(data.reviewerEmail) : null;
-  const appraisalStatus = data.status ?? "Draft";
+  const legacyStatusMap: Record<string, string> = {
+    Draft: "draft", Pending_Approval: "submitted",
+    Approved_By_Manager: "approved", Processed_By_PA: "completed", Completed: "completed",
+  };
+  const appraisalStatus = (legacyStatusMap[data.status ?? ""] ?? data.status ?? "draft") as
+    "draft" | "in_progress" | "submitted" | "approved" | "rejected" | "completed" | "overdue";
   const existingAppraisal = await db.query.appraisals.findFirst({
     where: and(
       eq(appraisals.staffProfileId, staffProfileId),
