@@ -1,6 +1,7 @@
 /**
- * Operational Overlays — quarterly recurring duties (server room cleaning,
+ * Routine Maintenance — quarterly recurring duties (server room cleaning,
  * routine maintenance, etc.) that sit alongside but separate from on-call rota.
+ * Tables renamed from overlay_* to routine_maintenance_* in migration 0013.
  */
 import { relations } from "drizzle-orm";
 import {
@@ -23,15 +24,14 @@ export const overlayTaskStatusEnum = pgEnum("overlay_task_status", [
   "overdue",
 ]);
 
-// ── overlay_types ──────────────────────────────────────────────────────────
-// Defines the named categories of recurring operational duties.
-export const overlayTypes = pgTable("overlay_types", {
+// ── routine_maintenance_types ──────────────────────────────────────────────
+export const overlayTypes = pgTable("routine_maintenance_types", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  name: text("name").notNull().unique(), // e.g. "Cleaning Server Room"
+  name: text("name").notNull().unique(),
   description: text("description"),
-  category: text("category"), // e.g. "facilities", "maintenance", "compliance"
+  category: text("category"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
@@ -39,10 +39,9 @@ export const overlayTypes = pgTable("overlay_types", {
     .notNull(),
 });
 
-// ── overlay_schedules ──────────────────────────────────────────────────────
-// One row per overlay-type per quarter (Q1 2026, Q2 2026, ...).
+// ── routine_maintenance_schedules ──────────────────────────────────────────
 export const overlaySchedules = pgTable(
-  "overlay_schedules",
+  "routine_maintenance_schedules",
   {
     id: text("id")
       .primaryKey()
@@ -50,10 +49,10 @@ export const overlaySchedules = pgTable(
     overlayTypeId: text("overlay_type_id")
       .notNull()
       .references(() => overlayTypes.id),
-    quarter: text("quarter").notNull(), // "Q1" | "Q2" | "Q3" | "Q4"
-    year: text("year").notNull(), // "2026"
-    startDate: date("start_date").notNull(), // first day of the quarter
-    endDate: date("end_date").notNull(), // last day of the quarter
+    quarter: text("quarter").notNull(),
+    year: text("year").notNull(),
+    startDate: date("start_date").notNull(),
+    endDate: date("end_date").notNull(),
     notes: text("notes"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
@@ -67,11 +66,9 @@ export const overlaySchedules = pgTable(
   ],
 );
 
-// ── overlay_assignments ────────────────────────────────────────────────────
-// Who is responsible for a given overlay schedule.
-// staffProfileId is nullable to support external entities (NOC, Asif, etc.).
+// ── routine_maintenance_assignments ────────────────────────────────────────
 export const overlayAssignments = pgTable(
-  "overlay_assignments",
+  "routine_maintenance_assignments",
   {
     id: text("id")
       .primaryKey()
@@ -79,9 +76,9 @@ export const overlayAssignments = pgTable(
     overlayScheduleId: text("overlay_schedule_id")
       .notNull()
       .references(() => overlaySchedules.id, { onDelete: "cascade" }),
-    staffProfileId: text("staff_profile_id").references(() => staffProfiles.id), // nullable
-    externalLabel: text("external_label"), // "NOC", "Asif", "Core" etc.
-    roleDescription: text("role_description"), // e.g. "Test Fire Detection System"
+    staffProfileId: text("staff_profile_id").references(() => staffProfiles.id),
+    externalLabel: text("external_label"),
+    roleDescription: text("role_description"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
@@ -90,10 +87,9 @@ export const overlayAssignments = pgTable(
   ],
 );
 
-// ── overlay_tasks ──────────────────────────────────────────────────────────
-// Granular tasks under an overlay schedule (e.g. "Inspect cooling airflow").
+// ── routine_maintenance_tasks ──────────────────────────────────────────────
 export const overlayTasks = pgTable(
-  "overlay_tasks",
+  "routine_maintenance_tasks",
   {
     id: text("id")
       .primaryKey()
@@ -104,7 +100,7 @@ export const overlayTasks = pgTable(
     name: text("name").notNull(),
     dueDate: date("due_date"),
     assignedToId: text("assigned_to_id").references(() => staffProfiles.id),
-    assignedToExternal: text("assigned_to_external"), // for NOC, Asif, etc.
+    assignedToExternal: text("assigned_to_external"),
     status: overlayTaskStatusEnum("status").default("pending").notNull(),
     completedAt: timestamp("completed_at"),
     completedById: text("completed_by_id").references(() => user.id),
