@@ -78,6 +78,13 @@
       "when": 1776967200000,
       "tag": "0010_staff_cleanup",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1776970800000,
+      "tag": "0011_departments_fk",
+      "breakpoints": true
     }
   ]
 }
