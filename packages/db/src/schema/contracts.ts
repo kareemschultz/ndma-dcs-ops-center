@@ -4,6 +4,7 @@ import {
   integer,
   pgEnum,
   pgTable,
+  varchar,
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
@@ -32,6 +33,7 @@ export const contracts = pgTable(
     contractType: text("contract_type").notNull(),
     startDate: date("start_date").notNull(),
     endDate: date("end_date"),
+    appraisalPeriod: varchar("appraisal_period", { length: 255 }),
     // Days before endDate to trigger expiry reminder
     renewalReminderDays: integer("renewal_reminder_days").notNull().default(60),
     renewalStatus: text("renewal_status", {

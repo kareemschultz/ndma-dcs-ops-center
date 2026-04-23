@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+﻿import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
-import { User, KeyRound, Calendar, Briefcase } from "lucide-react";
+import { Plus, Trash2, User, KeyRound, Calendar, Briefcase, Phone, HeartHandshake, AlertCircle } from "lucide-react";
+import { z } from "zod";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
 import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
@@ -41,6 +42,30 @@ function labelCase(s: string) {
     .join(" ");
 }
 
+type EmergencyContactForm = {
+  name: string;
+  phone: string;
+  relation: string;
+};
+
+const selfServiceSchema = z.object({
+  phoneNumber: z
+    .string()
+    .trim()
+    .max(32, "Phone number is too long")
+    .optional()
+    .or(z.literal("")),
+  emergencyContacts: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1, "Contact name is required"),
+        phone: z.string().trim().min(1, "Contact phone is required"),
+        relation: z.string().trim().optional().or(z.literal("")),
+      }),
+    )
+    .max(5, "You can save up to 5 emergency contacts"),
+});
+
 const LEAVE_STATUS_COLORS: Record<string, string> = {
   pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
   approved: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
@@ -60,15 +85,10 @@ const WORK_STATUS_COLORS: Record<string, string> = {
 
 function ProfilePage() {
   const { data: session } = authClient.useSession();
+  const queryClient = useQueryClient();
   const user = session?.user;
 
-  // Find own staff profile by matching auth user ID
-  const { data: staffList } = useQuery(
-    orpc.staff.list.queryOptions({ input: { limit: 200, offset: 0 } })
-  );
-  const ownStaff = staffList?.find(
-    (s) => s.user?.id === user?.id
-  );
+  const { data: ownStaff } = useQuery(orpc.staff.me.queryOptions());
   const staffProfileId = ownStaff?.id;
 
   // Own leave requests (most recent)
@@ -87,7 +107,7 @@ function ProfilePage() {
     enabled: !!staffProfileId,
   });
 
-  // ── Profile name update ──────────────────────────────────────────────────
+  // â”€â”€ Profile name update â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [name, setName] = useState("");
   const [nameLoading, setNameLoading] = useState(false);
 
@@ -108,7 +128,7 @@ function ProfilePage() {
     }
   }
 
-  // ── Password change ──────────────────────────────────────────────────────
+  // â”€â”€ Password change â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [confirmPw, setConfirmPw] = useState("");
@@ -147,6 +167,100 @@ function ProfilePage() {
     }
   }
 
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [contacts, setContacts] = useState<EmergencyContactForm[]>([
+    { name: "", phone: "", relation: "" },
+  ]);
+  const [contactSaving, setContactSaving] = useState(false);
+
+  useEffect(() => {
+    if (!ownStaff) return;
+    setPhoneNumber(ownStaff.phoneNumber ?? "");
+    const nextContacts = (ownStaff.emergencyContacts ?? []).map((contact) => ({
+      name: contact.name ?? "",
+      phone: contact.phone ?? "",
+      relation: contact.relation ?? "",
+    }));
+    setContacts(nextContacts.length > 0 ? nextContacts : [{ name: "", phone: "", relation: "" }]);
+  }, [ownStaff]);
+
+  const updateSelfMutation = useMutation(
+    orpc.staff.updateSelf.mutationOptions({
+      onMutate: async (input) => {
+        await queryClient.cancelQueries({ queryKey: orpc.staff.me.key() });
+        const previous = queryClient.getQueryData<NonNullable<typeof ownStaff>>(
+          orpc.staff.me.key(),
+        );
+        queryClient.setQueryData<NonNullable<typeof ownStaff>>(
+          orpc.staff.me.key(),
+          (current) => {
+            if (!current) return current;
+            return {
+              ...current,
+              phoneNumber: input.phoneNumber ?? current.phoneNumber,
+              emergencyContacts: input.emergencyContacts ?? current.emergencyContacts,
+            };
+          },
+        );
+        return { previous };
+      },
+      onError: (err: Error, _input, context) => {
+        if (context?.previous) {
+          queryClient.setQueryData(orpc.staff.me.key(), context.previous);
+        }
+        toast.error(err.message ?? "Failed to update contact details");
+      },
+      onSuccess: async () => {
+        toast.success("Contact details updated successfully");
+        await queryClient.invalidateQueries({ queryKey: orpc.staff.me.key() });
+        await queryClient.invalidateQueries({ queryKey: orpc.staff.list.key() });
+      },
+    }),
+  );
+
+  function addContactRow() {
+    setContacts((current) => [...current, { name: "", phone: "", relation: "" }]);
+  }
+
+  function removeContactRow(index: number) {
+    setContacts((current) => {
+      if (current.length <= 1) return [{ name: "", phone: "", relation: "" }];
+      return current.filter((_, i) => i !== index);
+    });
+  }
+
+  async function handleUpdateSelfContacts(e: React.FormEvent) {
+    e.preventDefault();
+
+    const normalizedContacts = contacts
+      .map((contact) => ({
+        name: contact.name.trim(),
+        phone: contact.phone.trim(),
+        relation: contact.relation.trim(),
+      }))
+      .filter((contact) => contact.name || contact.phone || contact.relation);
+
+    const parsed = selfServiceSchema.safeParse({
+      phoneNumber: phoneNumber.trim(),
+      emergencyContacts: normalizedContacts,
+    });
+
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Please check the contact fields");
+      return;
+    }
+
+    setContactSaving(true);
+    try {
+      await updateSelfMutation.mutateAsync({
+        phoneNumber: parsed.data.phoneNumber || undefined,
+        emergencyContacts: parsed.data.emergencyContacts,
+      });
+    } finally {
+      setContactSaving(false);
+    }
+  }
+
   const userRole = (user as Record<string, unknown> | undefined)?.role as string | undefined;
 
   return (
@@ -170,7 +284,7 @@ function ProfilePage() {
         </div>
 
         <div className="max-w-2xl space-y-6">
-          {/* ── Account info + name edit ─────────────────────────────────── */}
+          {/* â”€â”€ Account info + name edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
@@ -187,8 +301,8 @@ function ProfilePage() {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="text-lg font-semibold">{user?.name ?? "—"}</p>
-                  <p className="text-sm text-muted-foreground">{user?.email ?? "—"}</p>
+                  <p className="text-lg font-semibold">{user?.name ?? "â€”"}</p>
+                  <p className="text-sm text-muted-foreground">{user?.email ?? "â€”"}</p>
                   {(ownStaff || userRole) && (
                     <div className="mt-1 flex flex-wrap gap-1.5">
                       {userRole && (
@@ -238,13 +352,134 @@ function ProfilePage() {
                   size="sm"
                   disabled={nameLoading || !name.trim() || name.trim() === user?.name}
                 >
-                  {nameLoading ? "Saving…" : "Save Changes"}
+                  {nameLoading ? "Savingâ€¦" : "Save Changes"}
                 </Button>
               </form>
             </CardContent>
           </Card>
 
-          {/* ── Change password ──────────────────────────────────────────── */}
+          {ownStaff && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <HeartHandshake className="size-4 text-green-500" />
+                  Self-Service Contact Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleUpdateSelfContacts} className="space-y-5">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="self-phone">Phone Number</Label>
+                    <Input
+                      id="self-phone"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      placeholder="+592 000-0000"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      This number is visible in the directory and used for internal contact.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <Label className="text-sm font-medium">Emergency Contacts</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Add the people NDMA should contact if an urgent issue occurs.
+                        </p>
+                      </div>
+                      <Button type="button" variant="outline" size="sm" onClick={addContactRow}>
+                        <Plus className="size-3.5 mr-1" />
+                        Add Contact
+                      </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {contacts.map((contact, index) => (
+                        <div key={`${index}-${contact.name}-${contact.phone}`} className="rounded-xl border p-3 space-y-3">
+                          <div className="grid gap-3 md:grid-cols-3">
+                            <div className="space-y-1.5">
+                              <Label>Name</Label>
+                              <Input
+                                value={contact.name}
+                                onChange={(e) =>
+                                  setContacts((current) =>
+                                    current.map((row, i) =>
+                                      i === index ? { ...row, name: e.target.value } : row,
+                                    ),
+                                  )
+                                }
+                                placeholder="Emergency contact name"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label>Phone</Label>
+                              <Input
+                                value={contact.phone}
+                                onChange={(e) =>
+                                  setContacts((current) =>
+                                    current.map((row, i) =>
+                                      i === index ? { ...row, phone: e.target.value } : row,
+                                    ),
+                                  )
+                                }
+                                placeholder="+592 000-0000"
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label>Relation</Label>
+                              <select
+                                value={contact.relation}
+                                onChange={(e) =>
+                                  setContacts((current) =>
+                                    current.map((row, i) =>
+                                      i === index ? { ...row, relation: e.target.value } : row,
+                                    ),
+                                  )
+                                }
+                                className="w-full rounded-lg border bg-background px-2.5 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                              >
+                                <option value="">Select relation</option>
+                                <option value="Spouse">Spouse</option>
+                                <option value="Parent">Parent</option>
+                                <option value="Sibling">Sibling</option>
+                                <option value="Child">Child</option>
+                                <option value="Other">Other</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="flex justify-end">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeContactRow(index)}
+                            >
+                              <Trash2 className="size-3.5 mr-1.5" />
+                              Remove
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Button type="submit" size="sm" disabled={contactSaving || updateSelfMutation.isPending}>
+                      {contactSaving || updateSelfMutation.isPending ? "Saving…" : "Save Contact Details"}
+                    </Button>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <AlertCircle className="size-3.5" />
+                      Only you can change these fields.
+                    </div>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* â”€â”€ Change password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
@@ -290,13 +525,13 @@ function ProfilePage() {
                   size="sm"
                   disabled={pwLoading || !currentPw || !newPw || !confirmPw}
                 >
-                  {pwLoading ? "Updating…" : "Update Password"}
+                  {pwLoading ? "Updatingâ€¦" : "Update Password"}
                 </Button>
               </form>
             </CardContent>
           </Card>
 
-          {/* ── My leave requests ────────────────────────────────────────── */}
+          {/* â”€â”€ My leave requests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {staffProfileId && (
             <Card>
               <CardHeader className="pb-3">
@@ -328,9 +563,9 @@ function ProfilePage() {
                             {req.leaveType?.name ?? "Leave"}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {format(parseISO(req.startDate), "dd MMM")} –{" "}
+                            {format(parseISO(req.startDate), "dd MMM")} â€“{" "}
                             {format(parseISO(req.endDate), "dd MMM yyyy")}
-                            {" · "}
+                            {" Â· "}
                             {req.totalDays} day{req.totalDays !== 1 ? "s" : ""}
                           </p>
                         </div>
@@ -349,7 +584,7 @@ function ProfilePage() {
             </Card>
           )}
 
-          {/* ── My work items ────────────────────────────────────────────── */}
+          {/* â”€â”€ My work items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {staffProfileId && (
             <Card>
               <CardHeader className="pb-3">
@@ -381,7 +616,7 @@ function ProfilePage() {
                           <p className="text-xs text-muted-foreground capitalize">
                             {item.type?.replace(/_/g, " ")}
                             {item.dueDate
-                              ? ` · Due ${format(parseISO(item.dueDate), "dd MMM")}`
+                              ? ` Â· Due ${format(parseISO(item.dueDate), "dd MMM")}`
                               : ""}
                           </p>
                         </div>
@@ -404,3 +639,9 @@ function ProfilePage() {
     </>
   );
 }
+
+
+
+
+
+

@@ -17,6 +17,7 @@ import {
   getManagedStaffIds,
 } from "../lib/scope";
 import { createNotification } from "../lib/notify";
+import { getTeamStaffIds } from "../lib/team";
 
 const timesheetStatusSchema = z.enum(["draft", "submitted", "approved", "rejected", "closed"]);
 
@@ -62,6 +63,7 @@ export const timesheetsRouter = {
     .input(
       z.object({
         staffProfileId: z.string().optional(),
+        team: z.enum(["DCS", "NOC"]).optional(),
         status: timesheetStatusSchema.optional(),
       }),
     )
@@ -72,6 +74,12 @@ export const timesheetsRouter = {
       if (input.staffProfileId) {
         await assertTimesheetAccess(context, input.staffProfileId);
         conditions.push(eq(timesheets.staffProfileId, input.staffProfileId));
+      } else if (input.team) {
+        const teamStaffIds = await getTeamStaffIds(input.team);
+        if (teamStaffIds.length === 0) {
+          return [];
+        }
+        conditions.push(inArray(timesheets.staffProfileId, teamStaffIds));
       } else if (role !== "admin" && role !== "hrAdminOps") {
         const managed = await getManagedStaffIds(context);
         const caller = await getCallerStaffProfile(context);

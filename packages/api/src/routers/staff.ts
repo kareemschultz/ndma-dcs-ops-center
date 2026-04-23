@@ -1,10 +1,11 @@
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import { db, staffProfiles, departments } from "@ndma-dcs-staff-portal/db";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { protectedProcedure, requireRole } from "../index";
 import { logAudit } from "../lib/audit";
+import { getTeamStaffIds } from "../lib/team";
 import {
   canAccessStaffPrivate,
   getDirectReports,
@@ -16,6 +17,7 @@ export const staffRouter = {
     .input(
       z.object({
         departmentId: z.string().optional(),
+        team: z.enum(["DCS", "NOC"]).optional(),
         status: z
           .enum(["active", "inactive", "on_leave", "terminated"])
           .optional(),
@@ -28,6 +30,11 @@ export const staffRouter = {
       if (input.status) conditions.push(eq(staffProfiles.status, input.status));
       if (input.departmentId)
         conditions.push(eq(staffProfiles.departmentId, input.departmentId));
+      if (input.team) {
+        const teamStaffIds = await getTeamStaffIds(input.team);
+        if (teamStaffIds.length === 0) return [];
+        conditions.push(inArray(staffProfiles.id, teamStaffIds));
+      }
 
       return db.query.staffProfiles.findMany({
         where: conditions.length > 0 ? and(...conditions) : undefined,
@@ -55,24 +62,35 @@ export const staffRouter = {
         userId: z.string(),
         employeeId: z.string().min(1),
         departmentId: z.string(),
+        role: z.enum(["Staff", "Team_Lead", "Manager", "PA", "Admin"]).default("Staff"),
         jobTitle: z.string().min(1),
         employmentType: z
           .enum(["full_time", "part_time", "contract", "temporary"])
           .default("full_time"),
         startDate: z.string(), // ISO date string
+        phoneNumber: z.string().optional(),
+        reportsTo: z.string().optional(),
+        emergencyContacts: z.array(
+          z.object({
+            name: z.string().min(1),
+            phone: z.string().min(1),
+            relation: z.string().optional(),
+          }),
+        ).optional(),
         isTeamLead: z.boolean().default(false),
         isLeadEngineerEligible: z.boolean().default(false),
         isOnCallEligible: z.boolean().default(true),
       }),
     )
     .handler(async ({ input, context }) => {
-      const [profile] = await db
+      const profileRows = await db
         .insert(staffProfiles)
         .values({
           ...input,
           startDate: new Date(input.startDate),
         })
         .returning();
+      const profile = profileRows[0];
       if (!profile) throw new ORPCError("INTERNAL_SERVER_ERROR");
 
       await logAudit({
@@ -97,10 +115,20 @@ export const staffRouter = {
       z.object({
         id: z.string(),
         departmentId: z.string().optional(),
+        role: z.enum(["Staff", "Team_Lead", "Manager", "PA", "Admin"]).optional(),
         jobTitle: z.string().min(1).optional(),
         employmentType: z
           .enum(["full_time", "part_time", "contract", "temporary"])
           .optional(),
+        phoneNumber: z.string().optional(),
+        reportsTo: z.string().nullable().optional(),
+        emergencyContacts: z.array(
+          z.object({
+            name: z.string().min(1),
+            phone: z.string().min(1),
+            relation: z.string().optional(),
+          }),
+        ).optional(),
         status: z
           .enum(["active", "inactive", "on_leave", "terminated"])
           .optional(),
@@ -116,11 +144,12 @@ export const staffRouter = {
       });
       if (!before) throw new ORPCError("NOT_FOUND");
 
-      const [updated] = await db
+      const updatedRows = await db
         .update(staffProfiles)
         .set(updates)
         .where(eq(staffProfiles.id, id))
         .returning();
+      const updated = updatedRows[0];
 
       await logAudit({
         actorId: context.session.user.id,
@@ -148,11 +177,12 @@ export const staffRouter = {
       });
       if (!before) throw new ORPCError("NOT_FOUND");
 
-      const [updated] = await db
+      const updatedRows = await db
         .update(staffProfiles)
         .set({ status: "terminated" })
         .where(eq(staffProfiles.id, input.id))
         .returning();
+      const updated = updatedRows[0];
 
       await logAudit({
         actorId: context.session.user.id,
@@ -212,7 +242,7 @@ export const staffRouter = {
         }
       }
 
-      const [updated] = await db
+      const updatedRows = await db
         .update(staffProfiles)
         .set({
           teamLeadId: input.teamLeadId,
@@ -220,6 +250,7 @@ export const staffRouter = {
         })
         .where(eq(staffProfiles.id, input.id))
         .returning();
+      const updated = updatedRows[0];
 
       if (!updated) {
         throw new ORPCError("INTERNAL_SERVER_ERROR");
@@ -249,6 +280,60 @@ export const staffRouter = {
       return {
         allowed: await canAccessStaffPrivate(context, input.staffProfileId),
       };
+    }),
+
+  me: protectedProcedure.handler(async ({ context }) => {
+    const profile = await getCallerStaffProfile(context);
+    return profile ?? null;
+  }),
+
+  updateSelf: protectedProcedure
+    .input(
+      z.object({
+        phoneNumber: z.string().optional(),
+        emergencyContacts: z.array(
+          z.object({
+            name: z.string().min(1),
+            phone: z.string().min(1),
+            relation: z.string().optional(),
+          }),
+        ).optional(),
+      }),
+    )
+    .handler(async ({ input, context }) => {
+      const caller = await getCallerStaffProfile(context);
+      if (!caller) throw new ORPCError("NOT_FOUND");
+
+      const before = await db.query.staffProfiles.findFirst({
+        where: eq(staffProfiles.id, caller.id),
+      });
+      if (!before) throw new ORPCError("NOT_FOUND");
+
+      const [updated] = await db
+        .update(staffProfiles)
+        .set({
+          phoneNumber: input.phoneNumber ?? before.phoneNumber,
+          emergencyContacts: input.emergencyContacts ?? before.emergencyContacts,
+        })
+        .where(eq(staffProfiles.id, caller.id))
+        .returning();
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        action: "staff.self_update",
+        module: "staff",
+        resourceType: "staff_profile",
+        resourceId: caller.id,
+        beforeValue: before as Record<string, unknown>,
+        afterValue: updated as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+      });
+
+      return updated;
     }),
 
   getMyDirectReports: requireRole("staff", "read").handler(async ({ context }) => {

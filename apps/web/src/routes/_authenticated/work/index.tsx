@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -61,6 +61,7 @@ import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { useTeamFilter } from "@/lib/team-filter";
 import { orpc } from "@/utils/orpc";
 import { chartTheme } from "@/lib/chart-theme";
 import {
@@ -800,6 +801,19 @@ function WorkPage() {
   const [priority, setPriority] = useState<WorkPriority | "">("");
   const [departmentId, setDepartmentId] = useState("");
   const [overdueOnly, setOverdueOnly] = useState(false);
+  const { team } = useTeamFilter();
+
+  const { data: departments } = useQuery(
+    orpc.staff.getDepartments.queryOptions(),
+  );
+
+  const teamDepartmentId = useMemo(
+    () =>
+      team === "All"
+        ? ""
+        : departments?.find((department) => department.code === team)?.id ?? "",
+    [departments, team],
+  );
 
   const { data, isLoading, error, refetch } = useQuery(
     orpc.work.list.queryOptions({
@@ -807,7 +821,7 @@ function WorkPage() {
         status: status || undefined,
         type: type || undefined,
         priority: priority || undefined,
-        departmentId: departmentId || undefined,
+        departmentId: departmentId || teamDepartmentId || undefined,
         overdueOnly: overdueOnly || undefined,
         limit: 200,
         offset: 0,
@@ -816,9 +830,6 @@ function WorkPage() {
   );
 
   const { data: stats } = useQuery(orpc.work.stats.queryOptions());
-  const { data: departments } = useQuery(
-    orpc.staff.getDepartments.queryOptions(),
-  );
 
   const chartData = stats
     ? Object.entries(stats.byStatus)

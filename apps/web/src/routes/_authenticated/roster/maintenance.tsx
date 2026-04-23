@@ -13,6 +13,7 @@ import { Textarea } from "@ndma-dcs-staff-portal/ui/components/textarea";
 
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { SchedulingTabs } from "@/components/layout/scheduling-tabs";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc, queryClient } from "@/utils/orpc";
 
@@ -67,6 +68,8 @@ function RosterMaintenancePage() {
       </Header>
 
       <Main className="space-y-6">
+        <SchedulingTabs scope="noc" />
+
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Maintenance Assignments</h1>
           <p className="text-sm text-muted-foreground">Quarterly maintenance coverage and ownership.</p>
@@ -96,7 +99,7 @@ function RosterMaintenancePage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="year">Year</Label>
-                <Input id="year" value={year} onChange={(e) => setYear(e.target.value)} />
+                <Input id="year" type="number" min="2020" max="2100" value={year} onChange={(e) => setYear(e.target.value)} />
               </div>
               <div className="space-y-1.5">
                 <Label>Quarter</Label>

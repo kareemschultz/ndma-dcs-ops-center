@@ -8,7 +8,7 @@ export default defineConfig({
   workers: 1,
   reporter: [["list"], ["html", { open: "never", outputFolder: "e2e-report" }]],
   use: {
-    baseURL: "http://localhost:3002",
+    baseURL: "http://localhost:3001",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "off",

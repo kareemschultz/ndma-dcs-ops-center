@@ -14,13 +14,16 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedWorkIndexRouteImport } from './routes/_authenticated/work/index'
+import { Route as AuthenticatedTrainingIndexRouteImport } from './routes/_authenticated/training/index'
 import { Route as AuthenticatedTimesheetsIndexRouteImport } from './routes/_authenticated/timesheets/index'
 import { Route as AuthenticatedStaffIndexRouteImport } from './routes/_authenticated/staff/index'
 import { Route as AuthenticatedServicesIndexRouteImport } from './routes/_authenticated/services/index'
+import { Route as AuthenticatedSchedulingIndexRouteImport } from './routes/_authenticated/scheduling/index'
 import { Route as AuthenticatedRotaIndexRouteImport } from './routes/_authenticated/rota/index'
 import { Route as AuthenticatedRosterIndexRouteImport } from './routes/_authenticated/roster/index'
 import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports/index'
 import { Route as AuthenticatedProcurementIndexRouteImport } from './routes/_authenticated/procurement/index'
+import { Route as AuthenticatedPolicyIndexRouteImport } from './routes/_authenticated/policy/index'
 import { Route as AuthenticatedOpsReadinessIndexRouteImport } from './routes/_authenticated/ops-readiness/index'
 import { Route as AuthenticatedNotificationsIndexRouteImport } from './routes/_authenticated/notifications/index'
 import { Route as AuthenticatedLeaveIndexRouteImport } from './routes/_authenticated/leave/index'
@@ -30,7 +33,9 @@ import { Route as AuthenticatedHrIndexRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedCyclesIndexRouteImport } from './routes/_authenticated/cycles/index'
 import { Route as AuthenticatedContractsIndexRouteImport } from './routes/_authenticated/contracts/index'
 import { Route as AuthenticatedChangesIndexRouteImport } from './routes/_authenticated/changes/index'
+import { Route as AuthenticatedCareerProgressionIndexRouteImport } from './routes/_authenticated/career-progression/index'
 import { Route as AuthenticatedAuditIndexRouteImport } from './routes/_authenticated/audit/index'
+import { Route as AuthenticatedAttendanceIndexRouteImport } from './routes/_authenticated/attendance/index'
 import { Route as AuthenticatedAppraisalsIndexRouteImport } from './routes/_authenticated/appraisals/index'
 import { Route as AuthenticatedAnalyticsIndexRouteImport } from './routes/_authenticated/analytics/index'
 import { Route as AuthenticatedAccessIndexRouteImport } from './routes/_authenticated/access/index'
@@ -73,7 +78,7 @@ import { Route as AuthenticatedAccessAccountIdRouteImport } from './routes/_auth
 import { Route as AuthenticatedRotaWarningsIndexRouteImport } from './routes/_authenticated/rota/warnings/index'
 import { Route as AuthenticatedRotaFairnessIndexRouteImport } from './routes/_authenticated/rota/fairness/index'
 import { Route as AuthenticatedRotaCalendarIndexRouteImport } from './routes/_authenticated/rota/calendar/index'
-import { Route as AuthenticatedRosterCalendarIndexRouteImport } from './routes/_authenticated/roster/calendar/index'
+import { Route as AuthenticatedAppraisalsStaffStaffProfileIdRouteImport } from './routes/_authenticated/appraisals/staff/$staffProfileId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -99,6 +104,12 @@ const AuthenticatedWorkIndexRoute = AuthenticatedWorkIndexRouteImport.update({
   path: '/work/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTrainingIndexRoute =
+  AuthenticatedTrainingIndexRouteImport.update({
+    id: '/training/',
+    path: '/training/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTimesheetsIndexRoute =
   AuthenticatedTimesheetsIndexRouteImport.update({
     id: '/timesheets/',
@@ -114,6 +125,12 @@ const AuthenticatedServicesIndexRoute =
   AuthenticatedServicesIndexRouteImport.update({
     id: '/services/',
     path: '/services/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSchedulingIndexRoute =
+  AuthenticatedSchedulingIndexRouteImport.update({
+    id: '/scheduling/',
+    path: '/scheduling/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRotaIndexRoute = AuthenticatedRotaIndexRouteImport.update({
@@ -137,6 +154,12 @@ const AuthenticatedProcurementIndexRoute =
   AuthenticatedProcurementIndexRouteImport.update({
     id: '/procurement/',
     path: '/procurement/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPolicyIndexRoute =
+  AuthenticatedPolicyIndexRouteImport.update({
+    id: '/policy/',
+    path: '/policy/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedOpsReadinessIndexRoute =
@@ -191,11 +214,23 @@ const AuthenticatedChangesIndexRoute =
     path: '/changes/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCareerProgressionIndexRoute =
+  AuthenticatedCareerProgressionIndexRouteImport.update({
+    id: '/career-progression/',
+    path: '/career-progression/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAuditIndexRoute = AuthenticatedAuditIndexRouteImport.update({
   id: '/audit/',
   path: '/audit/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAttendanceIndexRoute =
+  AuthenticatedAttendanceIndexRouteImport.update({
+    id: '/attendance/',
+    path: '/attendance/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAppraisalsIndexRoute =
   AuthenticatedAppraisalsIndexRouteImport.update({
     id: '/appraisals/',
@@ -442,10 +477,10 @@ const AuthenticatedRotaCalendarIndexRoute =
     path: '/rota/calendar/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedRosterCalendarIndexRoute =
-  AuthenticatedRosterCalendarIndexRouteImport.update({
-    id: '/roster/calendar/',
-    path: '/roster/calendar/',
+const AuthenticatedAppraisalsStaffStaffProfileIdRoute =
+  AuthenticatedAppraisalsStaffStaffProfileIdRouteImport.update({
+    id: '/appraisals/staff/$staffProfileId',
+    path: '/appraisals/staff/$staffProfileId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -492,7 +527,9 @@ export interface FileRoutesByFullPath {
   '/access/': typeof AuthenticatedAccessIndexRoute
   '/analytics/': typeof AuthenticatedAnalyticsIndexRoute
   '/appraisals/': typeof AuthenticatedAppraisalsIndexRoute
+  '/attendance/': typeof AuthenticatedAttendanceIndexRoute
   '/audit/': typeof AuthenticatedAuditIndexRoute
+  '/career-progression/': typeof AuthenticatedCareerProgressionIndexRoute
   '/changes/': typeof AuthenticatedChangesIndexRoute
   '/contracts/': typeof AuthenticatedContractsIndexRoute
   '/cycles/': typeof AuthenticatedCyclesIndexRoute
@@ -502,15 +539,18 @@ export interface FileRoutesByFullPath {
   '/leave/': typeof AuthenticatedLeaveIndexRoute
   '/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/ops-readiness/': typeof AuthenticatedOpsReadinessIndexRoute
+  '/policy/': typeof AuthenticatedPolicyIndexRoute
   '/procurement/': typeof AuthenticatedProcurementIndexRoute
   '/reports/': typeof AuthenticatedReportsIndexRoute
   '/roster/': typeof AuthenticatedRosterIndexRoute
   '/rota/': typeof AuthenticatedRotaIndexRoute
+  '/scheduling/': typeof AuthenticatedSchedulingIndexRoute
   '/services/': typeof AuthenticatedServicesIndexRoute
   '/staff/': typeof AuthenticatedStaffIndexRoute
   '/timesheets/': typeof AuthenticatedTimesheetsIndexRoute
+  '/training/': typeof AuthenticatedTrainingIndexRoute
   '/work/': typeof AuthenticatedWorkIndexRoute
-  '/roster/calendar/': typeof AuthenticatedRosterCalendarIndexRoute
+  '/appraisals/staff/$staffProfileId': typeof AuthenticatedAppraisalsStaffStaffProfileIdRoute
   '/rota/calendar/': typeof AuthenticatedRotaCalendarIndexRoute
   '/rota/fairness/': typeof AuthenticatedRotaFairnessIndexRoute
   '/rota/warnings/': typeof AuthenticatedRotaWarningsIndexRoute
@@ -558,7 +598,9 @@ export interface FileRoutesByTo {
   '/access': typeof AuthenticatedAccessIndexRoute
   '/analytics': typeof AuthenticatedAnalyticsIndexRoute
   '/appraisals': typeof AuthenticatedAppraisalsIndexRoute
+  '/attendance': typeof AuthenticatedAttendanceIndexRoute
   '/audit': typeof AuthenticatedAuditIndexRoute
+  '/career-progression': typeof AuthenticatedCareerProgressionIndexRoute
   '/changes': typeof AuthenticatedChangesIndexRoute
   '/contracts': typeof AuthenticatedContractsIndexRoute
   '/cycles': typeof AuthenticatedCyclesIndexRoute
@@ -568,15 +610,18 @@ export interface FileRoutesByTo {
   '/leave': typeof AuthenticatedLeaveIndexRoute
   '/notifications': typeof AuthenticatedNotificationsIndexRoute
   '/ops-readiness': typeof AuthenticatedOpsReadinessIndexRoute
+  '/policy': typeof AuthenticatedPolicyIndexRoute
   '/procurement': typeof AuthenticatedProcurementIndexRoute
   '/reports': typeof AuthenticatedReportsIndexRoute
   '/roster': typeof AuthenticatedRosterIndexRoute
   '/rota': typeof AuthenticatedRotaIndexRoute
+  '/scheduling': typeof AuthenticatedSchedulingIndexRoute
   '/services': typeof AuthenticatedServicesIndexRoute
   '/staff': typeof AuthenticatedStaffIndexRoute
   '/timesheets': typeof AuthenticatedTimesheetsIndexRoute
+  '/training': typeof AuthenticatedTrainingIndexRoute
   '/work': typeof AuthenticatedWorkIndexRoute
-  '/roster/calendar': typeof AuthenticatedRosterCalendarIndexRoute
+  '/appraisals/staff/$staffProfileId': typeof AuthenticatedAppraisalsStaffStaffProfileIdRoute
   '/rota/calendar': typeof AuthenticatedRotaCalendarIndexRoute
   '/rota/fairness': typeof AuthenticatedRotaFairnessIndexRoute
   '/rota/warnings': typeof AuthenticatedRotaWarningsIndexRoute
@@ -626,7 +671,9 @@ export interface FileRoutesById {
   '/_authenticated/access/': typeof AuthenticatedAccessIndexRoute
   '/_authenticated/analytics/': typeof AuthenticatedAnalyticsIndexRoute
   '/_authenticated/appraisals/': typeof AuthenticatedAppraisalsIndexRoute
+  '/_authenticated/attendance/': typeof AuthenticatedAttendanceIndexRoute
   '/_authenticated/audit/': typeof AuthenticatedAuditIndexRoute
+  '/_authenticated/career-progression/': typeof AuthenticatedCareerProgressionIndexRoute
   '/_authenticated/changes/': typeof AuthenticatedChangesIndexRoute
   '/_authenticated/contracts/': typeof AuthenticatedContractsIndexRoute
   '/_authenticated/cycles/': typeof AuthenticatedCyclesIndexRoute
@@ -636,15 +683,18 @@ export interface FileRoutesById {
   '/_authenticated/leave/': typeof AuthenticatedLeaveIndexRoute
   '/_authenticated/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/_authenticated/ops-readiness/': typeof AuthenticatedOpsReadinessIndexRoute
+  '/_authenticated/policy/': typeof AuthenticatedPolicyIndexRoute
   '/_authenticated/procurement/': typeof AuthenticatedProcurementIndexRoute
   '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
   '/_authenticated/roster/': typeof AuthenticatedRosterIndexRoute
   '/_authenticated/rota/': typeof AuthenticatedRotaIndexRoute
+  '/_authenticated/scheduling/': typeof AuthenticatedSchedulingIndexRoute
   '/_authenticated/services/': typeof AuthenticatedServicesIndexRoute
   '/_authenticated/staff/': typeof AuthenticatedStaffIndexRoute
   '/_authenticated/timesheets/': typeof AuthenticatedTimesheetsIndexRoute
+  '/_authenticated/training/': typeof AuthenticatedTrainingIndexRoute
   '/_authenticated/work/': typeof AuthenticatedWorkIndexRoute
-  '/_authenticated/roster/calendar/': typeof AuthenticatedRosterCalendarIndexRoute
+  '/_authenticated/appraisals/staff/$staffProfileId': typeof AuthenticatedAppraisalsStaffStaffProfileIdRoute
   '/_authenticated/rota/calendar/': typeof AuthenticatedRotaCalendarIndexRoute
   '/_authenticated/rota/fairness/': typeof AuthenticatedRotaFairnessIndexRoute
   '/_authenticated/rota/warnings/': typeof AuthenticatedRotaWarningsIndexRoute
@@ -694,7 +744,9 @@ export interface FileRouteTypes {
     | '/access/'
     | '/analytics/'
     | '/appraisals/'
+    | '/attendance/'
     | '/audit/'
+    | '/career-progression/'
     | '/changes/'
     | '/contracts/'
     | '/cycles/'
@@ -704,15 +756,18 @@ export interface FileRouteTypes {
     | '/leave/'
     | '/notifications/'
     | '/ops-readiness/'
+    | '/policy/'
     | '/procurement/'
     | '/reports/'
     | '/roster/'
     | '/rota/'
+    | '/scheduling/'
     | '/services/'
     | '/staff/'
     | '/timesheets/'
+    | '/training/'
     | '/work/'
-    | '/roster/calendar/'
+    | '/appraisals/staff/$staffProfileId'
     | '/rota/calendar/'
     | '/rota/fairness/'
     | '/rota/warnings/'
@@ -760,7 +815,9 @@ export interface FileRouteTypes {
     | '/access'
     | '/analytics'
     | '/appraisals'
+    | '/attendance'
     | '/audit'
+    | '/career-progression'
     | '/changes'
     | '/contracts'
     | '/cycles'
@@ -770,15 +827,18 @@ export interface FileRouteTypes {
     | '/leave'
     | '/notifications'
     | '/ops-readiness'
+    | '/policy'
     | '/procurement'
     | '/reports'
     | '/roster'
     | '/rota'
+    | '/scheduling'
     | '/services'
     | '/staff'
     | '/timesheets'
+    | '/training'
     | '/work'
-    | '/roster/calendar'
+    | '/appraisals/staff/$staffProfileId'
     | '/rota/calendar'
     | '/rota/fairness'
     | '/rota/warnings'
@@ -827,7 +887,9 @@ export interface FileRouteTypes {
     | '/_authenticated/access/'
     | '/_authenticated/analytics/'
     | '/_authenticated/appraisals/'
+    | '/_authenticated/attendance/'
     | '/_authenticated/audit/'
+    | '/_authenticated/career-progression/'
     | '/_authenticated/changes/'
     | '/_authenticated/contracts/'
     | '/_authenticated/cycles/'
@@ -837,15 +899,18 @@ export interface FileRouteTypes {
     | '/_authenticated/leave/'
     | '/_authenticated/notifications/'
     | '/_authenticated/ops-readiness/'
+    | '/_authenticated/policy/'
     | '/_authenticated/procurement/'
     | '/_authenticated/reports/'
     | '/_authenticated/roster/'
     | '/_authenticated/rota/'
+    | '/_authenticated/scheduling/'
     | '/_authenticated/services/'
     | '/_authenticated/staff/'
     | '/_authenticated/timesheets/'
+    | '/_authenticated/training/'
     | '/_authenticated/work/'
-    | '/_authenticated/roster/calendar/'
+    | '/_authenticated/appraisals/staff/$staffProfileId'
     | '/_authenticated/rota/calendar/'
     | '/_authenticated/rota/fairness/'
     | '/_authenticated/rota/warnings/'
@@ -893,6 +958,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/training/': {
+      id: '/_authenticated/training/'
+      path: '/training'
+      fullPath: '/training/'
+      preLoaderRoute: typeof AuthenticatedTrainingIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/timesheets/': {
       id: '/_authenticated/timesheets/'
       path: '/timesheets'
@@ -912,6 +984,13 @@ declare module '@tanstack/react-router' {
       path: '/services'
       fullPath: '/services/'
       preLoaderRoute: typeof AuthenticatedServicesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/scheduling/': {
+      id: '/_authenticated/scheduling/'
+      path: '/scheduling'
+      fullPath: '/scheduling/'
+      preLoaderRoute: typeof AuthenticatedSchedulingIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rota/': {
@@ -940,6 +1019,13 @@ declare module '@tanstack/react-router' {
       path: '/procurement'
       fullPath: '/procurement/'
       preLoaderRoute: typeof AuthenticatedProcurementIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/policy/': {
+      id: '/_authenticated/policy/'
+      path: '/policy'
+      fullPath: '/policy/'
+      preLoaderRoute: typeof AuthenticatedPolicyIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/ops-readiness/': {
@@ -1005,11 +1091,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChangesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/career-progression/': {
+      id: '/_authenticated/career-progression/'
+      path: '/career-progression'
+      fullPath: '/career-progression/'
+      preLoaderRoute: typeof AuthenticatedCareerProgressionIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/audit/': {
       id: '/_authenticated/audit/'
       path: '/audit'
       fullPath: '/audit/'
       preLoaderRoute: typeof AuthenticatedAuditIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/attendance/': {
+      id: '/_authenticated/attendance/'
+      path: '/attendance'
+      fullPath: '/attendance/'
+      preLoaderRoute: typeof AuthenticatedAttendanceIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/appraisals/': {
@@ -1306,11 +1406,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRotaCalendarIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/roster/calendar/': {
-      id: '/_authenticated/roster/calendar/'
-      path: '/roster/calendar'
-      fullPath: '/roster/calendar/'
-      preLoaderRoute: typeof AuthenticatedRosterCalendarIndexRouteImport
+    '/_authenticated/appraisals/staff/$staffProfileId': {
+      id: '/_authenticated/appraisals/staff/$staffProfileId'
+      path: '/appraisals/staff/$staffProfileId'
+      fullPath: '/appraisals/staff/$staffProfileId'
+      preLoaderRoute: typeof AuthenticatedAppraisalsStaffStaffProfileIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
@@ -1358,7 +1458,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccessIndexRoute: typeof AuthenticatedAccessIndexRoute
   AuthenticatedAnalyticsIndexRoute: typeof AuthenticatedAnalyticsIndexRoute
   AuthenticatedAppraisalsIndexRoute: typeof AuthenticatedAppraisalsIndexRoute
+  AuthenticatedAttendanceIndexRoute: typeof AuthenticatedAttendanceIndexRoute
   AuthenticatedAuditIndexRoute: typeof AuthenticatedAuditIndexRoute
+  AuthenticatedCareerProgressionIndexRoute: typeof AuthenticatedCareerProgressionIndexRoute
   AuthenticatedChangesIndexRoute: typeof AuthenticatedChangesIndexRoute
   AuthenticatedContractsIndexRoute: typeof AuthenticatedContractsIndexRoute
   AuthenticatedCyclesIndexRoute: typeof AuthenticatedCyclesIndexRoute
@@ -1368,15 +1470,18 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedLeaveIndexRoute: typeof AuthenticatedLeaveIndexRoute
   AuthenticatedNotificationsIndexRoute: typeof AuthenticatedNotificationsIndexRoute
   AuthenticatedOpsReadinessIndexRoute: typeof AuthenticatedOpsReadinessIndexRoute
+  AuthenticatedPolicyIndexRoute: typeof AuthenticatedPolicyIndexRoute
   AuthenticatedProcurementIndexRoute: typeof AuthenticatedProcurementIndexRoute
   AuthenticatedReportsIndexRoute: typeof AuthenticatedReportsIndexRoute
   AuthenticatedRosterIndexRoute: typeof AuthenticatedRosterIndexRoute
   AuthenticatedRotaIndexRoute: typeof AuthenticatedRotaIndexRoute
+  AuthenticatedSchedulingIndexRoute: typeof AuthenticatedSchedulingIndexRoute
   AuthenticatedServicesIndexRoute: typeof AuthenticatedServicesIndexRoute
   AuthenticatedStaffIndexRoute: typeof AuthenticatedStaffIndexRoute
   AuthenticatedTimesheetsIndexRoute: typeof AuthenticatedTimesheetsIndexRoute
+  AuthenticatedTrainingIndexRoute: typeof AuthenticatedTrainingIndexRoute
   AuthenticatedWorkIndexRoute: typeof AuthenticatedWorkIndexRoute
-  AuthenticatedRosterCalendarIndexRoute: typeof AuthenticatedRosterCalendarIndexRoute
+  AuthenticatedAppraisalsStaffStaffProfileIdRoute: typeof AuthenticatedAppraisalsStaffStaffProfileIdRoute
   AuthenticatedRotaCalendarIndexRoute: typeof AuthenticatedRotaCalendarIndexRoute
   AuthenticatedRotaFairnessIndexRoute: typeof AuthenticatedRotaFairnessIndexRoute
   AuthenticatedRotaWarningsIndexRoute: typeof AuthenticatedRotaWarningsIndexRoute
@@ -1426,7 +1531,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccessIndexRoute: AuthenticatedAccessIndexRoute,
   AuthenticatedAnalyticsIndexRoute: AuthenticatedAnalyticsIndexRoute,
   AuthenticatedAppraisalsIndexRoute: AuthenticatedAppraisalsIndexRoute,
+  AuthenticatedAttendanceIndexRoute: AuthenticatedAttendanceIndexRoute,
   AuthenticatedAuditIndexRoute: AuthenticatedAuditIndexRoute,
+  AuthenticatedCareerProgressionIndexRoute:
+    AuthenticatedCareerProgressionIndexRoute,
   AuthenticatedChangesIndexRoute: AuthenticatedChangesIndexRoute,
   AuthenticatedContractsIndexRoute: AuthenticatedContractsIndexRoute,
   AuthenticatedCyclesIndexRoute: AuthenticatedCyclesIndexRoute,
@@ -1436,15 +1544,19 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLeaveIndexRoute: AuthenticatedLeaveIndexRoute,
   AuthenticatedNotificationsIndexRoute: AuthenticatedNotificationsIndexRoute,
   AuthenticatedOpsReadinessIndexRoute: AuthenticatedOpsReadinessIndexRoute,
+  AuthenticatedPolicyIndexRoute: AuthenticatedPolicyIndexRoute,
   AuthenticatedProcurementIndexRoute: AuthenticatedProcurementIndexRoute,
   AuthenticatedReportsIndexRoute: AuthenticatedReportsIndexRoute,
   AuthenticatedRosterIndexRoute: AuthenticatedRosterIndexRoute,
   AuthenticatedRotaIndexRoute: AuthenticatedRotaIndexRoute,
+  AuthenticatedSchedulingIndexRoute: AuthenticatedSchedulingIndexRoute,
   AuthenticatedServicesIndexRoute: AuthenticatedServicesIndexRoute,
   AuthenticatedStaffIndexRoute: AuthenticatedStaffIndexRoute,
   AuthenticatedTimesheetsIndexRoute: AuthenticatedTimesheetsIndexRoute,
+  AuthenticatedTrainingIndexRoute: AuthenticatedTrainingIndexRoute,
   AuthenticatedWorkIndexRoute: AuthenticatedWorkIndexRoute,
-  AuthenticatedRosterCalendarIndexRoute: AuthenticatedRosterCalendarIndexRoute,
+  AuthenticatedAppraisalsStaffStaffProfileIdRoute:
+    AuthenticatedAppraisalsStaffStaffProfileIdRoute,
   AuthenticatedRotaCalendarIndexRoute: AuthenticatedRotaCalendarIndexRoute,
   AuthenticatedRotaFairnessIndexRoute: AuthenticatedRotaFairnessIndexRoute,
   AuthenticatedRotaWarningsIndexRoute: AuthenticatedRotaWarningsIndexRoute,

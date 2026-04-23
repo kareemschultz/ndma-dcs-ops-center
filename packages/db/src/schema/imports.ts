@@ -25,11 +25,20 @@ export const importTypeEnum = pgEnum("import_type", [
   "training",
   "contracts",
   "work",
+  "operations_work_update",
+  "roster",
   "platform_accounts",
   "leave",
   "ppe",
   "attendance",
   "callouts",
+  "appraisals",
+  "calendar_events",
+  "promotions",
+  "exam_dates",
+  "onboarding",
+  "policy",
+  "forms",
 ]);
 
 // ── Import Jobs ────────────────────────────────────────────────────────────

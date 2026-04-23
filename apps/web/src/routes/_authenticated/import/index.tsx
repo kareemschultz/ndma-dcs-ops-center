@@ -6,7 +6,10 @@ import {
   Users,
   GraduationCap,
   FileText,
+  ClipboardCheck,
   ClipboardList,
+  CalendarClock,
+  CalendarRange,
   CalendarOff,
   CheckCircle,
   ChevronRight,
@@ -59,10 +62,19 @@ type ImportType =
   | "training"
   | "contracts"
   | "work"
+  | "operations_work_update"
+  | "roster"
   | "leave"
   | "ppe"
   | "attendance"
-  | "callouts";
+  | "callouts"
+  | "appraisals"
+  | "calendar_events"
+  | "promotions"
+  | "exam_dates"
+  | "onboarding"
+  | "policy"
+  | "forms";
 
 interface ImportTarget {
   id: ImportType;
@@ -92,12 +104,49 @@ const IMPORT_TARGETS: ImportTarget[] = [
     title: "Staff Profiles",
     description: "Import staff members with their department and employment details.",
     icon: Users,
-    columns: ["name", "email", "department", "employmentType"],
-    requiredColumns: ["name", "email", "department", "employmentType"],
-    notes: "employmentType: full_time | part_time | contract | temporary",
+    columns: [
+      "name",
+      "email",
+      "department",
+      "employment_type",
+      "phone_number",
+      "role",
+      "reports_to",
+      "emergency_contact_name",
+      "emergency_contact_phone",
+      "job_title",
+      "employee_id",
+    ],
+    requiredColumns: ["name", "email", "department", "employment_type"],
+    notes:
+      "employment_type: full_time | part_time | contract | temporary. role: Staff | Team_Lead | Manager | PA | Admin.",
     sampleRows: [
-      ["Alice Mensah", "alice.mensah@ndma.gov.gh", "Infrastructure", "full_time"],
-      ["Bob Asante", "bob.asante@ndma.gov.gh", "Network Operations", "contract"],
+      [
+        "Alice Mensah",
+        "alice.mensah@ndma.gov.gh",
+        "Infrastructure",
+        "full_time",
+        "592-0000",
+        "Staff",
+        "staff-manager",
+        "Grace Mensah",
+        "592-1111",
+        "Engineer",
+        "EMP-0001",
+      ],
+      [
+        "Bob Asante",
+        "bob.asante@ndma.gov.gh",
+        "Network Operations",
+        "contract",
+        "592-0001",
+        "Team_Lead",
+        "staff-manager",
+        "Peter Asante",
+        "592-1112",
+        "Senior Engineer",
+        "EMP-0002",
+      ],
     ],
   },
   {
@@ -105,12 +154,52 @@ const IMPORT_TARGETS: ImportTarget[] = [
     title: "Training Records",
     description: "Bulk import training completions with expiry dates and providers.",
     icon: GraduationCap,
-    columns: ["staffEmail", "trainingName", "provider", "completedDate", "expiryDate"],
-    requiredColumns: ["staffEmail", "trainingName", "completedDate"],
-    notes: "Dates must be in YYYY-MM-DD format. expiryDate is optional.",
+    columns: [
+      "staff_email",
+      "course_title",
+      "vendor",
+      "course_type",
+      "status",
+      "start_date",
+      "completion_date",
+      "target_date",
+      "material_type",
+      "material_title",
+      "reference_link",
+      "notes",
+    ],
+    requiredColumns: ["staff_email", "course_title", "status"],
+    notes:
+      "Dates must be in YYYY-MM-DD format. course_type: Certification | Syllabus | Internship. status: Enrolled | In Progress | Completed | Failed.",
     sampleRows: [
-      ["alice.mensah@ndma.gov.gh", "Fire Safety", "Safety Pro Ltd", "2025-01-15", "2026-01-15"],
-      ["bob.asante@ndma.gov.gh", "First Aid Level 2", "Red Cross", "2025-03-10", "2027-03-10"],
+      [
+        "alice.mensah@ndma.gov.gh",
+        "Fire Safety",
+        "Safety Pro Ltd",
+        "Certification",
+        "Completed",
+        "2025-01-10",
+        "2025-01-15",
+        "2026-01-15",
+        "Book",
+        "Official Guide",
+        "https://example.com/guide",
+        "Training completion example",
+      ],
+      [
+        "bob.asante@ndma.gov.gh",
+        "First Aid Level 2",
+        "Red Cross",
+        "Certification",
+        "In Progress",
+        "2025-03-01",
+        "",
+        "2027-03-10",
+        "Checklist",
+        "Onboarding Checklist",
+        "https://example.com/checklist",
+        "Recurring certification import",
+      ],
     ],
   },
   {
@@ -118,26 +207,191 @@ const IMPORT_TARGETS: ImportTarget[] = [
     title: "Contracts",
     description: "Import contract details including start/end dates and contract type.",
     icon: FileText,
-    columns: ["staffEmail", "contractType", "startDate", "endDate"],
-    requiredColumns: ["staffEmail", "contractType", "startDate", "endDate"],
-    notes: "Dates must be in YYYY-MM-DD format.",
+    columns: [
+      "staff_email",
+      "contract_type",
+      "start_date",
+      "end_date",
+      "renewal_status",
+      "appraisal_period",
+      "document_url",
+      "notes",
+    ],
+    requiredColumns: ["staff_email", "contract_type", "start_date"],
+    notes:
+      "Dates must be in YYYY-MM-DD format. renewal_status: not_due | due_soon | letter_drafted | submitted_to_hr | renewed | not_renewing.",
     sampleRows: [
-      ["alice.mensah@ndma.gov.gh", "permanent", "2023-01-01", "2026-12-31"],
-      ["bob.asante@ndma.gov.gh", "fixed_term", "2025-01-01", "2025-12-31"],
+      [
+        "alice.mensah@ndma.gov.gh",
+        "permanent",
+        "2023-01-01",
+        "2026-12-31",
+        "not_due",
+        "Oct 2025 - Apr 2026",
+        "https://example.invalid/contracts/alice.pdf",
+        "Standard permanent contract",
+      ],
+      [
+        "bob.asante@ndma.gov.gh",
+        "fixed_term",
+        "2025-01-01",
+        "2025-12-31",
+        "due_soon",
+        "Oct 2025 - Apr 2026",
+        "https://example.invalid/contracts/bob.pdf",
+        "Renewal pending HR review",
+      ],
     ],
   },
   {
     id: "work",
-    title: "Work Items",
-    description: "Bulk import work register items with type and priority.",
+    title: "Work Update",
+    description: "Import work items, recurring routines, and temporary tracker rows from the operations workbook.",
     icon: ClipboardList,
-    columns: ["title", "type", "priority"],
-    requiredColumns: ["title", "type", "priority"],
+    columns: [
+      "record_kind",
+      "project_title",
+      "task_title",
+      "sub_task",
+      "description",
+      "status",
+      "priority",
+      "assigned_to",
+      "department_code",
+      "due_date",
+      "period",
+      "estimated_hours",
+      "external_source",
+      "external_link",
+      "removal_date",
+      "follow_up_date",
+      "notes",
+      "year",
+    ],
+    requiredColumns: ["record_kind", "project_title", "task_title", "status", "priority"],
     notes:
-      "type: routine | project | external_request | ad_hoc — priority: low | medium | high | critical",
+      "record_kind: work_item | routine | temporary. Use YYYY-MM-DD dates, and add year/period when the source workbook has weekly or monthly buckets.",
     sampleRows: [
-      ["Quarterly server audit", "routine", "medium"],
-      ["Network upgrade Phase 2", "project", "high"],
+      [
+        "work_item",
+        "Ops Stabilization",
+        "Monthly Config Review",
+        "",
+        "Review monthly configuration and close out updates",
+        "todo",
+        "medium",
+        "Engineer Name",
+        "DCS",
+        "2026-04-30",
+        "",
+        "4",
+        "iTop",
+        "https://example.invalid/ticket/123",
+        "",
+        "",
+        "Imported from current work workbook",
+        "2026",
+      ],
+      [
+        "routine",
+        "Ops Stabilization",
+        "Monthly Health Check",
+        "Servers",
+        "Verify uptime and collect logs",
+        "backlog",
+        "low",
+        "Engineer Name",
+        "DCS",
+        "2026-05-01",
+        "Monthly",
+        "2",
+        "Teams",
+        "https://example.invalid/teams/thread/456",
+        "",
+        "",
+        "Recurring routine import",
+        "2026",
+      ],
+    ],
+  },
+  {
+    id: "operations_work_update",
+    title: "Operations Workbook",
+    description: "Import the full weekly operations tracker with sheet name, deadlines, overdue metrics, and external source links.",
+    icon: ClipboardList,
+    columns: [
+      "record_type",
+      "sheet_name",
+      "year",
+      "period",
+      "task_assigned",
+      "sub_task",
+      "date_assigned",
+      "details",
+      "update_status",
+      "deadline_or_overdue",
+      "deadline_date",
+      "weeks_overdue",
+      "engineer",
+      "source_system",
+      "priority",
+      "scheduled_date",
+      "due_date",
+      "folder",
+      "estimated_hours",
+      "follow_up_date",
+      "notes",
+    ],
+    requiredColumns: ["record_type", "sheet_name", "task_assigned", "update_status", "priority"],
+    notes:
+      "This mirrors the legacy WorkUpdate workbook. Keep the original sheet name and use the sheet-derived year/period values from the source file.",
+    sampleRows: [
+      [
+        "monthly_work",
+        "0301",
+        "2025",
+        "Jan 2025",
+        "Example task",
+        "",
+        "2025-01-03",
+        "Example details",
+        "In Progress",
+        "2 Weeks",
+        "2025-01-17",
+        "",
+        "Bheesham, Devon, Sachin",
+        "Teams",
+        "Medium",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "Monthly work sheet import",
+      ],
+      [
+        "temporary_change",
+        "TemporaryTracker",
+        "2026",
+        "2026 H2",
+        "Temporary network change",
+        "",
+        "2026-07-22",
+        "Temporary change details",
+        "Active",
+        "",
+        "2026-11-30",
+        "",
+        "Devon",
+        "Temporary Tracker",
+        "High",
+        "",
+        "",
+        "",
+        "",
+        "2026-11-29",
+        "Remove when complete",
+      ],
     ],
   },
   {
@@ -198,15 +452,262 @@ const IMPORT_TARGETS: ImportTarget[] = [
     notes:
       "startTime/endTime in HH:MM 24h format. hours is the total duration worked. relatedIncidentRef is optional.",
   },
+  {
+    id: "roster",
+    title: "Scheduling & Rosters",
+    description: "Import DCS on-call and NOC shift rows from the shared scheduling workbook.",
+    icon: CalendarRange,
+    columns: [
+      "roster_type",
+      "staff_name",
+      "staff_email",
+      "staff_id",
+      "department",
+      "year",
+      "period",
+      "shift_date",
+      "shift_type",
+      "start_time",
+      "end_time",
+      "notes",
+      "source_file",
+    ],
+    requiredColumns: ["roster_type", "staff_email", "shift_date", "shift_type"],
+    sampleRows: [
+      [
+        "dcs_on_call",
+        "Example Staff",
+        "example.staff@ndma.gov",
+        "staff-001",
+        "DCS",
+        "2026",
+        "2026-04",
+        "2026-04-01",
+        "On Call",
+        "08:00",
+        "16:00",
+        "Weekly block",
+        "category-zips/DCS.zip/on-call/PlannedOnCallRoster_20230123 (1).xlsx",
+      ],
+      [
+        "noc_shifts",
+        "Example Staff",
+        "example.staff@ndma.gov",
+        "staff-002",
+        "NOC",
+        "2026",
+        "2026-04",
+        "2026-04-01",
+        "12hr Day",
+        "07:00",
+        "19:00",
+        "Monthly grid",
+        "category-zips/NOC.zip/shift-schedule/January_20260101_v01.xlsx",
+      ],
+    ],
+    notes: "Use roster_type=dcs_on_call for the weekly DCS roster and roster_type=noc_shifts for the daily NOC grid.",
+  },
+  {
+    id: "appraisals",
+    title: "Appraisals",
+    description: "Import appraisal headers, line items, notes, and workflow status for staff reviews.",
+    icon: ClipboardCheck,
+    columns: [
+      "staff_email",
+      "reviewer_email",
+      "year",
+      "period",
+      "period_start",
+      "period_end",
+      "evaluation_type",
+      "status",
+      "total_score",
+      "category",
+      "criteria",
+      "score",
+      "comment",
+      "note_type",
+      "content",
+    ],
+    requiredColumns: ["staff_email", "year", "period", "period_start", "period_end", "status"],
+    sampleRows: [
+      [
+        "example.staff@ndma.gov",
+        "sachin@ndma.gov",
+        "2026",
+        "Oct 2025 - Apr 2026",
+        "2025-10-01",
+        "2026-04-30",
+        "Standard",
+        "Draft",
+        "84",
+        "Teamwork",
+        "Communication",
+        "4",
+        "Example comment",
+        "note",
+        "Example appraisal note",
+      ],
+      [
+        "example.staff@ndma.gov",
+        "ataybia@ndma.gov",
+        "2026",
+        "Oct 2025 - Apr 2026",
+        "2025-10-01",
+        "2026-04-30",
+        "Employee of the Month",
+        "Processed_By_PA",
+        "92",
+        "Operations",
+        "Delivery",
+        "5",
+        "Ready for HR",
+        "summary",
+        "Exported for HR",
+      ],
+    ],
+    notes: "Repeat appraisal rows can share the same staff_email + year + period + evaluation_type; scores and notes are attached per row.",
+  },
+  {
+    id: "calendar_events",
+    title: "Calendar Events",
+    description: "Import birthdays, training reminders, and manual reminders into the shared calendar.",
+    icon: CalendarClock,
+    columns: ["title", "event_type", "event_date", "staff_email", "notes", "source_file"],
+    requiredColumns: ["title", "event_type", "event_date"],
+    sampleRows: [
+      ["Department Drill", "Event", "2026-04-21", "", "Department-wide reminder", "ops calendar"],
+      ["Birthday - Example Staff", "Birthday", "2026-04-21", "example.staff@ndma.gov", "Auto-generated birthday reminder", "staff directory"],
+      ["Training Reminder - Example Staff", "Training", "2026-04-28", "example.staff@ndma.gov", "Upcoming training target date", "training import"],
+    ],
+    notes: "event_type must be Birthday, Training, or Event. staff_email is optional for manual/global reminders.",
+  },
+  {
+    id: "promotions",
+    title: "Career Progression",
+    description: "Import promotion letters and effective dates into the career progression timeline.",
+    icon: ClipboardCheck,
+    columns: ["staff_email", "promotion_date", "letter_date", "from_title", "to_title", "letter_url", "notes"],
+    requiredColumns: ["staff_email", "promotion_date", "to_title"],
+    sampleRows: [
+      ["example.staff@ndma.gov", "2026-03-01", "2026-02-20", "Engineer I", "Engineer II", "https://example.invalid/letters/promo-2026.pdf", "Promoted after appraisal cycle"],
+    ],
+    notes: "Attach the scanned letter URL where available. Leave letter_date blank if the letter is missing.",
+  },
+  {
+    id: "exam_dates",
+    title: "Exam Dates",
+    description: "Import certification exam schedules for staff members.",
+    icon: GraduationCap,
+    columns: ["staff_email", "exam_name", "scheduled_date", "status"],
+    requiredColumns: ["staff_email", "exam_name", "scheduled_date"],
+    sampleRows: [
+      ["example.staff@ndma.gov", "CCNA", "2026-05-18", "Scheduled"],
+      ["example.staff@ndma.gov", "Huawei HCIA", "2026-06-11", "Passed"],
+    ],
+    notes: "status should be Scheduled, Passed, or Failed.",
+  },
+  {
+    id: "onboarding",
+    title: "Onboarding Tasks",
+    description: "Import standard onboarding checklist tasks for new hires.",
+    icon: ClipboardCheck,
+    columns: ["staff_email", "task_name", "category", "is_completed", "completed_at", "due_date"],
+    requiredColumns: ["staff_email", "task_name", "category"],
+    sampleRows: [
+      ["new.hire@ndma.gov", "Create NDMA email account", "IT", "false", "", "2026-04-28"],
+      ["new.hire@ndma.gov", "Collect ID badge", "HR & Admin", "true", "2026-04-24T09:00:00", "2026-04-24"],
+    ],
+    notes: "is_completed accepts true or false. completed_at can be left blank for incomplete tasks.",
+  },
+  {
+    id: "policy",
+    title: "Company Policies",
+    description: "Import the NDMA policy library, starting with the Clean Desk Policy.",
+    icon: FileText,
+    columns: ["title", "content_text", "document_url", "last_updated"],
+    requiredColumns: ["title", "content_text", "last_updated"],
+    sampleRows: [
+      ["Clean Desk Policy", "Policy text extracted from clean desk policy.docx", "https://example.invalid/clean-desk-policy.docx", "2026-04-21"],
+    ],
+    notes: "Use this for policy documents only; upload forms through the forms template.",
+  },
+  {
+    id: "forms",
+    title: "Internal Forms",
+    description: "Import the NDMA internal forms catalog with category and file links.",
+    icon: FileText,
+    columns: ["title", "description", "category", "file_url", "uploaded_at"],
+    requiredColumns: ["title", "category", "file_url"],
+    sampleRows: [
+      ["Internal Request Form", "Standard internal request form", "HR & Leave", "https://example.invalid/forms/internal-request-form.pdf", "2026-04-21T09:00:00"],
+    ],
+    notes: "category must be one of HR & Leave, Finance, Operations, IT, or General.",
+  },
 ];
+
+function getTargetAccent(targetId: ImportType) {
+  switch (targetId) {
+    case "staff":
+      return {
+        shell: "from-blue-500/10 via-blue-500/5 to-cyan-500/10",
+        border: "border-blue-200/70 dark:border-blue-900/60",
+        icon: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+        chip: "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300",
+      };
+    case "training":
+      return {
+        shell: "from-indigo-500/10 via-sky-500/5 to-cyan-500/10",
+        border: "border-indigo-200/70 dark:border-indigo-900/60",
+        icon: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
+        chip: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300",
+      };
+    case "contracts":
+      return {
+        shell: "from-emerald-500/10 via-teal-500/5 to-cyan-500/10",
+        border: "border-emerald-200/70 dark:border-emerald-900/60",
+        icon: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+        chip: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+      };
+    case "work":
+    case "operations_work_update":
+      return {
+        shell: "from-slate-500/10 via-blue-500/5 to-indigo-500/10",
+        border: "border-slate-200/70 dark:border-slate-800/80",
+        icon: "bg-slate-100 text-slate-700 dark:bg-slate-900/40 dark:text-slate-300",
+        chip: "bg-slate-50 text-slate-700 dark:bg-slate-950/40 dark:text-slate-300",
+      };
+    case "leave":
+      return {
+        shell: "from-rose-500/10 via-orange-500/5 to-amber-500/10",
+        border: "border-rose-200/70 dark:border-rose-900/60",
+        icon: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+        chip: "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300",
+      };
+    default:
+      return {
+        shell: "from-blue-500/10 via-indigo-500/5 to-cyan-500/10",
+        border: "border-blue-200/70 dark:border-blue-900/60",
+        icon: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+        chip: "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300",
+      };
+  }
+}
 
 // ── CSV template download ──────────────────────────────────────────────────
 
+function encodeCsvCell(cell: string) {
+  const escaped = cell.replaceAll('"', '""');
+  return /[",\n]/.test(cell) ? `"${escaped}"` : cell;
+}
+
+function encodeCsvRow(row: string[]) {
+  return row.map((cell) => encodeCsvCell(cell)).join(",");
+}
+
 function downloadTemplate(target: ImportTarget) {
-  const header = target.columns.join(",");
-  const rows = target.sampleRows
-    .map((row) => row.map((cell) => (cell.includes(",") ? `"${cell}"` : cell)).join(","))
-    .join("\n");
+  const header = encodeCsvRow(target.columns);
+  const rows = target.sampleRows.map((row) => encodeCsvRow(row)).join("\n");
   const csv = `${header}\n${rows}`;
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -465,8 +966,8 @@ function ImportPage() {
 
   const loadSampleData = () => {
     if (!selectedType) return;
-    const header = selectedType.columns.join(",");
-    const rows = selectedType.sampleRows.map((r) => r.join(",")).join("\n");
+    const header = encodeCsvRow(selectedType.columns);
+    const rows = selectedType.sampleRows.map((r) => encodeCsvRow(r)).join("\n");
     processCsv(`${header}\n${rows}`, "sample-data.csv");
   };
 
@@ -542,7 +1043,7 @@ function ImportPage() {
     <>
       <Header fixed>
         <div className="flex items-center gap-2">
-          <Upload className="size-4 text-muted-foreground" />
+          <Upload className="size-4 text-blue-600 dark:text-blue-400" />
           <span className="text-sm font-medium">Import Data</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
@@ -551,15 +1052,66 @@ function ImportPage() {
       </Header>
 
       <Main>
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight">Import Data</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Bulk import staff, training records, contracts, and work items from CSV.
-          </p>
-        </div>
-
+        <section className="mb-6 overflow-hidden rounded-3xl border border-blue-200/60 bg-gradient-to-br from-blue-50 via-background to-indigo-50 shadow-sm dark:border-blue-900/50 dark:from-blue-950/30 dark:via-background dark:to-indigo-950/20">
+          <div className="grid gap-6 p-6 lg:grid-cols-[1.4fr_0.9fr] lg:p-8">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-100/80 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/60 dark:text-blue-300">
+                <Upload className="size-3.5" />
+                Historical bulk imports
+              </div>
+              <div className="space-y-2">
+                <h1 className="text-2xl font-bold tracking-tight text-blue-950 dark:text-blue-50 md:text-3xl">
+                  Import Data
+                </h1>
+                <p className="max-w-2xl text-sm text-muted-foreground md:text-base">
+                  Bulk import staff, training records, contracts, work items, and historical workbook rows from CSV.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                  Year / period aware
+                </span>
+                <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
+                  Notes preserved
+                </span>
+                <span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-medium text-cyan-700 dark:bg-cyan-950/50 dark:text-cyan-300">
+                  DCS / NOC separation
+                </span>
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                  CSV templates included
+                </span>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+              <div className="rounded-2xl border border-blue-200/70 bg-white/80 p-4 shadow-sm dark:border-blue-900/50 dark:bg-slate-950/70">
+                <p className="text-xs font-medium uppercase tracking-wide text-blue-600 dark:text-blue-300">
+                  Source of truth
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Workbook-driven imports with historical backfill across leave, work, training, appraisal, and attendance.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-indigo-200/70 bg-white/80 p-4 shadow-sm dark:border-indigo-900/50 dark:bg-slate-950/70">
+                <p className="text-xs font-medium uppercase tracking-wide text-indigo-600 dark:text-indigo-300">
+                  Safe preview
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Validate headers and rows before committing anything to the database.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-emerald-200/70 bg-white/80 p-4 shadow-sm dark:border-emerald-900/50 dark:bg-slate-950/70">
+                <p className="text-xs font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+                  Source notes
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Comments, reasons, and legacy labels map forward instead of being dropped.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
         <Tabs defaultValue="wizard">
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 bg-blue-50/80 text-blue-950 shadow-sm dark:bg-blue-950/30 dark:text-blue-50">
             <TabsTrigger value="wizard">
               <Upload className="size-3.5 mr-1.5" />
               Import Wizard
@@ -583,20 +1135,20 @@ function ImportPage() {
                     <Card
                       key={target.id}
                       onClick={() => handleTypeSelect(target)}
-                      className={`cursor-pointer transition-all hover:border-primary/60 ${
+                      className={`cursor-pointer border bg-blue-50/70 transition-all hover:-translate-y-0.5 hover:border-blue-400/60 hover:shadow-md dark:bg-blue-950/20 ${
                         selectedType?.id === target.id
-                          ? "border-primary ring-2 ring-primary/20"
+                          ? "border-blue-500 ring-2 ring-blue-400/30"
                           : ""
                       }`}
                     >
                       <CardHeader className="pb-2">
                         <div className="flex items-center gap-2">
-                          <div className="rounded-xl bg-muted p-2">
-                            <target.icon className="size-4 text-foreground" />
+                          <div className="rounded-xl bg-blue-100 p-2 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                            <target.icon className="size-4" />
                           </div>
                           <CardTitle className="text-sm">{target.title}</CardTitle>
                           {selectedType?.id === target.id && (
-                            <CheckCircle className="size-4 text-primary ml-auto" />
+                            <CheckCircle className="ml-auto size-4 text-blue-600 dark:text-blue-300" />
                           )}
                         </div>
                       </CardHeader>
@@ -609,7 +1161,7 @@ function ImportPage() {
                           {target.columns.map((col) => (
                             <span
                               key={col}
-                              className="font-mono text-[10px] bg-muted rounded-lg px-1.5 py-0.5"
+                              className="rounded-lg bg-blue-100 px-1.5 py-0.5 font-mono text-[10px] text-blue-700 dark:bg-blue-950/50 dark:text-blue-300"
                             >
                               {col}
                             </span>
@@ -619,14 +1171,14 @@ function ImportPage() {
                           {target.notes}
                         </p>
                         {/* Download template link — stopPropagation prevents card selection */}
-                        <div className="mt-3 pt-3 border-t border-dashed">
+                        <div className="mt-3 border-t border-dashed border-blue-200/70 pt-3 dark:border-blue-900/60">
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               downloadTemplate(target);
                             }}
-                            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 transition-colors hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200"
                           >
                             <Download className="size-3" />
                             Download CSV Template

@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Search, Plus, Eye } from "lucide-react";
+import { Users, Search, Plus, Eye, LayoutGrid, Table2 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
@@ -31,6 +31,7 @@ import {
 } from "@ndma-dcs-staff-portal/ui/components/select";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { useTeamFilter } from "@/lib/team-filter";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
 import { authClient } from "@/lib/auth-client";
@@ -53,6 +54,89 @@ const STATUS_COLORS: Record<string, string> = {
   on_leave: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   terminated: "bg-muted text-muted-foreground line-through",
 };
+
+const BOARD_COLUMNS: Array<{
+  status: "" | "active" | "inactive" | "on_leave" | "terminated";
+  label: string;
+}> = [
+  { status: "active", label: "Active" },
+  { status: "on_leave", label: "On Leave" },
+  { status: "inactive", label: "Inactive" },
+  { status: "terminated", label: "Terminated" },
+];
+
+function StaffCard({
+  staff,
+  onOpen,
+}: {
+  staff: {
+    id: string;
+    employeeId: string;
+    phoneNumber?: string | null;
+    jobTitle: string;
+    status: string;
+    employmentType?: string | null;
+    isTeamLead?: boolean;
+    isOnCallEligible?: boolean;
+    user?: { name?: string | null } | null;
+    department?: { name?: string | null } | null;
+  };
+  onOpen: (id: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(staff.id)}
+      className="w-full rounded-2xl border bg-background p-4 text-left transition-colors hover:border-primary/50 hover:bg-accent/40"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-medium truncate">{staff.user?.name ?? "—"}</p>
+          <p className="text-xs text-muted-foreground truncate">{staff.jobTitle}</p>
+        </div>
+        <span
+          className={`inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-medium ${
+            STATUS_COLORS[staff.status] ?? "bg-muted text-muted-foreground"
+          }`}
+        >
+          {staff.status.replace("_", " ")}
+        </span>
+      </div>
+
+      <div className="mt-3 grid gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between gap-2">
+          <span>Employee ID</span>
+          <span className="font-mono">{staff.employeeId}</span>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span>Phone</span>
+          <span>{staff.phoneNumber ?? "—"}</span>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span>Department</span>
+          <span>{staff.department?.name ?? "—"}</span>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span>Type</span>
+          <span className="capitalize">{staff.employmentType?.replace("_", " ") ?? "—"}</span>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {staff.isTeamLead && (
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+            Lead
+          </span>
+        )}
+        {staff.isOnCallEligible && (
+          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+            On-call
+          </span>
+        )}
+      </div>
+    </button>
+  );
+}
 
 function NewStaffDialog({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
@@ -191,9 +275,13 @@ function StaffPage() {
   const [status, setStatus] = useState("");
   const [deptId, setDeptId] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  const [view, setView] = useState<"table" | "board">("table");
+  const { team } = useTeamFilter();
 
   const { data, isLoading } = useQuery(
-    orpc.staff.list.queryOptions({ input: { limit: 200, offset: 0 } })
+    orpc.staff.list.queryOptions({
+      input: { limit: 200, offset: 0, team: team === "All" ? undefined : team },
+    }),
   );
   const { data: departments } = useQuery(orpc.staff.getDepartments.queryOptions());
 
@@ -210,6 +298,15 @@ function StaffPage() {
     }
     return true;
   });
+
+  const boardColumns = useMemo(
+    () =>
+      BOARD_COLUMNS.map((column) => ({
+        ...column,
+        staff: (filtered ?? []).filter((staff) => staff.status === column.status),
+      })),
+    [filtered],
+  );
 
   return (
     <>
@@ -255,6 +352,33 @@ function StaffPage() {
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
+
+          <div className="inline-flex rounded-xl border bg-background p-0.5">
+            <button
+              type="button"
+              onClick={() => setView("table")}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                view === "table"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Table2 className="size-3.5" />
+              Table
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("board")}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                view === "board"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <LayoutGrid className="size-3.5" />
+              Board
+            </button>
+          </div>
         </div>
 
         {/* Department filter pills */}
@@ -286,94 +410,137 @@ function StaffPage() {
           ))}
         </div>
 
-        {/* Table */}
-        <div className="rounded-xl border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Employee ID</TableHead>
-                <TableHead>Job Title</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>On-Call Eligible</TableHead>
-                <TableHead className="w-16" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 6 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 8 }).map((_, j) => (
-                      <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : !filtered?.length ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
-                    {search ? "No staff matching your search." : "No staff found."}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filtered.map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell>
-                      <Link
-                        to="/staff/$staffId"
-                        params={{ staffId: s.id }}
-                        className="font-medium hover:underline"
-                      >
-                        {s.user?.name ?? "—"}
-                      </Link>
-                      {s.isTeamLead && (
-                        <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">Lead</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-mono text-muted-foreground text-xs">
-                      {s.employeeId}
-                    </TableCell>
-                    <TableCell>{s.jobTitle}</TableCell>
-                    <TableCell>{s.department?.name ?? "—"}</TableCell>
-                    <TableCell className="capitalize">
-                      {s.employmentType?.replace("_", " ")}
-                    </TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium ${
-                          STATUS_COLORS[s.status] ?? "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {s.status?.replace("_", " ")}
+        {view === "board" ? (
+          <div className="space-y-4">
+            {isLoading ? (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {BOARD_COLUMNS.map((column) => (
+                  <Skeleton key={column.status} className="h-64 rounded-2xl" />
+                ))}
+              </div>
+            ) : !filtered?.length ? (
+              <div className="rounded-xl border py-12 text-center text-muted-foreground">
+                {search ? "No staff matching your search." : "No staff found."}
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {boardColumns.map((column) => (
+                  <div key={column.status} className="rounded-2xl border bg-muted/20 p-3">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-sm font-semibold">{column.label}</h3>
+                      <span className="rounded-full bg-background px-2 py-0.5 text-xs text-muted-foreground">
+                        {column.staff.length}
                       </span>
-                    </TableCell>
-                    <TableCell>
-                      {s.isOnCallEligible ? (
-                        <span className="text-green-600 text-xs">Yes</span>
+                    </div>
+                    <div className="space-y-3">
+                      {column.staff.length === 0 ? (
+                        <div className="rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground">
+                          No staff in this lane
+                        </div>
                       ) : (
-                        <span className="text-muted-foreground text-xs">No</span>
+                        column.staff.map((staff) => (
+                          <StaffCard key={staff.id} staff={staff} onOpen={(id) => navigate({ to: "/staff/$staffId", params: { staffId: id } })} />
+                        ))
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        title="View profile"
-                        onClick={() =>
-                          navigate({ to: "/staff/$staffId", params: { staffId: s.id } })
-                        }
-                      >
-                        <Eye className="size-3.5" />
-                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="rounded-xl border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Employee ID</TableHead>
+                  <TableHead>Phone Number</TableHead>
+                  <TableHead>Job Title</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>On-Call Eligible</TableHead>
+                  <TableHead className="w-16" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <TableRow key={i}>
+                      {Array.from({ length: 9 }).map((_, j) => (
+                        <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : !filtered?.length ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="py-12 text-center text-muted-foreground">
+                      {search ? "No staff matching your search." : "No staff found."}
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                ) : (
+                  filtered.map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell>
+                        <Link
+                          to="/staff/$staffId"
+                          params={{ staffId: s.id }}
+                          className="font-medium hover:underline"
+                        >
+                          {s.user?.name ?? "—"}
+                        </Link>
+                        {s.isTeamLead && (
+                          <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">Lead</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-mono text-muted-foreground text-xs">
+                        {s.employeeId}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {s.phoneNumber ?? "—"}
+                      </TableCell>
+                      <TableCell>{s.jobTitle}</TableCell>
+                      <TableCell>{s.department?.name ?? "—"}</TableCell>
+                      <TableCell className="capitalize">
+                        {s.employmentType?.replace("_", " ")}
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium ${
+                            STATUS_COLORS[s.status] ?? "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {s.status?.replace("_", " ")}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {s.isOnCallEligible ? (
+                          <span className="text-green-600 text-xs">Yes</span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">No</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          title="View profile"
+                          onClick={() =>
+                            navigate({ to: "/staff/$staffId", params: { staffId: s.id } })
+                          }
+                        >
+                          <Eye className="size-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </Main>
       <Dialog open={showCreate} onOpenChange={(o) => !o && setShowCreate(false)}>
         <NewStaffDialog onClose={() => setShowCreate(false)} />

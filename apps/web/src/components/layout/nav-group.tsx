@@ -61,7 +61,26 @@ export function NavGroup({ title, items }: NavGroupProps) {
   const { data: session } = authClient.useSession();
   const role = (session?.user as Record<string, unknown>)?.role as string | null;
 
-  const visibleItems = items.filter((item) => canAccess(role, item.requiredResource));
+  const visibleItems = items
+    .map((item) => {
+      if (!item.items) {
+        return canAccess(role, item.requiredResource) ? item : null;
+      }
+
+      const visibleSubItems = item.items.filter((subItem) =>
+        canAccess(role, subItem.requiredResource),
+      );
+
+      if (visibleSubItems.length === 0) {
+        return null;
+      }
+
+      return {
+        ...item,
+        items: visibleSubItems,
+      };
+    })
+    .filter((item): item is NavItem => item !== null);
 
   return (
     <SidebarGroup>

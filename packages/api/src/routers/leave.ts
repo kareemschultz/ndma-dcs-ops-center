@@ -2,28 +2,59 @@ import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import {
   db,
+  calendarEvents,
   leaveTypes,
   leaveBalances,
   leaveRequests,
   staffProfiles,
 } from "@ndma-dcs-staff-portal/db";
-import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { protectedProcedure, requireRole } from "../index";
+import { logAudit } from "../lib/audit";
+import { createNotification } from "../lib/notify";
+import { getTeamStaffIds } from "../lib/team";
 
 // Maximum number of staff from the same department allowed on leave simultaneously.
 // Increase this per-department when a department config table exists.
 const MAX_DEPT_LEAVE_OVERLAP = 2;
+const LEGACY_LEAVE_TYPE_NAMES = new Set(["Compassionate", "Compassionate Leave"]);
+const LEAVE_TYPE_SORT_ORDER = [
+  "Annual Leave",
+  "Sick Leave",
+  "Maternity Leave",
+  "Study Leave",
+  "Emergency",
+  "No Pay",
+  "Special",
+] as const;
 
-import { protectedProcedure, requireRole } from "../index";
-import { logAudit } from "../lib/audit";
-import { createNotification } from "../lib/notify";
+function displayLeaveTypeName(name: string): string {
+  if (name === "Special") return "Special Leave";
+  return name;
+}
+
+function leaveTypeSortIndex(name: string): number {
+  const normalized = name === "Special Leave" ? "Special" : name;
+  const idx = LEAVE_TYPE_SORT_ORDER.indexOf(
+    normalized as (typeof LEAVE_TYPE_SORT_ORDER)[number],
+  );
+  return idx === -1 ? LEAVE_TYPE_SORT_ORDER.length : idx;
+}
 
 export const leaveRouter = {
   // ── Leave Types ───────────────────────────────────────────────────────────
   types: {
     list: protectedProcedure.handler(async () => {
-      return db.query.leaveTypes.findMany({
+      const rows = await db.query.leaveTypes.findMany({
         where: eq(leaveTypes.isActive, true),
       });
+      return rows
+        .filter((row) => !LEGACY_LEAVE_TYPE_NAMES.has(row.name))
+        .map((row) => ({
+          ...row,
+          name: displayLeaveTypeName(row.name),
+        }))
+        .sort((a, b) => leaveTypeSortIndex(a.name) - leaveTypeSortIndex(b.name));
     }),
 
     create: requireRole("leave", "create")
@@ -167,6 +198,7 @@ export const leaveRouter = {
       .input(
         z.object({
           staffProfileId: z.string().optional(),
+          team: z.enum(["DCS", "NOC"]).optional(),
           status: z
             .enum(["pending", "approved", "rejected", "cancelled"])
             .optional(),
@@ -184,6 +216,11 @@ export const leaveRouter = {
         if (canSeeAll) {
           if (input.staffProfileId)
             conditions.push(eq(leaveRequests.staffProfileId, input.staffProfileId));
+          if (input.team) {
+            const teamStaffIds = await getTeamStaffIds(input.team);
+            if (teamStaffIds.length === 0) return [];
+            conditions.push(inArray(leaveRequests.staffProfileId, teamStaffIds));
+          }
         } else {
           // Staff can only see their own requests
           const ownProfile = await db.query.staffProfiles.findFirst({
@@ -478,13 +515,19 @@ export const leaveRouter = {
 
   // ── Team calendar: approved leave for a date range ─────────────────────
   getTeamCalendar: requireRole("leave", "read")
-    .input(z.object({ from: z.string(), to: z.string(), departmentId: z.string().optional() }))
+    .input(z.object({ from: z.string(), to: z.string(), departmentId: z.string().optional(), team: z.enum(["DCS", "NOC"]).optional() }))
     .handler(async ({ input }) => {
       const conditions = [
         eq(leaveRequests.status, "approved"),
         lte(leaveRequests.startDate, input.to),
         gte(leaveRequests.endDate, input.from),
       ];
+
+      if (input.team) {
+        const teamStaffIds = await getTeamStaffIds(input.team);
+        if (teamStaffIds.length === 0) return [];
+        conditions.push(inArray(leaveRequests.staffProfileId, teamStaffIds));
+      }
 
       return db.query.leaveRequests.findMany({
         where: and(...conditions),
@@ -494,4 +537,36 @@ export const leaveRouter = {
         },
       });
     }),
+
+  // ── Calendar events: birthdays and training reminders ────────────────────
+  calendarEvents: {
+    list: requireRole("leave", "read")
+      .input(
+        z.object({
+          from: z.string(),
+          to: z.string(),
+          eventTypes: z
+            .array(z.enum(["Birthday", "Training", "Event"]))
+            .optional(),
+        }),
+      )
+      .handler(async ({ input }) => {
+        const conditions = [
+          gte(calendarEvents.eventDate, input.from),
+          lte(calendarEvents.eventDate, input.to),
+        ];
+
+        if (input.eventTypes?.length) {
+          conditions.push(inArray(calendarEvents.eventType, input.eventTypes));
+        }
+
+        return db.query.calendarEvents.findMany({
+          where: and(...conditions),
+          with: {
+            staffProfile: { with: { user: true, department: true } },
+          },
+          orderBy: (table, { asc }) => [asc(table.eventDate), asc(table.title)],
+        });
+      }),
+  },
 };

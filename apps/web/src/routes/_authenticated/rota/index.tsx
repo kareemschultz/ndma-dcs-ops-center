@@ -2,12 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { CalendarClock, ArrowLeftRight, AlertTriangle, CheckCircle2, ClipboardList } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@ndma-dcs-staff-portal/ui/components/card";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 import { Badge } from "@ndma-dcs-staff-portal/ui/components/badge";
+import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
+import { Link } from "@tanstack/react-router";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { SchedulingTabs } from "@/components/layout/scheduling-tabs";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { useTeamFilter } from "@/lib/team-filter";
 import { orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_authenticated/rota/")({
@@ -31,6 +36,8 @@ const ROLE_COLORS: Record<string, string> = {
 const REQUIRED_ROLES = ["lead_engineer", "asn_support", "core_support", "enterprise_support"] as const;
 
 function RotaPage() {
+  const [showMyOnCall, setShowMyOnCall] = useState(false);
+  const { team } = useTeamFilter();
   const { data: current, isLoading: loadingCurrent } = useQuery(
     orpc.rota.getCurrent.queryOptions()
   );
@@ -44,6 +51,33 @@ function RotaPage() {
   const { data: overlaySchedules } = useQuery(
     orpc.overlays.list.queryOptions({ input: {} })
   );
+  const { data: currentStaff } = useQuery(orpc.staff.me.queryOptions());
+
+  const currentAssignments = useMemo(() => {
+    if (!current || team === "NOC") return [];
+    if (!showMyOnCall || !currentStaff?.id) return current.assignments;
+    return current.assignments.filter((assignment) => assignment.staffProfileId === currentStaff.id);
+  }, [current, currentStaff?.id, showMyOnCall, team]);
+
+  const upcomingSchedules = useMemo(() => {
+    if (team === "NOC") return [];
+    if (!showMyOnCall || !currentStaff?.id) return upcoming ?? [];
+    return (upcoming ?? []).map((schedule) => ({
+      ...schedule,
+      assignments: schedule.assignments.filter((assignment) => assignment.staffProfileId === currentStaff.id),
+    }));
+  }, [currentStaff?.id, upcoming, showMyOnCall, team]);
+
+  const pendingSwapsVisible = useMemo(() => {
+    if (team === "NOC") return [];
+    if (!showMyOnCall || !currentStaff?.id) return pendingSwaps ?? [];
+    return (pendingSwaps ?? []).filter(
+      (swap) =>
+        swap.requester?.id === currentStaff.id ||
+        swap.target?.id === currentStaff.id ||
+        swap.assignment?.staffProfileId === currentStaff.id,
+    );
+  }, [currentStaff?.id, pendingSwaps, showMyOnCall, team]);
 
   return (
     <>
@@ -58,11 +92,38 @@ function RotaPage() {
       </Header>
 
       <Main>
+        <SchedulingTabs scope="dcs" />
+
         <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight">On-Call Roster</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Current and upcoming on-call assignments.
           </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Link to="/rota/planner">
+            <Button size="sm">Edit Roster</Button>
+          </Link>
+          <Link to="/rota/planner">
+            <Button variant="outline" size="sm">
+              <CalendarClock className="mr-1.5 size-3.5" />
+              Planner
+            </Button>
+          </Link>
+          <Link to="/rota/swaps">
+            <Button variant="outline" size="sm">
+              <ArrowLeftRight className="mr-1.5 size-3.5" />
+              Swaps
+            </Button>
+          </Link>
+          <Button
+            variant={showMyOnCall ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowMyOnCall((value) => !value)}
+          >
+            My On-Call
+          </Button>
         </div>
 
         {/* Current Week */}
@@ -77,15 +138,17 @@ function RotaPage() {
                 <Skeleton key={i} className="h-20 w-full rounded-lg" />
               ))}
             </div>
-          ) : !current ? (
+          ) : !current || team === "NOC" ? (
             <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground text-sm">
-              No published schedule for this week.
+              {team === "NOC"
+                ? "Switch the department filter to DCS to view on-call assignments."
+                : "No published schedule for this week."}
             </div>
           ) : (
             <>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {REQUIRED_ROLES.map((role) => {
-                  const assignment = current.assignments.find((a) => a.role === role);
+                  const assignment = currentAssignments.find((a) => a.role === role);
                   const acknowledged = !!(assignment as Record<string, unknown>)?.acknowledgedAt;
                   return (
                     <Card key={role} className="p-3">
@@ -128,13 +191,13 @@ function RotaPage() {
         </div>
 
         {/* Upcoming Schedules */}
-        {upcoming && upcoming.length > 0 && (
+        {upcomingSchedules && upcomingSchedules.length > 0 && team !== "NOC" && (
           <div className="mb-8">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
               Upcoming Weeks
             </h2>
             <div className="space-y-2">
-              {upcoming.map((schedule) => (
+              {upcomingSchedules.map((schedule) => (
                 <div
                   key={schedule.id}
                   className="rounded-xl border px-4 py-3 flex items-center justify-between"
@@ -157,14 +220,14 @@ function RotaPage() {
         )}
 
         {/* Pending Swaps */}
-        {pendingSwaps && pendingSwaps.length > 0 && (
+        {pendingSwapsVisible && pendingSwapsVisible.length > 0 && team !== "NOC" && (
           <div className="mb-8">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
               <ArrowLeftRight className="size-3.5" />
-              Pending Swap Requests ({pendingSwaps.length})
+              Pending Swap Requests ({pendingSwapsVisible.length})
             </h2>
             <div className="space-y-2">
-              {pendingSwaps.map((swap) => (
+              {pendingSwapsVisible.map((swap) => (
                 <div key={swap.id} className="rounded-xl border px-4 py-3">
                   <p className="text-sm">
                     <span className="font-medium">{swap.requester?.user?.name}</span>

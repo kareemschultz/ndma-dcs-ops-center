@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { CalendarOff, Plus, CheckCircle, XCircle } from "lucide-react";
+import { CalendarOff, CheckCircle, Plus, XCircle } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@ndma-dcs-staff-portal/ui/components/card";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 import {
   Table,
@@ -17,6 +18,12 @@ import {
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { useTeamFilter } from "@/lib/team-filter";
+import {
+  getLeaveTypeDisplayName,
+  isVisibleLeaveType,
+  sortLeaveTypesByCanonicalOrder,
+} from "@/lib/leave-types";
 import { orpc, queryClient } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_authenticated/leave/")({
@@ -52,18 +59,66 @@ function LeaveStatusBadge({ status }: { status: string }) {
 function LeavePage() {
   const [activeTab, setActiveTab] = useState<"all" | "pending">("all");
   const [status, setStatus] = useState<LeaveStatus | "">("");
+  const { team } = useTeamFilter();
 
+  const { data: currentStaff } = useQuery(orpc.staff.me.queryOptions());
   const { data, isLoading } = useQuery(
     orpc.leave.requests.list.queryOptions({
       input: {
         status: activeTab === "pending" ? "pending" : (status as LeaveStatus) || undefined,
         limit: 100,
         offset: 0,
+        team: team === "All" ? undefined : team,
       },
-    })
+    }),
+  );
+  const { data: leaveBalances } = useQuery(
+    {
+      ...orpc.leave.balances.getByStaff.queryOptions({
+        input: { staffProfileId: currentStaff?.id ?? "" },
+      }),
+      enabled: Boolean(currentStaff?.id),
+    },
   );
 
   const { data: leaveTypes } = useQuery(orpc.leave.types.list.queryOptions());
+  const visibleLeaveTypes = leaveTypes
+    ?.filter((leaveType) => isVisibleLeaveType(leaveType.name))
+    .slice()
+    .sort(sortLeaveTypesByCanonicalOrder);
+
+  const leaveBalanceCards = useMemo(() => {
+    const rows = leaveBalances ?? [];
+    const findLatest = (leaveTypeName: string) =>
+      rows
+        .filter((row) => row.leaveType?.name === leaveTypeName)
+        .sort((a, b) => {
+          const aDate = a.contractYearStart ? new Date(a.contractYearStart).getTime() : 0;
+          const bDate = b.contractYearStart ? new Date(b.contractYearStart).getTime() : 0;
+          return bDate - aDate;
+        })[0] ?? null;
+
+    const cards = [
+      { key: "Annual Leave", label: "Annual / Vacation" },
+      { key: "Sick Leave", label: "Sick" },
+      { key: "Special", label: "Special" },
+    ].map(({ key, label }) => {
+      const row = findLatest(key);
+      const allowance = row
+        ? row.entitlement + row.carriedOver + row.adjustment
+        : 0;
+      const taken = row?.used ?? 0;
+      return {
+        key,
+        label,
+        taken,
+        allowance,
+        remaining: Math.max(0, allowance - taken),
+      };
+    });
+
+    return cards;
+  }, [leaveBalances]);
 
   const approveMutation = useMutation(
     orpc.leave.requests.approve.mutationOptions({
@@ -72,7 +127,7 @@ function LeavePage() {
         toast.success("Leave request approved");
       },
       onError: (err) => toast.error(err.message),
-    })
+    }),
   );
 
   const rejectMutation = useMutation(
@@ -82,7 +137,7 @@ function LeavePage() {
         toast.success("Leave request rejected");
       },
       onError: (err) => toast.error(err.message),
-    })
+    }),
   );
 
   return (
@@ -96,7 +151,7 @@ function LeavePage() {
           <ThemeSwitch />
           <Link to="/leave/new">
             <Button size="sm">
-              <Plus className="size-4 mr-1" />
+              <Plus className="mr-1 size-4" />
               Request Leave
             </Button>
           </Link>
@@ -106,23 +161,58 @@ function LeavePage() {
       <Main>
         <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight">Leave Management</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="mt-1 text-sm text-muted-foreground">
             Submit leave requests and manage team leave.
           </p>
         </div>
 
-        {/* Leave types summary */}
-        {leaveTypes && leaveTypes.length > 0 && (
+        {currentStaff && (
+          <div className="mb-6">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold">Leave Balances</h2>
+                <p className="text-sm text-muted-foreground">
+                  Your annual, sick, and special leave usage versus allowance.
+                </p>
+              </div>
+              <div className="rounded-full border px-3 py-1 text-xs text-muted-foreground">
+                {currentStaff?.user?.name ?? "Current user"}
+              </div>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {leaveBalanceCards.map((card) => (
+                <Card key={card.key} className="border-border/70">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">{card.label}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-1.5">
+                    <div className="text-2xl font-bold leading-none">{card.taken}</div>
+                    <p className="text-xs text-muted-foreground">
+                      of {card.allowance} days allowed this year
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Remaining: <span className="font-medium text-foreground">{card.remaining}</span>
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {visibleLeaveTypes && visibleLeaveTypes.length > 0 && (
           <div className="mb-4 flex flex-wrap gap-2">
-            {leaveTypes.map((lt) => (
-              <span key={lt.id} className="rounded-full border px-3 py-1 text-xs font-medium">
-                {lt.name} ({lt.defaultAnnualAllowance} days/yr)
+            {visibleLeaveTypes.map((leaveType) => (
+              <span
+                key={leaveType.id}
+                className="rounded-full border px-3 py-1 text-xs font-medium"
+              >
+                {getLeaveTypeDisplayName(leaveType.name)} ({leaveType.defaultAnnualAllowance} days/yr)
               </span>
             ))}
           </div>
         )}
 
-        {/* Tabs */}
         <div className="mb-4 flex gap-1 border-b">
           {(["all", "pending"] as const).map((tab) => (
             <button
@@ -139,7 +229,6 @@ function LeavePage() {
           ))}
         </div>
 
-        {/* Status filter */}
         <div className="mb-4">
           <select
             value={status}
@@ -173,7 +262,9 @@ function LeavePage() {
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
                     {Array.from({ length: 8 }).map((_, j) => (
-                      <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                      <TableCell key={j}>
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))
@@ -192,44 +283,42 @@ function LeavePage() {
                     <TableCell className="font-medium">
                       {req.staffProfile?.user?.name ?? "—"}
                     </TableCell>
-                    <TableCell>{req.leaveType?.name ?? "—"}</TableCell>
                     <TableCell>
-                      {format(parseISO(req.startDate), "dd MMM yyyy")}
+                      {req.leaveType?.name ? getLeaveTypeDisplayName(req.leaveType.name) : "—"}
                     </TableCell>
-                    <TableCell>
-                      {format(parseISO(req.endDate), "dd MMM yyyy")}
-                    </TableCell>
+                    <TableCell>{format(parseISO(req.startDate), "dd MMM yyyy")}</TableCell>
+                    <TableCell>{format(parseISO(req.endDate), "dd MMM yyyy")}</TableCell>
                     <TableCell>{req.totalDays}</TableCell>
                     <TableCell>
                       <LeaveStatusBadge status={req.status} />
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-xs max-w-xs truncate">
+                    <TableCell className="max-w-xs truncate text-xs text-muted-foreground">
                       {req.reason ?? "—"}
                     </TableCell>
                     <TableCell>
-                        {req.status === "pending" && (
-                          <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-green-600 hover:text-green-700 h-7"
-                              onClick={() => approveMutation.mutate({ id: req.id })}
-                            >
-                              <CheckCircle className="size-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-red-600 hover:text-red-700 h-7"
-                              onClick={() =>
-                                rejectMutation.mutate({ id: req.id, rejectionReason: "Not approved" })
-                              }
-                            >
-                              <XCircle className="size-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </TableCell>
+                      {req.status === "pending" && (
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-green-600 hover:text-green-700"
+                            onClick={() => approveMutation.mutate({ id: req.id })}
+                          >
+                            <CheckCircle className="size-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-red-600 hover:text-red-700"
+                            onClick={() =>
+                              rejectMutation.mutate({ id: req.id, rejectionReason: "Not approved" })
+                            }
+                          >
+                            <XCircle className="size-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))
               )}

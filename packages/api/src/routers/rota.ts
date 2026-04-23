@@ -44,6 +44,10 @@ const PublishScheduleInput = z.object({
   scheduleId: z.string(),
 });
 
+const ReopenScheduleInput = z.object({
+  scheduleId: z.string(),
+});
+
 const RequestSwapInput = z.object({
   assignmentId: z.string(),
   targetStaffProfileId: z.string(),
@@ -463,6 +467,62 @@ export const rotaRouter = {
       });
 
       return published;
+    }),
+
+  reopen: requireRole("rota", "update")
+    .input(ReopenScheduleInput)
+    .handler(async ({ input, context }) => {
+      const before = await db.query.onCallSchedules.findFirst({
+        where: eq(onCallSchedules.id, input.scheduleId),
+        with: {
+          assignments: {
+            with: {
+              staffProfile: { with: { user: true } },
+            },
+          },
+        },
+      });
+      if (!before) throw new ORPCError("NOT_FOUND");
+      if (before.status !== "published") {
+        throw new ORPCError("CONFLICT", { message: "Only published schedules can be reopened." });
+      }
+
+      const [updated] = await db
+        .update(onCallSchedules)
+        .set({
+          status: "draft",
+          updatedAt: new Date(),
+        })
+        .where(eq(onCallSchedules.id, input.scheduleId))
+        .returning();
+      if (!updated) throw new ORPCError("INTERNAL_SERVER_ERROR");
+
+      await logHistory({
+        scheduleId: input.scheduleId,
+        action: "reopened",
+        performedById: context.session.user.id,
+        metadata: {
+          fromStatus: before.status,
+          toStatus: updated.status,
+        },
+      });
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        action: "rota.schedule.reopen",
+        module: "rota",
+        resourceType: "on_call_schedule",
+        resourceId: updated.id,
+        beforeValue: before as Record<string, unknown>,
+        afterValue: updated as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+      });
+
+      return updated;
     }),
 
   // Get eligible staff for a role (used by assign modal + rotation engine)

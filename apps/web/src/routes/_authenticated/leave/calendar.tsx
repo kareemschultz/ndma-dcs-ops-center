@@ -18,6 +18,7 @@ import {
   CalendarOff,
   ChevronLeft,
   ChevronRight,
+  Download,
 } from "lucide-react";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
@@ -25,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@ndma-dcs-staff-portal
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { useTeamFilter } from "@/lib/team-filter";
 import { orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_authenticated/leave/calendar")({
@@ -104,10 +106,16 @@ interface LeaveRequest {
 function LeaveCalendarPage() {
   const today = new Date();
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const { team } = useTeamFilter();
 
   const { data, isLoading } = useQuery(
     orpc.leave.requests.list.queryOptions({
-      input: { status: "approved", limit: 200, offset: 0 },
+      input: {
+        status: "approved",
+        limit: 200,
+        offset: 0,
+        team: team === "All" ? undefined : team,
+      },
     })
   );
 
@@ -178,7 +186,11 @@ function LeaveCalendarPage() {
           <CalendarOff className="size-4 text-muted-foreground" />
           <span className="text-sm font-medium">Team Leave Calendar</span>
         </div>
-        <div className="ms-auto flex items-center gap-2">
+        <div className="ms-auto flex items-center gap-2 print:hidden">
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Download className="mr-1.5 size-3.5" />
+            Export PDF
+          </Button>
           <ThemeSwitch />
         </div>
       </Header>

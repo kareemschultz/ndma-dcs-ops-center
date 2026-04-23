@@ -3,12 +3,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
-import { CalendarClock, Plus, Send, ChevronDown, ChevronUp } from "lucide-react";
+import { CalendarClock, Plus, Send, ChevronDown, ChevronUp, PencilLine, Trash2, RotateCcw } from "lucide-react";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@ndma-dcs-staff-portal/ui/components/card";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { SchedulingTabs } from "@/components/layout/scheduling-tabs";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc, queryClient } from "@/utils/orpc";
 
@@ -63,6 +64,17 @@ function RoleAssignRow({
     })
   );
 
+  const removeMutation = useMutation(
+    orpc.rota.removeAssignment.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: orpc.rota.list.key() });
+        queryClient.invalidateQueries({ queryKey: orpc.rota.getCurrent.key() });
+        toast.success(`${ROLE_LABELS[role]} cleared`);
+      },
+      onError: (err) => toast.error(err.message),
+    })
+  );
+
   const staffList = eligibleStaff
     ? (eligibleStaff as Array<{
         staffProfiles?: { id: string; user?: { name: string } };
@@ -112,9 +124,24 @@ function RoleAssignRow({
         )}
       </div>
 
-      {currentAssignment && (
-        <span className="text-xs text-green-600 dark:text-green-400 shrink-0">Assigned</span>
-      )}
+      <div className="flex items-center gap-2 shrink-0">
+        {currentAssignment && (
+          <span className="text-xs text-green-600 dark:text-green-400">Assigned</span>
+        )}
+        {currentAssignment && (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
+            title="Clear assignment"
+            disabled={removeMutation.isPending}
+            onClick={() => removeMutation.mutate({ assignmentId: currentAssignment.id })}
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -158,6 +185,17 @@ function ScheduleCard({
     })
   );
 
+  const reopenMutation = useMutation(
+    orpc.rota.reopen.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: orpc.rota.list.key() });
+        queryClient.invalidateQueries({ queryKey: orpc.rota.getCurrent.key() });
+        toast.success("Schedule reopened as draft");
+      },
+      onError: (err) => toast.error(err.message),
+    })
+  );
+
   return (
     <div className="rounded-xl border">
       {/* Header row */}
@@ -182,8 +220,31 @@ function ScheduleCard({
           {schedule.status}
         </span>
 
+        {schedule.status === "published" && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1 shrink-0"
+            disabled={reopenMutation.isPending}
+            onClick={() => reopenMutation.mutate({ scheduleId: schedule.id })}
+            title="Reopen this published schedule for editing"
+          >
+            <RotateCcw className="size-3" />
+            Reopen
+          </Button>
+        )}
+
         {isDraft && (
           <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1"
+              onClick={() => setExpanded(true)}
+            >
+              <PencilLine className="size-3" />
+              Edit
+            </Button>
             {canPublish && (
               <Button
                 size="sm"
@@ -230,6 +291,12 @@ function ScheduleCard({
           ))}
         </div>
       )}
+
+      {schedule.status === "published" && (
+        <div className="border-t bg-blue-50/60 px-4 py-3 text-xs text-blue-800 dark:bg-blue-950/20 dark:text-blue-200">
+          Published schedules are locked for staff view. Use Reopen to create a draft version and continue editing.
+        </div>
+      )}
     </div>
   );
 }
@@ -253,7 +320,10 @@ function NewScheduleForm({ onClose }: { onClose: () => void }) {
   return (
     <Card className="mb-6">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">New Schedule</CardTitle>
+        <CardTitle className="text-base">Roster Planning Wizard</CardTitle>
+        <p className="text-sm text-muted-foreground mt-1">
+          Create a draft, then use the role selectors below to add or replace staff.
+        </p>
       </CardHeader>
       <CardContent>
         <form
@@ -323,17 +393,19 @@ function PlannerPage() {
           {!showNewForm && (
             <Button size="sm" onClick={() => setShowNewForm(true)}>
               <Plus className="size-4 mr-1" />
-              New Schedule
+              Plan Roster
             </Button>
           )}
         </div>
       </Header>
 
       <Main>
+        <SchedulingTabs scope="dcs" />
+
         <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight">Roster Planner</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Create draft schedules, assign on-call roles, and publish for the team.
+            Create draft schedules, assign on-call roles, replace staff, and publish for the team.
           </p>
         </div>
 

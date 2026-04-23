@@ -1,31 +1,38 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { toast } from "sonner";
-import { CalendarOff, ArrowLeft } from "lucide-react";
 import { differenceInBusinessDays, parseISO } from "date-fns";
+import { ArrowLeft, CalendarOff } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
+import {
+  getLeaveTypeDisplayName,
+  isVisibleLeaveType,
+  sortLeaveTypesByCanonicalOrder,
+} from "@/lib/leave-types";
 import { orpc, queryClient } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_authenticated/leave/new")({
   component: NewLeavePage,
 });
 
-const schema = z.object({
-  staffProfileId: z.string().min(1, "Staff member is required"),
-  leaveTypeId: z.string().min(1, "Leave type is required"),
-  startDate: z.string().min(1, "Start date is required"),
-  endDate: z.string().min(1, "End date is required"),
-  reason: z.string().optional(),
-}).refine((d) => d.endDate >= d.startDate, {
-  message: "End date must be on or after start date",
-  path: ["endDate"],
-});
+const schema = z
+  .object({
+    staffProfileId: z.string().min(1, "Staff member is required"),
+    leaveTypeId: z.string().min(1, "Leave type is required"),
+    startDate: z.string().min(1, "Start date is required"),
+    endDate: z.string().min(1, "End date is required"),
+    reason: z.string().optional(),
+  })
+  .refine((d) => d.endDate >= d.startDate, {
+    message: "End date must be on or after start date",
+    path: ["endDate"],
+  });
 
 type FormData = z.infer<typeof schema>;
 
@@ -33,9 +40,13 @@ function NewLeavePage() {
   const navigate = useNavigate();
 
   const { data: staff } = useQuery(
-    orpc.staff.list.queryOptions({ input: { limit: 100, offset: 0 } })
+    orpc.staff.list.queryOptions({ input: { limit: 100, offset: 0 } }),
   );
   const { data: leaveTypes } = useQuery(orpc.leave.types.list.queryOptions());
+  const visibleLeaveTypes = leaveTypes
+    ?.filter((leaveType) => isVisibleLeaveType(leaveType.name))
+    .slice()
+    .sort(sortLeaveTypesByCanonicalOrder);
 
   const {
     register,
@@ -59,7 +70,7 @@ function NewLeavePage() {
         navigate({ to: "/leave" });
       },
       onError: (err) => toast.error(err.message),
-    })
+    }),
   );
 
   return (
@@ -86,19 +97,17 @@ function NewLeavePage() {
             Back to Leave
           </Button>
           <h1 className="text-2xl font-bold tracking-tight">Submit Leave Request</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="mt-1 text-sm text-muted-foreground">
             Submit a leave request for approval.
           </p>
         </div>
 
         <form
-          onSubmit={handleSubmit((data) =>
-            mutation.mutate({ ...data, totalDays: totalDays ?? 1 })
-          )}
-          className="space-y-5 max-w-2xl"
+          onSubmit={handleSubmit((data) => mutation.mutate({ ...data, totalDays: totalDays ?? 1 }))}
+          className="max-w-2xl space-y-5"
         >
           <div>
-            <label className="block text-sm font-medium mb-1.5">
+            <label className="mb-1.5 block text-sm font-medium">
               Staff Member <span className="text-destructive">*</span>
             </label>
             <select
@@ -113,12 +122,12 @@ function NewLeavePage() {
               ))}
             </select>
             {errors.staffProfileId && (
-              <p className="text-xs text-destructive mt-1">{errors.staffProfileId.message}</p>
+              <p className="mt-1 text-xs text-destructive">{errors.staffProfileId.message}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1.5">
+            <label className="mb-1.5 block text-sm font-medium">
               Leave Type <span className="text-destructive">*</span>
             </label>
             <select
@@ -126,20 +135,20 @@ function NewLeavePage() {
               className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">Select leave type</option>
-              {leaveTypes?.map((t) => (
+              {visibleLeaveTypes?.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.name}
+                  {getLeaveTypeDisplayName(t.name)}
                 </option>
               ))}
             </select>
             {errors.leaveTypeId && (
-              <p className="text-xs text-destructive mt-1">{errors.leaveTypeId.message}</p>
+              <p className="mt-1 text-xs text-destructive">{errors.leaveTypeId.message}</p>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1.5">
+              <label className="mb-1.5 block text-sm font-medium">
                 Start Date <span className="text-destructive">*</span>
               </label>
               <input
@@ -148,11 +157,11 @@ function NewLeavePage() {
                 className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
               {errors.startDate && (
-                <p className="text-xs text-destructive mt-1">{errors.startDate.message}</p>
+                <p className="mt-1 text-xs text-destructive">{errors.startDate.message}</p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1.5">
+              <label className="mb-1.5 block text-sm font-medium">
                 End Date <span className="text-destructive">*</span>
               </label>
               <input
@@ -161,24 +170,27 @@ function NewLeavePage() {
                 className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
               {errors.endDate && (
-                <p className="text-xs text-destructive mt-1">{errors.endDate.message}</p>
+                <p className="mt-1 text-xs text-destructive">{errors.endDate.message}</p>
               )}
             </div>
           </div>
 
           {totalDays !== null && (
             <p className="text-sm text-muted-foreground">
-              Duration: <strong className="text-foreground">{totalDays} business day{totalDays !== 1 ? "s" : ""}</strong>
+              Duration:{" "}
+              <strong className="text-foreground">
+                {totalDays} business day{totalDays !== 1 ? "s" : ""}
+              </strong>
             </p>
           )}
 
           <div>
-            <label className="block text-sm font-medium mb-1.5">Reason</label>
+            <label className="mb-1.5 block text-sm font-medium">Reason</label>
             <textarea
               {...register("reason")}
               rows={3}
               placeholder="Optional reason for leave..."
-              className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              className="w-full resize-none rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
@@ -186,11 +198,7 @@ function NewLeavePage() {
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending ? "Submitting..." : "Submit Request"}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate({ to: "/leave" })}
-            >
+            <Button type="button" variant="outline" onClick={() => navigate({ to: "/leave" })}>
               Cancel
             </Button>
           </div>

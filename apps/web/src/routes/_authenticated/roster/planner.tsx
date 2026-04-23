@@ -13,6 +13,7 @@ import { Textarea } from "@ndma-dcs-staff-portal/ui/components/textarea";
 
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { SchedulingTabs } from "@/components/layout/scheduling-tabs";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
 
@@ -61,6 +62,10 @@ function RosterPlannerPage() {
 
   function submitSchedule(e: React.FormEvent) {
     e.preventDefault();
+    if (!monthKey) {
+      toast.error("Select a month before creating a schedule.");
+      return;
+    }
     createSchedule.mutate({
       monthKey,
       departmentId: departmentId === "all" ? undefined : departmentId,
@@ -72,6 +77,14 @@ function RosterPlannerPage() {
     e.preventDefault();
     if (!selectedSchedule) {
       toast.error("Create or select a schedule first.");
+      return;
+    }
+    if (!shiftDate) {
+      toast.error("Select a shift date.");
+      return;
+    }
+    if (!staffProfileId) {
+      toast.error("Select a staff member.");
       return;
     }
     assign.mutate({
@@ -96,6 +109,8 @@ function RosterPlannerPage() {
       </Header>
 
       <Main className="space-y-6">
+        <SchedulingTabs scope="noc" />
+
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Planner</h1>
           <p className="text-sm text-muted-foreground">
@@ -114,9 +129,9 @@ function RosterPlannerPage() {
                   <Label htmlFor="monthKey">Month Key</Label>
                   <Input
                     id="monthKey"
+                    type="month"
                     value={monthKey}
                     onChange={(e) => setMonthKey(e.target.value)}
-                    placeholder="2026-04"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -178,9 +193,9 @@ function RosterPlannerPage() {
                     <Label htmlFor="shiftDate">Shift Date</Label>
                     <Input
                       id="shiftDate"
+                      type="date"
                       value={shiftDate}
                       onChange={(e) => setShiftDate(e.target.value)}
-                      placeholder="2026-04-01"
                     />
                   </div>
                   <div className="space-y-1.5">

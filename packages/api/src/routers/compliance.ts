@@ -2,14 +2,22 @@ import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import {
   db,
+  certificationBudgets,
   trainingRecords,
   ppeRecords,
   policyAcknowledgements,
 } from "@ndma-dcs-staff-portal/db";
-import { and, eq, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, lte, sql } from "drizzle-orm";
 
 import { requireRole } from "../index";
 import { logAudit } from "../lib/audit";
+import {
+  listTrainingCourses,
+  listTrainingMaterials,
+  listTrainingRecords,
+  refreshTrainingReminders,
+  sendTrainingReminder,
+} from "../lib/training";
 
 export const complianceRouter = {
   // ── Training ─────────────────────────────────────────────────────────────
@@ -140,6 +148,57 @@ export const complianceRouter = {
         });
         return { success: true };
       }),
+
+    records: {
+      list: requireRole("compliance", "read")
+        .input(
+          z.object({
+            staffProfileId: z.string().optional(),
+            departmentId: z.string().optional(),
+            team: z.enum(["DCS", "NOC"]).optional(),
+            courseId: z.number().int().optional(),
+            status: z.enum(["Enrolled", "In Progress", "Completed", "Failed"]).optional(),
+            limit: z.number().min(1).max(500).default(200),
+          }),
+        )
+        .handler(async ({ input, context }) => {
+          return listTrainingRecords(context, input);
+        }),
+
+      sendReminder: requireRole("compliance", "update")
+        .input(z.object({ recordId: z.number().int() }))
+        .handler(async ({ input, context }) => {
+          return sendTrainingReminder(context, input.recordId);
+        }),
+    },
+
+    courses: {
+      list: requireRole("compliance", "read").handler(async () => listTrainingCourses()),
+    },
+
+    materials: {
+      list: requireRole("compliance", "read")
+        .input(z.object({ courseId: z.number().int().optional() }))
+        .handler(async ({ input }) => listTrainingMaterials({ courseId: input.courseId })),
+    },
+
+    budgets: {
+      list: requireRole("compliance", "read")
+        .input(z.object({ year: z.number().int().optional() }))
+        .handler(async ({ input }) => {
+          const where = input.year ? eq(certificationBudgets.year, input.year) : undefined;
+          return db.query.certificationBudgets.findMany({
+            where,
+            orderBy: [desc(certificationBudgets.year), asc(certificationBudgets.certificationName)],
+          });
+        }),
+    },
+
+    reminders: {
+      refresh: requireRole("compliance", "update")
+        .input(z.object({ withinDays: z.number().int().min(1).max(30).default(14) }))
+        .handler(async ({ input, context }) => refreshTrainingReminders(context, input.withinDays)),
+    },
   },
 
   // ── PPE ───────────────────────────────────────────────────────────────────

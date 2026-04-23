@@ -62,9 +62,9 @@ function AppraisalsInboxPage() {
       <Main>
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Appraisal Inbox</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Sachin's Appraisal Inbox</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Review submitted appraisals and push them through approval or rejection.
+              Manager review queue for Sachin Ramsuran. Review submitted appraisals and push them through approval or rejection.
             </p>
           </div>
           <Button variant="outline" render={<Link to="/appraisals" />}>
@@ -88,7 +88,10 @@ function AppraisalsInboxPage() {
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {appraisal.staffProfile?.department?.name ?? "Unassigned"} |{" "}
-                        {appraisal.periodStart} to {appraisal.periodEnd}
+                        {appraisal.period ??
+                          (appraisal.periodStart && appraisal.periodEnd
+                            ? `${appraisal.periodStart} to ${appraisal.periodEnd}`
+                            : appraisal.year ?? "—")}
                       </p>
                     </div>
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">

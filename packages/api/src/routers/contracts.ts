@@ -50,6 +50,7 @@ export const contractsRouter = {
         contractType: z.string().min(1),
         startDate: z.string(),
         endDate: z.string().optional(),
+        appraisalPeriod: z.string().optional(),
         renewalReminderDays: z.number().default(60),
         documentUrl: z.string().optional(),
         notes: z.string().optional(),
@@ -89,6 +90,7 @@ export const contractsRouter = {
         contractType: z.string().optional(),
         startDate: z.string().optional(),
         endDate: z.string().optional(),
+        appraisalPeriod: z.string().optional(),
         renewalReminderDays: z.number().optional(),
         status: z
           .enum(["active", "expiring_soon", "expired", "renewed", "terminated"])

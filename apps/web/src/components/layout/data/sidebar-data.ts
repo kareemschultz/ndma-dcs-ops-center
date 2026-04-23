@@ -1,40 +1,25 @@
-// DCS Ops Center — Sidebar Navigation
+// NDMA Portal sidebar navigation aligned to the master implementation plan.
 import {
-  Activity,
-  AlertTriangle,
-  BarChart3,
+  BarChart2,
   Bell,
-  BookOpen,
-  Bot,
-  Building2,
+  AlertTriangle,
   CalendarClock,
-  CalendarDays,
   CalendarOff,
   CalendarRange,
   ClipboardCheck,
+  Clock3,
   FileText,
   GraduationCap,
-  HardHat,
-  Key,
   LayoutDashboard,
-  ListTodo,
-  MonitorDot,
-  Clock3,
-  PhoneCall,
-  ListChecks,
-  Settings,
+  Settings2,
   Shield,
-  ShoppingCart,
-  Shuffle,
-  Upload,
   Users,
   Wrench,
-  Zap,
+  Upload,
 } from "lucide-react";
+
 import { type SidebarData } from "../types";
 
-// Note: `user` is intentionally omitted — real user data comes from the auth
-// session via app-sidebar.tsx (authClient.useSession), not static config.
 export const sidebarData: Omit<SidebarData, "user"> = {
   teams: [
     {
@@ -44,224 +29,164 @@ export const sidebarData: Omit<SidebarData, "user"> = {
     },
   ],
   navGroups: [
-    // ── Overview ──────────────────────────────────────────────
     {
-      title: "Overview",
+      title: "Dashboard",
       items: [
-        {
-          title: "Dashboard",
-          url: "/",
-          icon: LayoutDashboard,
-        },
-        {
-          title: "Ops Readiness",
-          url: "/ops-readiness",
-          icon: MonitorDot,
-        },
+        { title: "Home", url: "/", icon: LayoutDashboard },
       ],
     },
-
-    // ── Core Operations ───────────────────────────────────────
     {
       title: "Operations",
       items: [
         {
-          title: "Work Register",
-          icon: ListTodo,
+          title: "Work Management",
+          icon: ClipboardCheck,
           items: [
-            { title: "All Work Items", url: "/work" },
-            { title: "Workload View", url: "/work/workload" },
+            { title: "Work Register", url: "/work", icon: ClipboardCheck },
+            { title: "Workload", url: "/work/workload", icon: BarChart2 },
           ],
         },
         {
-          title: "Sprint Cycles",
-          url: "/cycles",
-          icon: CalendarRange,
+          title: "Incidents & Services",
+          icon: Shield,
+          items: [
+            { title: "Incidents", url: "/incidents", icon: Shield },
+            { title: "Services", url: "/services", icon: Shield },
+            { title: "Ops Readiness", url: "/ops-readiness", icon: Shield },
+            { title: "Reports", url: "/reports", icon: FileText, requiredResource: "report" },
+          ],
         },
         {
-          title: "Incidents",
-          url: "/incidents",
-          icon: AlertTriangle,
-        },
-        {
-          title: "Temp Changes",
-          url: "/changes",
-          icon: Shuffle,
-        },
-        {
-          title: "Procurement",
-          url: "/procurement",
-          icon: ShoppingCart,
-        },
-        {
-          title: "Service Registry",
-          url: "/services",
-          icon: Zap,
-        },
-        {
-          title: "Access Management",
-          url: "/access",
-          icon: Key,
+          title: "Changes & Access",
+          icon: Wrench,
+          items: [
+            { title: "Changes", url: "/changes", icon: Wrench },
+            { title: "Procurement", url: "/procurement", icon: Wrench, requiredResource: "procurement" },
+            { title: "Access Management", url: "/access", icon: Shield },
+          ],
         },
       ],
     },
-
-    // ── Scheduling ────────────────────────────────────────────
-    // DCS uses an on-call rotation; NOC works 24/7 shifts (Day/Swing/Night).
-    // Both are listed here so managers and PAs have one place for scheduling.
     {
-      title: "Scheduling",
+      title: "Scheduling & Rosters",
       items: [
         {
-          title: "DCS On-Call Roster",
+          title: "Scheduling Overview",
+          url: "/scheduling",
+          icon: CalendarClock,
+        },
+        {
+          title: "DCS On-Call",
           icon: CalendarClock,
           items: [
-            { title: "Current Roster", url: "/rota" },
-            { title: "Roster Planner", url: "/rota/planner" },
-            { title: "Swap Requests", url: "/rota/swaps" },
-            { title: "Roster History", url: "/rota/history" },
-            { title: "Monthly Calendar", url: "/rota/calendar" },
-            { title: "Fairness Report", url: "/rota/fairness" },
-            { title: "Import Warnings", url: "/rota/warnings" },
+            { title: "On-Call", url: "/rota", icon: CalendarClock },
+            { title: "Planner", url: "/rota/planner", icon: Wrench },
+            { title: "Swaps", url: "/rota/swaps", icon: CalendarRange },
+            { title: "Calendar", url: "/rota/calendar", icon: CalendarClock },
+            { title: "Fairness", url: "/rota/fairness", icon: BarChart2 },
+            { title: "History", url: "/rota/history", icon: FileText },
+            { title: "Warnings", url: "/rota/warnings", icon: AlertTriangle },
           ],
         },
         {
-          title: "NOC Shift Schedule",
-          icon: CalendarDays,
+          title: "NOC Scheduling",
+          icon: CalendarRange,
           items: [
-            { title: "Schedule Overview", url: "/roster" },
-            { title: "Today's Coverage", url: "/roster/today" },
-            { title: "Shift Planner", url: "/roster/planner" },
-            { title: "My Shifts", url: "/roster/my-roster" },
-            { title: "Swap Requests", url: "/roster/swaps" },
-            { title: "Monthly Calendar", url: "/roster/calendar" },
+            { title: "NOC Shifts", url: "/roster", icon: CalendarRange },
+            { title: "Planner", url: "/roster/planner", icon: Wrench },
+            { title: "Today", url: "/roster/today", icon: CalendarClock },
+            { title: "My Roster", url: "/roster/my-roster", icon: Users },
+            { title: "Swaps", url: "/roster/swaps", icon: CalendarRange },
+            { title: "Maintenance Planner", url: "/roster/maintenance", icon: Wrench },
           ],
-        },
-        {
-          title: "Maintenance Planning",
-          url: "/roster/maintenance",
-          icon: Wrench,
         },
       ],
     },
-
-    // ── HR & People ───────────────────────────────────────────
+    {
+      title: "Attendance & Time",
+      items: [
+        {
+          title: "Attendance Views",
+          icon: Clock3,
+          items: [
+            { title: "Lateness Dashboard", url: "/attendance", icon: Clock3 },
+            { title: "Timesheets", url: "/timesheets", icon: CalendarOff },
+          ],
+        },
+      ],
+    },
     {
       title: "HR & People",
       items: [
         {
-          title: "Staff Directory",
-          url: "/staff",
+          title: "People Records",
           icon: Users,
-        },
-        {
-          title: "Leave Management",
-          icon: CalendarOff,
           items: [
-            { title: "All Requests", url: "/leave" },
-            { title: "Team Calendar", url: "/leave/calendar" },
+            { title: "Staff Directory", url: "/staff", icon: Users },
+            { title: "Leave Management", url: "/leave", icon: CalendarOff },
+            { title: "Career Progression", url: "/career-progression", icon: ClipboardCheck },
+            { title: "Contracts", url: "/contracts", icon: FileText, requiredResource: "contract" },
+            { title: "PPE & Tools", url: "/hr/ppe", icon: Shield },
+            { title: "PPE Compliance", url: "/compliance/ppe", icon: Shield, requiredResource: "compliance" },
           ],
         },
+      ],
+    },
+    {
+      title: "Appraisals & Performance",
+      items: [
         {
-          title: "Contracts",
-          url: "/contracts",
-          icon: FileText,
-        },
-        {
-          title: "Appraisals",
+          title: "Review Flow",
           icon: ClipboardCheck,
-          requiredResource: "appraisal",
           items: [
-            { title: "All Appraisals", url: "/appraisals" },
-            { title: "My Inbox", url: "/appraisals/inbox" },
+            { title: "My Appraisals", url: "/appraisals", icon: ClipboardCheck },
+            { title: "Team Pipeline", url: "/appraisals/inbox", icon: ClipboardCheck },
           ],
         },
-        {
-          title: "Attendance Exceptions",
-          url: "/hr/attendance",
-          icon: Clock3,
-        },
-        {
-          title: "Callout Register",
-          url: "/hr/callouts",
-          icon: PhoneCall,
-        },
-        {
-          title: "Timesheets",
-          url: "/timesheets",
-          icon: ListChecks,
-        },
       ],
     },
-
-    // ── Equipment & Compliance ────────────────────────────────
     {
-      title: "Equipment & Compliance",
+      title: "Training & Development",
       items: [
         {
-          title: "PPE & Tools",
-          url: "/hr/ppe",
-          icon: HardHat,
-        },
-        {
-          title: "Training Records",
-          url: "/compliance/training",
+          title: "Learning Views",
           icon: GraduationCap,
-        },
-        {
-          title: "Policy Compliance",
-          url: "/compliance/items",
-          icon: Shield,
+          items: [
+            { title: "Staff Logs", url: "/training", icon: GraduationCap },
+            { title: "Syllabus", url: "/training", icon: FileText },
+            { title: "Budgets", url: "/training", icon: ClipboardCheck },
+          ],
         },
       ],
     },
-
-    // ── System ────────────────────────────────────────────────
     {
-      title: "System",
+      title: "Policies & Forms",
       items: [
         {
-          title: "Analytics",
-          url: "/analytics",
-          icon: BarChart3,
-          requiredResource: "report",
+          title: "Document Library",
+          icon: FileText,
+          items: [
+            { title: "NDMA Policies", url: "/policy", icon: FileText },
+            { title: "Internal Forms", url: "/policy", icon: FileText },
+          ],
         },
+      ],
+    },
+    {
+      title: "Admin & Setup",
+      items: [
         {
-          title: "Audit Log",
-          url: "/audit",
-          icon: Activity,
-          requiredResource: "audit",
-        },
-        {
-          title: "Import Data",
-          url: "/import",
-          icon: Upload,
-          requiredResource: "settings",
-        },
-        {
-          title: "Notifications",
-          url: "/notifications",
-          icon: Bell,
-        },
-        {
-          title: "Documentation",
-          // Falls back to port 4000 if VITE_DOCS_URL is not set at build time.
-          // External links (starting with http) open in a new tab automatically.
-          url: (import.meta.env.VITE_DOCS_URL as string | undefined) ?? "http://localhost:4000",
-          icon: BookOpen,
-        },
-        {
-          title: "Settings",
-          icon: Settings,
+          title: "System Setup",
+          icon: Settings2,
           requiredResource: "settings",
           items: [
-            { title: "General", url: "/settings/general" },
-            { title: "Departments", url: "/settings/departments", icon: Building2 },
-            { title: "Dept. Assignments", url: "/settings/department-assignments", icon: Users },
-            { title: "Leave Types", url: "/settings/leave-types", icon: CalendarOff },
-            { title: "Escalation Policies", url: "/settings/escalation", icon: AlertTriangle },
-            { title: "Roles & Permissions", url: "/settings/roles", icon: Shield },
-            { title: "Automation Rules", url: "/settings/automation", icon: Bot },
+            { title: "Data Import", url: "/import", icon: Upload, requiredResource: "settings" },
+            { title: "Departments", url: "/settings/departments", icon: Settings2, requiredResource: "settings" },
+            { title: "Roles", url: "/settings/roles", icon: Shield, requiredResource: "settings" },
+            { title: "Leave Types", url: "/settings/leave-types", icon: CalendarOff, requiredResource: "settings" },
+            { title: "Automation", url: "/settings/automation", icon: Bell, requiredResource: "settings" },
+            { title: "Escalation", url: "/settings/escalation", icon: Bell, requiredResource: "settings" },
+            { title: "General", url: "/settings/general", icon: Settings2, requiredResource: "settings" },
           ],
         },
       ],

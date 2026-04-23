@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@ndma-dcs-staff-portal/ui/lib/utils";
 import { Separator } from "@ndma-dcs-staff-portal/ui/components/separator";
 import { SidebarTrigger } from "@ndma-dcs-staff-portal/ui/components/sidebar";
+import { DepartmentFilter } from "./department-filter";
 
 type HeaderProps = React.HTMLAttributes<HTMLElement> & {
   fixed?: boolean;
@@ -41,6 +42,7 @@ export function Header({ className, fixed, children, ...props }: HeaderProps) {
       >
         <SidebarTrigger variant="outline" className="max-md:scale-125" />
         <Separator orientation="vertical" className="h-6" />
+        <DepartmentFilter />
         {children}
       </div>
     </header>

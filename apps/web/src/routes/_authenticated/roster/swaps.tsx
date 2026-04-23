@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@ndma-dcs-staff-portal/ui/components/textarea";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { SchedulingTabs } from "@/components/layout/scheduling-tabs";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
 
@@ -60,6 +61,10 @@ function RosterSwapsPage() {
 
   function submitRequest(e: React.FormEvent) {
     e.preventDefault();
+    if (!assignmentId || !targetStaffProfileId) {
+      toast.error("Select an assignment and a target staff member.");
+      return;
+    }
     requestSwap.mutate({
       assignmentId,
       targetStaffProfileId,
@@ -80,6 +85,8 @@ function RosterSwapsPage() {
       </Header>
 
       <Main className="space-y-6">
+        <SchedulingTabs scope="noc" />
+
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Swap Requests</h1>
           <p className="text-sm text-muted-foreground">Staff can request coverage swaps; managers can review them.</p>
@@ -128,7 +135,7 @@ function RosterSwapsPage() {
                 <Textarea id="reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Explain why the swap is needed." />
               </div>
               <div className="md:col-span-2">
-                <Button type="submit" disabled={requestSwap.isPending}>
+                <Button type="submit" disabled={requestSwap.isPending || !assignmentId || !targetStaffProfileId}>
                   <Plus className="mr-1.5 size-3.5" />
                   {requestSwap.isPending ? "Submitting..." : "Submit Swap Request"}
                 </Button>

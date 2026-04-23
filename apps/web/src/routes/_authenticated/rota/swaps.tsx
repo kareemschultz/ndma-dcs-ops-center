@@ -25,6 +25,7 @@ import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
 import { Textarea } from "@ndma-dcs-staff-portal/ui/components/textarea";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { SchedulingTabs } from "@/components/layout/scheduling-tabs";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc, queryClient } from "@/utils/orpc";
 
@@ -433,6 +434,8 @@ function SwapsPage() {
       </Header>
 
       <Main>
+        <SchedulingTabs scope="dcs" />
+
         <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight">On-Call Swap Requests</h1>
           <p className="text-sm text-muted-foreground mt-1">

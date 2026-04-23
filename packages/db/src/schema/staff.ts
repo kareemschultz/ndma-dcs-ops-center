@@ -2,8 +2,10 @@ import { relations } from "drizzle-orm";
 import {
   boolean,
   index,
+  jsonb,
   pgEnum,
   pgTable,
+  varchar,
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
@@ -25,6 +27,14 @@ export const staffStatusEnum = pgEnum("staff_status", [
   "terminated",
 ]);
 
+export const staffRoleEnum = pgEnum("staff_role", [
+  "Staff",
+  "Team_Lead",
+  "Manager",
+  "PA",
+  "Admin",
+]);
+
 export const staffProfiles = pgTable(
   "staff_profiles",
   {
@@ -39,6 +49,8 @@ export const staffProfiles = pgTable(
     departmentId: text("department_id")
       .notNull()
       .references(() => departments.id),
+    role: staffRoleEnum("role").default("Staff").notNull(),
+    phoneNumber: varchar("phone_number", { length: 32 }),
     jobTitle: text("job_title").notNull(),
     employmentType: employmentTypeEnum("employment_type")
       .default("full_time")
@@ -51,9 +63,13 @@ export const staffProfiles = pgTable(
       .notNull(),
     isOnCallEligible: boolean("is_on_call_eligible").default(true).notNull(),
     // Reporting relationship: this staff member's direct team lead.
-    // Bare text (no .references()) — the self-referential FK is created at the DB level on db:push
-    // to avoid Drizzle's circular reference limitation. See CLAUDE.md "Drizzle self-referential tables".
+    // teamLeadId is kept for legacy compatibility.
+    // reportsTo is constrained at the database level by migration 0005.
     teamLeadId: text("team_lead_id"),
+    reportsTo: text("reports_to"),
+    emergencyContacts: jsonb("emergency_contacts")
+      .$type<{ name: string; phone: string; relation?: string }[]>()
+      .default([]),
     contractExpiresAt: timestamp("contract_expires_at"),
     startDate: timestamp("start_date").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -65,7 +81,9 @@ export const staffProfiles = pgTable(
   (table) => [
     index("staff_profiles_userId_idx").on(table.userId),
     index("staff_profiles_departmentId_idx").on(table.departmentId),
+    index("staff_profiles_role_idx").on(table.role),
     index("staff_profiles_teamLeadId_idx").on(table.teamLeadId),
+    index("staff_profiles_reportsTo_idx").on(table.reportsTo),
   ],
 );
 

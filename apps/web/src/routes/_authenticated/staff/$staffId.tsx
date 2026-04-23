@@ -7,16 +7,17 @@ import {
   Building2,
   Calendar,
   Clock3,
+  Download,
   HardHat,
   ListChecks,
   Mail,
   Pencil,
-  PhoneCall,
   ShieldCheck,
   Users,
   BookOpen,
   TrendingUp,
   FileText,
+  HeartHandshake,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -571,6 +572,12 @@ function StaffProfilePage() {
           <span className="text-muted-foreground">/</span>
           <span className="text-sm font-medium">{profile.user?.name}</span>
         </div>
+        <div className="ms-auto flex items-center gap-2 print:hidden">
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Download className="mr-1.5 size-3.5" />
+            Export PDF
+          </Button>
+        </div>
       </Header>
 
       <Main>
@@ -615,7 +622,7 @@ function StaffProfilePage() {
           {/* ----------------------------------------------------------------
               Overview Tab
           ---------------------------------------------------------------- */}
-          <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2 space-y-6">
                 <div className="rounded-xl border p-5 space-y-4">
@@ -667,6 +674,49 @@ function StaffProfilePage() {
                   </div>
                 </div>
 
+                <div className="rounded-xl border p-5 space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className="font-semibold">Contact & Emergency</h2>
+                    <span className="rounded-full border px-2.5 py-0.5 text-[11px] text-muted-foreground">
+                      Self-service editable
+                    </span>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-lg border bg-muted/20 p-4">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Phone Number</p>
+                      <p className="mt-1 font-medium">{profile.phoneNumber ?? "—"}</p>
+                    </div>
+                    <div className="rounded-lg border bg-muted/20 p-4">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Emergency Contacts</p>
+                      <p className="mt-1 font-medium">
+                        {Array.isArray(profile.emergencyContacts) ? profile.emergencyContacts.length : 0} saved
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {(Array.isArray(profile.emergencyContacts) ? profile.emergencyContacts : []).length > 0 ? (
+                      (profile.emergencyContacts as Array<{ name?: string; phone?: string; relation?: string }>).map(
+                        (contact, index) => (
+                          <div key={`${contact.name ?? "contact"}-${index}`} className="flex items-center gap-3 rounded-lg border px-3 py-2 text-sm">
+                            <HeartHandshake className="size-4 text-muted-foreground" />
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium">{contact.name ?? "Emergency Contact"}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {contact.phone ?? "—"}
+                                {contact.relation ? ` • ${contact.relation}` : ""}
+                              </p>
+                            </div>
+                          </div>
+                        ),
+                      )
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No emergency contacts saved yet.</p>
+                    )}
+                  </div>
+                </div>
+
                 <div className="rounded-xl border p-5">
                   <h2 className="mb-4 font-semibold">Operational HR</h2>
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -682,14 +732,7 @@ function StaffProfilePage() {
                       className="flex items-center gap-3 rounded-xl border px-3 py-2 text-sm hover:bg-accent"
                     >
                       <Clock3 className="size-4 text-muted-foreground" />
-                      Attendance Exceptions
-                    </Link>
-                    <Link
-                      to="/hr/callouts"
-                      className="flex items-center gap-3 rounded-xl border px-3 py-2 text-sm hover:bg-accent"
-                    >
-                      <PhoneCall className="size-4 text-muted-foreground" />
-                      Callouts
+                      Timesheets & Lateness
                     </Link>
                     <Link
                       to="/timesheets"
@@ -697,6 +740,13 @@ function StaffProfilePage() {
                     >
                       <ListChecks className="size-4 text-muted-foreground" />
                       Timesheets
+                    </Link>
+                    <Link
+                      to="/policy"
+                      className="flex items-center gap-3 rounded-xl border px-3 py-2 text-sm hover:bg-accent"
+                    >
+                      <FileText className="size-4 text-muted-foreground" />
+                      Policies & Forms
                     </Link>
                   </div>
                 </div>
@@ -728,6 +778,9 @@ function StaffProfilePage() {
                     </Link>
                     <Link to="/access" className="block text-muted-foreground hover:text-foreground">
                       → Platform Accounts
+                    </Link>
+                    <Link to="/import" className="block text-muted-foreground hover:text-foreground">
+                      → Bulk Import
                     </Link>
                   </div>
                 </div>

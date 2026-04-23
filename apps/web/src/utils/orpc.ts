@@ -1,5 +1,5 @@
-import type { AppRouterClient } from "@ndma-dcs-staff-portal/api/routers/index";
 import { env } from "@ndma-dcs-staff-portal/env/web";
+import type { AppRouterClient } from "@ndma-dcs-staff-portal/api/routers/index";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
@@ -34,6 +34,6 @@ export const link = new RPCLink({
   },
 });
 
-export const client: AppRouterClient = createORPCClient(link);
+export const client = createORPCClient<AppRouterClient>(link);
 
 export const orpc = createTanstackQueryUtils(client);

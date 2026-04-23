@@ -1,0 +1,1 @@
+ALTER TABLE "staff_profiles" ADD CONSTRAINT "staff_profiles_reports_to_staff_profiles_id_fk" FOREIGN KEY ("reports_to") REFERENCES "public"."staff_profiles"("id") ON DELETE set null ON UPDATE no action;
