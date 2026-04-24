@@ -71,6 +71,13 @@
       "when": 1777043440525,
       "tag": "0016_extend_staff_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1777043483787,
+      "tag": "0017_platforms_reference_table",
+      "breakpoints": true
     }
   ]
 }
