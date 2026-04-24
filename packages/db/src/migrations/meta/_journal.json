@@ -92,6 +92,13 @@
       "when": 1777043483789,
       "tag": "0019_sync_adapter_runs_table",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1777043483790,
+      "tag": "0020_service_access_registry_table",
+      "breakpoints": true
     }
   ]
 }
