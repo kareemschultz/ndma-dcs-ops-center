@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import { boolean, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
@@ -27,3 +28,10 @@ export const syncAdapters = pgTable(
       .where(sql`${table.enabled} = true`),
   ],
 );
+
+export const syncAdaptersRelations = relations(syncAdapters, ({ one }) => ({
+  platform: one(platforms, {
+    fields: [syncAdapters.platformId],
+    references: [platforms.id],
+  }),
+}));

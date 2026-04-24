@@ -69,6 +69,14 @@ export const staffRouter = {
           .default("full_time"),
         startDate: z.string(), // ISO date string
         phoneNumber: z.string().optional(),
+        cugPhoneNumber: z.string().optional(),
+        cugSimNumber: z.string().optional(),
+        mifiAssetTag: z.string().optional(),
+        birthday: z.string().optional(),
+        employmentStatus: z.enum(["Active", "Dormant", "OnLeave", "Left"]).optional(),
+        hireDate: z.string().optional(),
+        contractEndDate: z.string().optional(),
+        currentAppointment: z.string().optional(),
         reportsTo: z.string().optional(),
         emergencyContacts: z.array(
           z.object({
@@ -121,6 +129,14 @@ export const staffRouter = {
           .enum(["full_time", "part_time", "contract", "temporary"])
           .optional(),
         phoneNumber: z.string().optional(),
+        cugPhoneNumber: z.string().optional(),
+        cugSimNumber: z.string().optional(),
+        mifiAssetTag: z.string().optional(),
+        birthday: z.string().optional(),
+        employmentStatus: z.enum(["Active", "Dormant", "OnLeave", "Left"]).optional(),
+        hireDate: z.string().optional(),
+        contractEndDate: z.string().optional(),
+        currentAppointment: z.string().optional(),
         reportsTo: z.string().nullable().optional(),
         emergencyContacts: z.array(
           z.object({

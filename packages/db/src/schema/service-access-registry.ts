@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import { boolean, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
 
 import { platforms } from "./platforms";
@@ -38,3 +39,24 @@ export const serviceAccessRegistry = pgTable(
   },
   (table) => [unique("service_access_registry_staff_platform_unique").on(table.staffId, table.platformId)],
 );
+
+export const serviceAccessRegistryRelations = relations(serviceAccessRegistry, ({ one }) => ({
+  staff: one(staffProfiles, {
+    fields: [serviceAccessRegistry.staffId],
+    references: [staffProfiles.id],
+    relationName: "serviceAccessStaff",
+  }),
+  platform: one(platforms, {
+    fields: [serviceAccessRegistry.platformId],
+    references: [platforms.id],
+  }),
+  lastSyncAdapterRun: one(syncAdapterRuns, {
+    fields: [serviceAccessRegistry.lastSyncAdapterRunId],
+    references: [syncAdapterRuns.id],
+  }),
+  manualOverriddenByStaff: one(staffProfiles, {
+    fields: [serviceAccessRegistry.manualOverriddenBy],
+    references: [staffProfiles.id],
+    relationName: "serviceAccessManualOverride",
+  }),
+}));

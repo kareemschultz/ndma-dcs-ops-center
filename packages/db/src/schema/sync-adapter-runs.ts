@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { staffProfiles } from "./staff";
@@ -19,3 +20,14 @@ export const syncAdapterRuns = pgTable("sync_adapter_runs", {
   triggeredBy: text("triggered_by"),
   triggeredByStaffId: text("triggered_by_staff_id").references(() => staffProfiles.id),
 });
+
+export const syncAdapterRunsRelations = relations(syncAdapterRuns, ({ one }) => ({
+  syncAdapter: one(syncAdapters, {
+    fields: [syncAdapterRuns.syncAdapterId],
+    references: [syncAdapters.id],
+  }),
+  triggeredByStaff: one(staffProfiles, {
+    fields: [syncAdapterRuns.triggeredByStaffId],
+    references: [staffProfiles.id],
+  }),
+}));

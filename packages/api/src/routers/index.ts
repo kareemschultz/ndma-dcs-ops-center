@@ -1,6 +1,7 @@
 import type { RouterClient } from "@orpc/server";
 import { protectedProcedure, publicProcedure } from "../index";
 import { accessRouter } from "./access";
+import { accessRegistryRouter } from "./access-registry";
 import { importRouter } from "./import";
 import { appraisalsRouter } from "./appraisals";
 import { appraisalCyclesRouter } from "./appraisal-cycles";
@@ -35,6 +36,7 @@ import { workloadRouter } from "./workload";
 import { automationRouter } from "./automation";
 import { overlaysRouter } from "./overlays";
 import { analyticsRouter } from "./analytics";
+import { platformsRouter } from "./platforms";
 
 const healthCheck = publicProcedure.handler(() => "OK");
 const privateData = protectedProcedure.handler(({ context }) => ({
@@ -46,6 +48,7 @@ export type AppRouter = {
   healthCheck: typeof healthCheck;
   privateData: typeof privateData;
   access: typeof accessRouter;
+  accessRegistry: typeof accessRegistryRouter;
   appraisals: typeof appraisalsRouter;
   appraisalCycles: typeof appraisalCyclesRouter;
   audit: typeof auditRouter;
@@ -80,12 +83,14 @@ export type AppRouter = {
   automation: typeof automationRouter;
   overlays: typeof overlaysRouter;
   analytics: typeof analyticsRouter;
+  platforms: typeof platformsRouter;
 };
 
 export const appRouter: AppRouter = {
   healthCheck,
   privateData,
   access: accessRouter,
+  accessRegistry: accessRegistryRouter,
   appraisals: appraisalsRouter,
   appraisalCycles: appraisalCyclesRouter,
   audit: auditRouter,
@@ -120,6 +125,7 @@ export const appRouter: AppRouter = {
   automation: automationRouter,
   overlays: overlaysRouter,
   analytics: analyticsRouter,
+  platforms: platformsRouter,
 };
 
 export type AppRouterClient = RouterClient<AppRouter>;
