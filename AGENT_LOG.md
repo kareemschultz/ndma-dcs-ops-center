@@ -217,3 +217,12 @@ Also: channel-adapter pattern for notifications (Phase 10 AC), master plan secti
 - Phase N+1 branches from {gate commit SHA}
 - (any carry-over context the next agent needs)
 ```
+# Phase 1 — People & Access Registry — [WIP]
+
+- **Agent:** Codex
+- **Date:** 2026-04-24
+- **Branch:** `phase/1-access-registry`
+- **Commits:** `3c2bbb1`, `95ef54f`, `5eeb74a`, `6f1e3ef`, `e9cc570`, `8790235`, `c813352`, `c3d76d6`, `fd2da7b`
+- **Tests:** `bun run check-types` ✅, `bunx playwright test` ✅ 26/26 passing, migration round-trips ✅ for 0016-0020
+- **Shipped:** PPE sidebar duplicate removed; `/hr/ppe` now redirects to `/compliance/ppe`; Phase 1 staff-profile columns; platforms, sync_adapters, sync_adapter_runs, service_access_registry schema; new `platforms` and `accessRegistry` routers; staff profile access fields expanded
+- **Deferred:** UI routes `/access/platforms` and `/access/registry`, staff profile access section, directory columns, RBAC matrix file, historical seed script
