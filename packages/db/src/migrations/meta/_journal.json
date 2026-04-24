@@ -85,6 +85,13 @@
       "when": 1777043483788,
       "tag": "0018_sync_adapters_table",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1777043483789,
+      "tag": "0019_sync_adapter_runs_table",
+      "breakpoints": true
     }
   ]
 }
