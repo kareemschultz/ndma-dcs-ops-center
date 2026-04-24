@@ -57,6 +57,20 @@
       "when": 1776827966067,
       "tag": "0007_bright_stepford_cuckoos",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1777040000000,
+      "tag": "0008_restore_team_lead_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1777043440525,
+      "tag": "0016_extend_staff_profiles",
+      "breakpoints": true
     }
   ]
 }
