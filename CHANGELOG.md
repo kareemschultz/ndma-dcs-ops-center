@@ -4,30 +4,41 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
-## [Phase 0] — 2026-04-23
+## [Phase 0] — 2026-04-23 (shipped 2026-04-25 via #16 squash `3916721`)
 
-### Removed
-- Callouts Register (schema, router, routes, UI)
+> **Note (course correction 2026-04-25):** This entry was written aspirationally when PR #14 merged (planning docs only). The actual migration SQL was committed to the branch afterward but never made it onto main until PR #16 merged on 2026-04-25 with the cherry-picked migrations rebased onto current main. See AGENT_LOG.md for the full course-correction details.
+
+### Removed (via migration 0009)
+- Callouts Register (schema, router, routes, UI) — incident-response feature, distinct from XLSX 2023-Callout sheet (Phase 14 seeds those into `tosd_records.type='callout_legacy'`)
 - Attendance Exceptions (schema, router, routes, UI)
-- Compassionate leave type
 
-### Fixed
-- appraisalStatusEnum collapsed from 13 mixed-case to 7 canonical lowercase values
-- staff_profiles.team_lead_id removed (superseded by reportsTo)
-- departments.parent_id FK constraint added
-- leave_policies table now exists in DB (was schema-only pre-Phase 0)
-- e2e auth credentials corrected to match seed script
-- CORS origin env var corrected for dev environment
-- Appraisals page Button/Link nativeButton violation fixed
+### Fixed (via migrations 0008/0010/0011)
+- `appraisalStatusEnum` collapsed from 13 mixed-case to 7 canonical lowercase values (CASE WHEN mapping; Pending_Approval / scheduled → draft, Approved_By_Manager / Processed_By_PA → approved)
+- `staff_profiles.team_lead_id` removed (superseded by `reportsTo` set up in migration 0005)
+- `departments.parent_id` FK constraint added (raw SQL — Drizzle circular FK limitation)
+- e2e auth credentials corrected to match seed script (`.env.example` added)
 
-### Changed
-- exam_dates replaced by exam_schedule (richer schema)
-- operational_overlays renamed to routine_maintenance
-- calendar_event_type enum extended from 3 to 12 values
+### Changed (via migrations 0012/0013/0014/0015)
+- `exam_dates` replaced by `exam_schedule` (richer schema — adds vendor, certification_id, voucher_id, score, passing_score, expanded status enum)
+- `operational_overlays_*` tables renamed to `routine_maintenance_*` (master plan §5.7 naming)
+- `leave_policies` table extended with `blocked_months text[]` + `allow_rollover bool` columns (master plan §5.6 NOC rules support)
+- `calendar_event_type` enum extended from 3 to 12 values (added `public_holiday`, `exam`, `contract_renewal`, `appraisal_due`, `appraisal_followup`, `ppe_review`, `routine_maintenance`, `server_room_cleaning`, `custom`)
+
+### Deferred to later phases
+- **Compassionate leave_type row** — migration 0010 was no-op since prod had 0 referencing `leave_requests`. The `leave_types` row itself was NOT deleted from DB (still exists, harmless). Will be cleaned up in Phase 2 (Leave refactor) alongside the broader leave-types reseeding.
+- exam_schedule FK constraints (certification_id, voucher_id) → Phase 7 (target tables don't exist yet)
+- onboarding-tasks.template_id FK → Phase 7
+- certification-budgets integration → Phase 7
 
 ### Technical notes
-- For production DB: use DATABASE_URL=$PROD_DATABASE_URL bun run db:migrate
-- Migrations 0008-0015 are in packages/db/src/migrations/
+- Migration files: `packages/db/src/migrations/0008_enum_fix.sql` through `0015_calendar_event_type_widen.sql`
+- Each has a corresponding `.down.sql` file (manual rollback — drizzle-kit doesn't auto-apply DOWN)
+- For production DB apply: `DATABASE_URL=$PROD_DATABASE_URL bun run db:migrate`
+- Pre-checks before prod apply (per `docs/superpowers/plans/phase-0-stabilise.md` §8):
+  - `SELECT status, COUNT(*) FROM appraisals GROUP BY status` — ensure all values are within the 13-known set
+  - `SELECT COUNT(*) FROM leave_requests lr JOIN leave_types lt ON lr.leave_type_id = lt.id WHERE lt.name ILIKE '%compassionate%'` — if > 0, manual remap to `special_leave` required (migration 0010 will need updating)
+  - `SELECT id, name, parent_id FROM departments WHERE parent_id IS NOT NULL AND parent_id NOT IN (SELECT id FROM departments)` — if > 0, NULL out orphans before applying 0011
+  - `SELECT COUNT(*) FROM callouts` — if > 0, export to JSONL backup before applying 0009 (data loss otherwise)
 
 ---
 

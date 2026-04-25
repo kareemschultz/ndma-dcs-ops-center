@@ -10,6 +10,63 @@
 
 ---
 
+## Phase 0 — Course correction: migrations actually shipped — 🟢 Done
+
+- **Agent:** Claude Code (opusplan, 1M context) — picking up after Codex confusion
+- **Date:** 2026-04-25
+- **Branch:** `phase/0-stabilise` (recreated, cherry-picked) → squash-merged to main as PR #16
+- **Gate commit:** `3916721`
+- **Baseline commit:** `17b7922` (chore: Phase 0 gate ceremony — coordination files)
+
+### What actually happened
+
+The previous "Phase 0" entry below claimed 🟢 Done with gate commit `324f3f6`, but a 2026-04-25 audit found **the migration SQL never landed on main**. The aspirational CHANGELOG and the Phase 0 entry below describe what the work *should* have done — the planning was done correctly, but only the planning docs were merged to main via PR #14. The actual migration SQL was committed to `phase/0-stabilise` *after* PR #14's merge and was never re-merged.
+
+Compounding the confusion, Codex started Phase 1 (PR #15, `phase/1-access-registry`) before Phase 0 migrations had landed on main, violating Hard Invariant #1 ("Phase 0 must merge to main before Phase 1 branches"). Phase 1's branch was effectively built on top of a main that was missing migrations 0008-0015.
+
+### What this session did
+
+1. **Audit:** verified that migrations 0008-0015 did NOT exist on main; found them on `origin/phase/0-stabilise` (deleted from origin shortly after) and confirmed they had been written but never merged.
+2. **Quality review:** sampled migrations 0008, 0009, 0010, 0012 — all well-documented (CASE WHEN mappings, two-lineage notes, fidelity-loss DOWN files). Codex's *code* was correct; the *workflow* (early Phase 1 start, mismatched merge) was the problem.
+3. **Cherry-pick:** recreated `phase/0-stabilise` from current main, cherry-picked the 10 relevant commits (8 migrations + schema/index.ts fix + e2e credential fix), excluded the "closing — coordination files" commit (would have reverted main's gate ceremony work).
+4. **Fix CI failure:** typecheck failed in CI on the unused `normalizeKey` helper in `appraisals.ts:46`. Removed it (commit `be5b328`).
+5. **Merged PR #16 → main** as squash commit `3916721`. Branch deleted post-merge.
+6. **This entry:** course-correction record in the AGENT_LOG. The previous "Phase 0 — 🟢 Done" entry below (with gate commit `324f3f6`) describes the planning work and is left in place for traceability — but the *actual* gate commit is `3916721`, recorded above and in the IMPLEMENTATION_PLAN.md status table.
+
+### Lessons captured (for CLAUDE.md update)
+
+- **Aspirational CHANGELOG entries are dangerous.** When a CHANGELOG describes work as shipped before the migrations actually merge, follow-up agents trust the documented state and start new phases on a corrupt baseline. Either don't write the CHANGELOG entry until after merge, or include explicit "shipped/aspirational" markers.
+- **Hard Invariant #1 (Phase 0 → main before Phase 1 branches) is mechanical, not aspirational.** Verify by SHA, not by reading docs. Codex started Phase 1 at 2026-04-24 15:06Z when `main` did not contain migrations 0008-0015 — only the planning docs had merged.
+- **Branches that get re-pushed after their PR is merged are a footgun.** PR #14 merged at 15:47:59Z with planning docs only. The migration commits were pushed to the same branch name afterward, but never opened a new PR.
+- **CI typecheck catches what Turbo cache hides locally.** `bun run check-types` showed PASS locally because Turbo cached an old result. The CI run from a clean cache caught the unused-import error. When in doubt, `rm -rf .turbo` before final verification.
+
+### Tests
+
+- ✅ typecheck (after removing `normalizeKey`)
+- ✅ build (Vite production build)
+- ⚠️ e2e (deferred — not run in this session; needed before Phase 1 final merge)
+
+### What's now true on main
+
+- All 8 Phase 0 migrations (0008–0015) shipped — UP + DOWN files for each
+- `callouts.ts`, `attendance-exceptions.ts`, `exam-dates.ts` schemas removed
+- `exam-schedule.ts` schema added
+- `operational-overlays.ts` updated for `routine_maintenance_*` table renames
+- `appraisalStatusEnum` collapsed to 7 lowercase values
+- `staff_profiles.team_lead_id` dropped
+- `departments.parent_id` FK constraint added
+- `leave_policies` extended with `blocked_months` + `allow_rollover`
+- `calendar_event_type` enum widened to 12 values
+- `callouts.ts` + `attendance-exceptions.ts` routers + their `hr/*.tsx` routes removed
+- `import.ts` no longer imports callout/attendance paths
+
+### What's still pending
+
+- **Phase 1 PR #15** (`phase/1-access-registry`) — needs rebase onto current main now that Phase 0 migrations are landed; previously was built on stale main. CI on the open PR ran against a base that didn't have 0008-0015 — a re-CI after rebase is required before merge.
+- **Compassionate `leave_types` row** — migration 0010 was no-op (0 referencing `leave_requests` in prod). The row itself still exists in `leave_types` table. Cleanup deferred to Phase 2.
+
+---
+
 ## Phase 0 — Reconciliation decisions + migrations 0008-0015 — 🟢 Done
 
 - **Agent:** Claude Code (opusplan)

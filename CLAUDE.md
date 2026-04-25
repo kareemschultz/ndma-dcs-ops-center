@@ -5,6 +5,23 @@
 >
 > Authoritative spec: [`docs/superpowers/plans/2026-04-23-master-remediation-plan.md`](docs/superpowers/plans/2026-04-23-master-remediation-plan.md)
 
+## ⚠️ Lessons learned (2026-04-25 course correction)
+
+A multi-agent confusion in late April 2026 caused Phase 0 migrations to sit unmerged on a branch for ~2 days while the CHANGELOG and gate ceremony commit on main claimed Phase 0 was 🟢 Done. Codex then started Phase 1 (PR #15) on a main that didn't actually have the Phase 0 migrations, violating Hard Invariant #1.
+
+**To prevent recurrence, every agent MUST:**
+
+1. **Trust the SHA, not the prose.** Before claiming a phase is done or branching the next phase:
+   - Read `IMPLEMENTATION_PLAN.md` Phase status table — note the gate commit SHA
+   - Run `git log <SHA> --stat` and verify the SHA actually contains the migration files / schema deletions / etc. that the phase was supposed to ship
+   - If the SHA on main doesn't match what the prose claims, the prose is wrong — fix the docs, don't start the next phase
+2. **Don't write CHANGELOG entries before merge.** Aspirational entries are dangerous — follow-up agents read them and trust them. Either (a) write the CHANGELOG entry as part of the gate-ceremony commit AFTER the phase merges, or (b) prefix aspirational text with `⚠️ ASPIRATIONAL — not yet shipped`.
+3. **One PR per phase.** If a branch's PR is merged but the branch is re-pushed with new commits afterward, those commits are STRANDED — open a new PR. Never assume "the branch is merged" means "the latest commits on the branch are on main".
+4. **CI typecheck > local typecheck.** Turbo can cache stale results. When verifying before final merge, `rm -rf .turbo && bun run check-types` to force a clean run, or rely on the GitHub Actions CI run.
+5. **Read AGENT_LOG.md "last 3 entries" literally.** The starting-work protocol says read 3 entries because the most recent one might be a course correction overriding the entry below it. Don't skim — read.
+
+**Stale Codex branches NOT to merge from:** `codex/phase1-foundation`, `codex/phase2-appraisals`, `codex/phase3-operational-hr`, `codex/phase4-shift-scheduling`, `codex/phase5-leave-policy`. These are pre-2026-04-23-planning work with phase numbering that does NOT match the new master plan. Treat as historical reference only.
+
 ## Project Overview
 Enterprise internal operations platform for NDMA Data Centre Services (DCS).
 Modules: Work Management · Incident Management · On-Call Rota · Procurement · Leave · Staff/Compliance · Audit · Access Management · Temporary Changes · Analytics · Import Pipeline.
