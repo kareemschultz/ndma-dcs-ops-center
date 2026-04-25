@@ -4,6 +4,25 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
+## [Phase 1 — UI screens] — shipped 2026-04-25 via #20 squash `fea4835`
+
+### Added
+- `/access/platforms` — admin CRUD page for the platforms reference table (Layer 1 of 3-layer model). Create/edit dialog with category, auth_type, sync_mode enums. Soft-delete via Disable button.
+- `/access/registry` — staff × platform matrix view (Layer 3). Pick a platform, see all staff access records, filter by name/email/username. Renders privilege_level pill, account_type, privilege_groups (as chips), per-field source badge.
+- Sidebar entries: "Access Registry" (`/access/registry`) + "Platforms" (`/access/platforms`) under Changes & Access.
+
+### Fixed
+- `/hr/ppe` — converted to a redirect to `/compliance/ppe` (was a 297-line duplicate page; sidebar duplicate fix per Ataybia feedback). Old bookmarks/links auto-redirect.
+
+### Still deferred (Phase 1 follow-up — for future session)
+- `/access/registry/$staffId` per-staff detail page
+- Staff profile `Access` tab integration
+- Inline edit on registry matrix (currently read-only viewer)
+- RBAC matrix test rows for `platforms.*` + `accessRegistry.*` (CI gate per master plan §10.6)
+- e2e smoke tests for the 3 new pages
+
+---
+
 ## [Phase 1 — Schema + API] — shipped 2026-04-25 via #18 squash `c8fdd3e`
 
 > Phase 1 split: schema/migrations/routers landed in this commit. UI (`/access/platforms`, `/access/registry`, staff profile access tab, directory phone-number column) deferred to a follow-up PR. RBAC matrix tests for new procedures also deferred.

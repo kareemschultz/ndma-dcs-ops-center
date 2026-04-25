@@ -10,6 +10,55 @@
 
 ---
 
+## Phase 1 — Access registry UI shipped — 🟡 Core complete, polish TBD
+
+- **Agent:** Claude Code (opusplan, autonomous overnight session at user request)
+- **Date:** 2026-04-25
+- **Branch:** `phase/1-ui` → squash-merged to main as PR #20
+- **Gate commit:** `fea4835`
+- **Baseline commit:** `b6b7d54` (post-Phase-1 schema coordination)
+
+### What shipped
+
+- **`/access/platforms`** admin page — full CRUD on the platforms reference table. Create/edit dialog with all 6 categories, 6 auth types, 4 sync modes. Disable button (soft-delete). Renders category pill with color coding.
+- **`/access/registry`** matrix view — pick a platform, see all staff access records on that platform. Filter by name/email/username. Each row shows: staff link to profile, account username (mono), account type, privilege_level pill (admin/operator/read_only/auditor/custom/none color-coded), privilege_groups as chips, per-field source badge (manual/synced/hybrid-verified).
+- **`/hr/ppe` redirect** — old 297-line duplicate page replaced with 11-line `<Navigate to="/compliance/ppe" replace />` component. Bookmarks and old sidebar links auto-redirect.
+- **Sidebar entries** — "Access Registry" + "Platforms" under Changes & Access group, both gated `requiredResource: "access"`.
+
+### Fixes applied during build
+
+- **CLAUDE.md gotcha #1:** `Button asChild` doesn't exist in the shared Button component. Replaced with `onClick + useNavigate({ to: ... })` pattern.
+- **CLAUDE.md gotcha #2:** Base UI's `Select onValueChange` passes `string | null`, but `useState<string>` only accepts `string`. Wrapped with `(v) => setPlatformId(v ?? "")`.
+- Both gotchas are documented in CLAUDE.md "Lessons learned" + "KNOWN GOTCHAS" sections.
+
+### Tests
+
+- ✅ typecheck (clean Turbo cache, 30s)
+- ✅ build (Vite production)
+- ⚠️ e2e — not run; deferred to a final Phase 1 polish session
+- ⚠️ Manual smoke testing not done (would need dev server)
+
+### Still deferred (Phase 1 polish — future session)
+
+1. `/access/registry/$staffId` per-staff detail page — listing all access records for one staff member with edit form per record
+2. Staff profile `Access` tab — read-only access summary on the existing `/staff/$staffId` page
+3. Inline edit on `/access/registry` matrix — currently view-only; should support changing privilege_level + groups in-place
+4. RBAC matrix test rows — `platforms.*` (5 procedures) + `accessRegistry.*` (5 procedures) need explicit allow/deny coverage in `packages/api/tests/rbac-matrix.test.ts` per master plan §10.6
+5. e2e Playwright smokes — `/access/platforms` renders, create/edit/disable flow works, `/access/registry` matrix loads, search filters, `/hr/ppe` → `/compliance/ppe` redirect
+
+### Session summary (autonomous overnight work)
+
+This session executed Kareem's "do as much work as you can while I'm asleep" directive. Total accomplished:
+- Phase 0 migrations actually merged to main (course correction from prior aspirational state)
+- Phase 1 schema + migrations + routers merged
+- Phase 1 UI screens (platforms admin + registry matrix) shipped
+- 4 coordination commits + 5 PRs merged today
+- CLAUDE.md/AGENTS.md guardrails added to prevent the codex confusion from recurring
+
+Stopping at the natural Phase 1 boundary per the user's earlier instruction ("we will stop at Phase 1 and continue with the remaining phases later"). Phase 1 polish items above are queued for next session.
+
+---
+
 ## Phase 1 — Access registry schema + API rebase — 🟡 Schema/API Done, UI Pending
 
 - **Agent:** Claude Code (opusplan, 1M context) — rebased Codex's Phase 1 work onto current main
