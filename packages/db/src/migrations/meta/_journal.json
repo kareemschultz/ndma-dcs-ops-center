@@ -113,6 +113,41 @@
       "when": 1776985200000,
       "tag": "0015_calendar_event_type_widen",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1777068000000,
+      "tag": "0016_extend_staff_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1777071600000,
+      "tag": "0017_platforms_reference_table",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1777075200000,
+      "tag": "0018_sync_adapters_table",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1777078800000,
+      "tag": "0019_sync_adapter_runs_table",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1777082400000,
+      "tag": "0020_service_access_registry_table",
+      "breakpoints": true
     }
   ]
 }

@@ -33,6 +33,9 @@ import { workloadRouter } from "./workload";
 import { automationRouter } from "./automation";
 import { overlaysRouter } from "./overlays";
 import { analyticsRouter } from "./analytics";
+// Phase 1 — Access Registry (master plan §5.2)
+import { platformsRouter } from "./platforms";
+import { accessRegistryRouter } from "./access-registry";
 
 const healthCheck = publicProcedure.handler(() => "OK");
 const privateData = protectedProcedure.handler(({ context }) => ({
@@ -76,6 +79,8 @@ export type AppRouter = {
   automation: typeof automationRouter;
   overlays: typeof overlaysRouter;
   analytics: typeof analyticsRouter;
+  platforms: typeof platformsRouter;
+  accessRegistry: typeof accessRegistryRouter;
 };
 
 export const appRouter: AppRouter = {
@@ -114,6 +119,8 @@ export const appRouter: AppRouter = {
   automation: automationRouter,
   overlays: overlaysRouter,
   analytics: analyticsRouter,
+  platforms: platformsRouter,
+  accessRegistry: accessRegistryRouter,
 };
 
 export type AppRouterClient = RouterClient<AppRouter>;

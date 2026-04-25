@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
   boolean,
+  date,
   index,
   jsonb,
   pgEnum,
@@ -51,6 +52,15 @@ export const staffProfiles = pgTable(
       .references(() => departments.id),
     role: staffRoleEnum("role").default("Staff").notNull(),
     phoneNumber: varchar("phone_number", { length: 32 }),
+    // Phase 1 — extended profile fields (master plan §5.1) — added via migration 0016
+    cugPhoneNumber: text("cug_phone_number"),
+    cugSimNumber: text("cug_sim_number"),
+    mifiAssetTag: text("mifi_asset_tag"),
+    birthday: date("birthday"),
+    employmentStatus: text("employment_status").default("Active"),
+    hireDate: date("hire_date"),
+    contractEndDate: date("contract_end_date"),
+    currentAppointment: text("current_appointment"),
     jobTitle: text("job_title").notNull(),
     employmentType: employmentTypeEnum("employment_type")
       .default("full_time")
