@@ -43,10 +43,6 @@ const appraisalStatusSchema = z.enum([
   "overdue",
 ]);
 
-function normalizeKey(value: string) {
-  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
-}
-
 function computePercentage(ratingMatrix: Record<string, number>) {
   const values = Object.values(ratingMatrix);
   if (values.length === 0) {
