@@ -10,6 +10,71 @@
 
 ---
 
+## Phase 1 — Access registry schema + API rebase — 🟡 Schema/API Done, UI Pending
+
+- **Agent:** Claude Code (opusplan, 1M context) — rebased Codex's Phase 1 work onto current main
+- **Date:** 2026-04-25
+- **Branch:** `phase/1-rebase` → squash-merged to main as PR #18
+- **Gate commit:** `c8fdd3e`
+- **Baseline commit:** `047822a` (post-Phase-0 coordination)
+
+### Background
+
+Codex had built Phase 1 (PR #15) on a stale main predating Phase 0. Naive rebase would have generated 50+ files of conflicts (Phase 1 wanted dropped Phase 0 schemas to exist again). This session selectively cherry-picked the additive Phase 1 work onto post-Phase-0 main.
+
+### What shipped
+
+- **Migrations 0016-0020:**
+  - 0016 — extend `staff_profiles` with 8 new fields (cug_phone_number, cug_sim_number, mifi_asset_tag, birthday, employment_status, hire_date, contract_end_date, current_appointment)
+  - 0017 — `platforms` reference table (Layer 1 of 3-layer model)
+  - 0018 — `sync_adapters` table (Layer 2, schema only — no rows in Phase 1)
+  - 0019 — `sync_adapter_runs` ledger (Layer 2b, empty)
+  - 0020 — `service_access_registry` with per-field `_source` provenance (Layer 3)
+- **Schema files:** `platforms.ts`, `sync-adapters.ts`, `sync-adapter-runs.ts`, `service-access-registry.ts`
+- **`staff.ts`** extended with 8 profile fields (NO team_lead_id — Phase 0 dropped it; Codex's branch was reverting that, this rebase did NOT)
+- **Routers:** `platforms.*` (CRUD on platforms reference table) + `accessRegistry.*` (listByStaff/listByPlatform/create/update/bulkImport)
+- **Sidebar:** removed duplicate `PPE & Tools` entry pointing to `/hr/ppe`; kept `PPE Compliance` at `/compliance/ppe`
+- **Journal:** updated `_journal.json` with sequential entries 16-20 (skipping the orphaned `0008_restore_team_lead_id` from Codex's branch)
+
+### Excluded from rebase (would have reverted Phase 0)
+
+- `callouts.ts` schema + router restoration
+- `attendance-exceptions.ts` schema + router restoration
+- `exam-dates.ts` schema + the `exam_schedule.ts` deletion
+- `team_lead_id` re-addition to `staff_profiles`
+- `calendar-events.ts` enum reversion
+- `leave-policies.ts` extension reversion
+- `operational-overlays.ts` rename reversion
+- The `0008_restore_team_lead_id` orphaned journal entry
+
+### Tests
+
+- ✅ typecheck (clean Turbo cache, 30s run)
+- ✅ build (Vite production)
+- ⚠️ e2e — not run; should run before merging UI follow-up
+- ⚠️ Migration UP/DOWN — not verified per-file against fresh DB; deferred to staging apply step
+
+### What's still TBD (Phase 1 UI work)
+
+Per master plan §5.2 + the original PR #15 description's "Known issues / deferred items":
+- `/access/platforms` admin UI
+- `/access/registry` matrix UI (staff × platform)
+- `/access/registry/$staffId` per-staff detail page
+- Staff profile `Access` tab
+- Staff directory `phoneNumber` column display (Ataybia feedback)
+- RBAC matrix tests for the new procedures
+- e2e smoke tests
+
+These can ship in a follow-up `phase/1-ui` PR.
+
+### PR cleanup
+
+- PR #15 (original Phase 1, stale main base) — closed as superseded by PR #18
+- PR #18 (rebased Phase 1) — merged to main as `c8fdd3e`
+- Branches `phase/1-rebase` deleted post-merge; `origin/phase/1-access-registry` retained for now (codex's WIP, can be deleted manually)
+
+---
+
 ## Phase 0 — Course correction: migrations actually shipped — 🟢 Done
 
 - **Agent:** Claude Code (opusplan, 1M context) — picking up after Codex confusion

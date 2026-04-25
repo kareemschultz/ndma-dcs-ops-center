@@ -20,7 +20,7 @@
 |---|---|---|---|---|---|---|
 | — | Planning session | 🟢 Done | `planning/2026-04-23-master` | Claude Code opusplan + Claude web opus-4.7 audit | (this commit) | 2026-04-23 |
 | 0 | Stabilise & delete | 🟢 Done | — | Claude Code + Codex (course-corrected) | 3916721 | 2026-04-25 |
-| 1 | People & access registry | ⬜ Queued | — | — | — | — |
+| 1 | People & access registry | 🟡 Schema+API done, UI pending | `phase/1-rebase` (merged) | Codex (rebased by Claude Code) | c8fdd3e | 2026-04-25 |
 | 2 | Leave refactor | ⬜ Queued | — | — | — | — |
 | 3 | Scheduling unification | ⬜ Queued | — | — | — | — |
 | 4 | Appraisal system | ⬜ Queued | — | — | — | — |

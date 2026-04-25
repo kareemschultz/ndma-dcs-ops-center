@@ -4,6 +4,46 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
+## [Phase 1 — Schema + API] — shipped 2026-04-25 via #18 squash `c8fdd3e`
+
+> Phase 1 split: schema/migrations/routers landed in this commit. UI (`/access/platforms`, `/access/registry`, staff profile access tab, directory phone-number column) deferred to a follow-up PR. RBAC matrix tests for new procedures also deferred.
+
+### Added
+- **3-layer hybrid access registry** (master plan §5.2):
+  - `platforms` reference table (Layer 1) — categorises platforms by type/auth/sync_mode
+  - `sync_adapters` table (Layer 2, empty in Phase 1) — schema-only; populated in Phase 15 stretch
+  - `service_access_registry` (Layer 3) — per (staff, platform) row with per-field `_source` provenance + manual override tracking
+  - `sync_adapter_runs` ledger (Layer 2b, empty) — every sync execution audit trail
+- **Staff profile extended fields** (master plan §5.1, migration 0016): `cug_phone_number`, `cug_sim_number`, `mifi_asset_tag`, `birthday`, `employment_status` (default 'Active' with check constraint), `hire_date`, `contract_end_date`, `current_appointment`
+- **oRPC routers** — `platforms.*` (list/create/update/disable) + `accessRegistry.*` (listByStaff/listByPlatform/create/update/bulkImport)
+
+### Fixed
+- **Sidebar** — removed duplicate `PPE & Tools` entry at `/hr/ppe`; kept `PPE Compliance` at `/compliance/ppe` per Ataybia sticky-note feedback
+
+### Migrations applied
+- `0016_extend_staff_profiles.sql`
+- `0017_platforms_reference_table.sql`
+- `0018_sync_adapters_table.sql`
+- `0019_sync_adapter_runs_table.sql`
+- `0020_service_access_registry_table.sql`
+
+### Deferred to Phase 1 UI follow-up
+- `/access/platforms` admin UI
+- `/access/registry` matrix UI (staff × platform)
+- `/access/registry/$staffId` per-staff detail
+- Staff profile Access tab integration
+- Staff directory phone-number column display
+- RBAC matrix test rows for `platforms.*` + `accessRegistry.*`
+- e2e smoke tests for the new pages
+
+### Deferred to Phase 15 stretch (master plan §13.1)
+- All sync adapter implementations (LDAP pilot + Fortigate/Zabbix/Grafana priority order)
+- Conflict detection logic
+- `/access/sync-conflicts` review UI
+- Sync scheduling/cron
+
+---
+
 ## [Phase 0] — 2026-04-23 (shipped 2026-04-25 via #16 squash `3916721`)
 
 > **Note (course correction 2026-04-25):** This entry was written aspirationally when PR #14 merged (planning docs only). The actual migration SQL was committed to the branch afterward but never made it onto main until PR #16 merged on 2026-04-25 with the cherry-picked migrations rebased onto current main. See AGENT_LOG.md for the full course-correction details.
