@@ -63,6 +63,8 @@ export const sidebarData: Omit<SidebarData, "user"> = {
             { title: "Changes", url: "/changes", icon: Wrench },
             { title: "Procurement", url: "/procurement", icon: Wrench, requiredResource: "procurement" },
             { title: "Access Management", url: "/access", icon: Shield },
+            { title: "Access Registry", url: "/access/registry", icon: Shield, requiredResource: "access" },
+            { title: "Platforms", url: "/access/platforms", icon: Shield, requiredResource: "access" },
           ],
         },
       ],

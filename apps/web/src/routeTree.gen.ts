@@ -72,6 +72,8 @@ import { Route as AuthenticatedChangesNewRouteImport } from './routes/_authentic
 import { Route as AuthenticatedChangesChangeIdRouteImport } from './routes/_authenticated/changes/$changeId'
 import { Route as AuthenticatedAppraisalsInboxRouteImport } from './routes/_authenticated/appraisals/inbox'
 import { Route as AuthenticatedAppraisalsAppraisalIdRouteImport } from './routes/_authenticated/appraisals/$appraisalId'
+import { Route as AuthenticatedAccessRegistryRouteImport } from './routes/_authenticated/access/registry'
+import { Route as AuthenticatedAccessPlatformsRouteImport } from './routes/_authenticated/access/platforms'
 import { Route as AuthenticatedAccessAccountIdRouteImport } from './routes/_authenticated/access/$accountId'
 import { Route as AuthenticatedRotaWarningsIndexRouteImport } from './routes/_authenticated/rota/warnings/index'
 import { Route as AuthenticatedRotaFairnessIndexRouteImport } from './routes/_authenticated/rota/fairness/index'
@@ -440,6 +442,18 @@ const AuthenticatedAppraisalsAppraisalIdRoute =
     path: '/appraisals/$appraisalId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAccessRegistryRoute =
+  AuthenticatedAccessRegistryRouteImport.update({
+    id: '/access/registry',
+    path: '/access/registry',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAccessPlatformsRoute =
+  AuthenticatedAccessPlatformsRouteImport.update({
+    id: '/access/platforms',
+    path: '/access/platforms',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAccessAccountIdRoute =
   AuthenticatedAccessAccountIdRouteImport.update({
     id: '/access/$accountId',
@@ -476,6 +490,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/access/$accountId': typeof AuthenticatedAccessAccountIdRoute
+  '/access/platforms': typeof AuthenticatedAccessPlatformsRoute
+  '/access/registry': typeof AuthenticatedAccessRegistryRoute
   '/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRoute
   '/appraisals/inbox': typeof AuthenticatedAppraisalsInboxRoute
   '/changes/$changeId': typeof AuthenticatedChangesChangeIdRoute
@@ -545,6 +561,8 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthenticatedProfileRoute
   '/': typeof AuthenticatedIndexRoute
   '/access/$accountId': typeof AuthenticatedAccessAccountIdRoute
+  '/access/platforms': typeof AuthenticatedAccessPlatformsRoute
+  '/access/registry': typeof AuthenticatedAccessRegistryRoute
   '/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRoute
   '/appraisals/inbox': typeof AuthenticatedAppraisalsInboxRoute
   '/changes/$changeId': typeof AuthenticatedChangesChangeIdRoute
@@ -616,6 +634,8 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/access/$accountId': typeof AuthenticatedAccessAccountIdRoute
+  '/_authenticated/access/platforms': typeof AuthenticatedAccessPlatformsRoute
+  '/_authenticated/access/registry': typeof AuthenticatedAccessRegistryRoute
   '/_authenticated/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRoute
   '/_authenticated/appraisals/inbox': typeof AuthenticatedAppraisalsInboxRoute
   '/_authenticated/changes/$changeId': typeof AuthenticatedChangesChangeIdRoute
@@ -687,6 +707,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/profile'
     | '/access/$accountId'
+    | '/access/platforms'
+    | '/access/registry'
     | '/appraisals/$appraisalId'
     | '/appraisals/inbox'
     | '/changes/$changeId'
@@ -756,6 +778,8 @@ export interface FileRouteTypes {
     | '/profile'
     | '/'
     | '/access/$accountId'
+    | '/access/platforms'
+    | '/access/registry'
     | '/appraisals/$appraisalId'
     | '/appraisals/inbox'
     | '/changes/$changeId'
@@ -826,6 +850,8 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/_authenticated/'
     | '/_authenticated/access/$accountId'
+    | '/_authenticated/access/platforms'
+    | '/_authenticated/access/registry'
     | '/_authenticated/appraisals/$appraisalId'
     | '/_authenticated/appraisals/inbox'
     | '/_authenticated/changes/$changeId'
@@ -1339,6 +1365,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppraisalsAppraisalIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/access/registry': {
+      id: '/_authenticated/access/registry'
+      path: '/access/registry'
+      fullPath: '/access/registry'
+      preLoaderRoute: typeof AuthenticatedAccessRegistryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/access/platforms': {
+      id: '/_authenticated/access/platforms'
+      path: '/access/platforms'
+      fullPath: '/access/platforms'
+      preLoaderRoute: typeof AuthenticatedAccessPlatformsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/access/$accountId': {
       id: '/_authenticated/access/$accountId'
       path: '/access/$accountId'
@@ -1381,6 +1421,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAccessAccountIdRoute: typeof AuthenticatedAccessAccountIdRoute
+  AuthenticatedAccessPlatformsRoute: typeof AuthenticatedAccessPlatformsRoute
+  AuthenticatedAccessRegistryRoute: typeof AuthenticatedAccessRegistryRoute
   AuthenticatedAppraisalsAppraisalIdRoute: typeof AuthenticatedAppraisalsAppraisalIdRoute
   AuthenticatedAppraisalsInboxRoute: typeof AuthenticatedAppraisalsInboxRoute
   AuthenticatedChangesChangeIdRoute: typeof AuthenticatedChangesChangeIdRoute
@@ -1450,6 +1492,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAccessAccountIdRoute: AuthenticatedAccessAccountIdRoute,
+  AuthenticatedAccessPlatformsRoute: AuthenticatedAccessPlatformsRoute,
+  AuthenticatedAccessRegistryRoute: AuthenticatedAccessRegistryRoute,
   AuthenticatedAppraisalsAppraisalIdRoute:
     AuthenticatedAppraisalsAppraisalIdRoute,
   AuthenticatedAppraisalsInboxRoute: AuthenticatedAppraisalsInboxRoute,
