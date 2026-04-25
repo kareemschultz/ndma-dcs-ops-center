@@ -371,7 +371,7 @@ function AppraisalDetailPage() {
   const isReadOnly =
     status === "approved" || status === "completed";
   const canEdit =
-    status === "draft" || status === "in_progress" || status === "scheduled" || status === "rejected";
+    status === "draft" || status === "in_progress" || status === "rejected";
   const canSubmit = canEdit;
   const canApproveReject = isManager && status === "submitted";
 

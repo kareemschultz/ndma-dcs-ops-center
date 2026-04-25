@@ -7,11 +7,9 @@ import {
   companyForms,
   companyPolicies,
   db,
-  attendanceExceptions,
-  callouts,
   contracts,
   departments,
-  examDates,
+  examSchedule,
   importJobs,
   leaveRequests,
   leaveTypes,
@@ -146,7 +144,8 @@ const appraisalRowSchema = z.object({
   periodEnd: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   evaluationType: z.enum(["Standard", "Employee of the Month"]).optional(),
   status: z
-    .enum(["Draft", "Pending_Approval", "Approved_By_Manager", "Processed_By_PA", "Completed"])
+    .enum(["draft", "in_progress", "submitted", "approved", "rejected", "completed", "overdue",
+           "Draft", "Pending_Approval", "Approved_By_Manager", "Processed_By_PA", "Completed"])
     .optional(),
   totalScore: z.string().optional(),
   scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -181,7 +180,7 @@ const examDateRowSchema = z.object({
   staffEmail: z.string().email(),
   examName: z.string().min(1),
   scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  status: z.enum(["Scheduled", "Passed", "Failed"]).optional(),
+  status: z.enum(["scheduled", "passed", "failed", "cancelled", "rescheduled"]).optional(),
 });
 
 const onboardingTaskRowSchema = z.object({
@@ -442,7 +441,6 @@ async function processStaffRow(
     role: data.role ?? "Staff",
     phoneNumber: data.phoneNumber ?? null,
     reportsTo: reportsToId,
-    teamLeadId: reportsToId,
     emergencyContacts:
       data.emergencyContactName || data.emergencyContactPhone
         ? [
@@ -822,25 +820,6 @@ const ppeRowSchema = z.object({
   notes: z.string().optional(),
 });
 
-const attendanceRowSchema = z.object({
-  staffEmail: z.string().email(),
-  exceptionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  exceptionType: z.enum(["reported_sick", "medical", "absent", "lateness", "wfh", "early_leave", "other"]),
-  reason: z.string().optional(),
-  hours: z.string().optional(),
-  minutesLate: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-const calloutRowSchema = z.object({
-  staffEmail: z.string().email(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  startTime: z.string().optional(),
-  endTime: z.string().optional(),
-  hours: z.string().regex(/^\d+(\.\d+)?$/, "hours must be a number"),
-  comments: z.string().optional(),
-  relatedIncidentRef: z.string().optional(),
-});
 
 async function processPpeRow(
   rawRow: Record<string, string>,
@@ -888,83 +867,6 @@ async function processPpeRow(
   return { success: true };
 }
 
-async function processAttendanceRow(
-  rawRow: Record<string, string>,
-  rowIdx: number,
-  _actorUserId: string,
-): Promise<{ success: boolean; error?: { row: number; field?: string; message: string } }> {
-  const parse = attendanceRowSchema.safeParse({
-    staffEmail: rawRow.staffEmail,
-    exceptionDate: rawRow.exceptionDate ?? rawRow.date,
-    exceptionType: rawRow.exceptionType ?? rawRow.type,
-    reason: rawRow.reason || undefined,
-    hours: rawRow.hours || undefined,
-    minutesLate: rawRow.minutesLate || undefined,
-    notes: rawRow.notes || undefined,
-  });
-  if (!parse.success) {
-    return { success: false, error: { row: rowIdx, message: parse.error.issues[0]?.message ?? "Validation failed" } };
-  }
-  const data = parse.data;
-
-  const staffProfileId = await findStaffByEmail(data.staffEmail);
-  if (!staffProfileId) {
-    return { success: false, error: { row: rowIdx, field: "staffEmail", message: `Staff not found: ${data.staffEmail}` } };
-  }
-
-  await db
-    .insert(attendanceExceptions)
-    .values({
-      staffProfileId,
-      exceptionDate: data.exceptionDate,
-      exceptionType: data.exceptionType,
-      reason: data.reason ?? null,
-      hours: data.hours ?? null,
-      minutesLate: data.minutesLate ? parseInt(data.minutesLate, 10) : null,
-      notes: data.notes ?? null,
-    })
-    .onConflictDoNothing();
-
-  return { success: true };
-}
-
-async function processCalloutRow(
-  rawRow: Record<string, string>,
-  rowIdx: number,
-  _actorUserId: string,
-): Promise<{ success: boolean; error?: { row: number; field?: string; message: string } }> {
-  const parse = calloutRowSchema.safeParse({
-    staffEmail: rawRow.staffEmail,
-    date: rawRow.date,
-    startTime: rawRow.startTime || undefined,
-    endTime: rawRow.endTime || undefined,
-    hours: rawRow.hours,
-    comments: rawRow.comments || undefined,
-    relatedIncidentRef: rawRow.relatedIncidentRef || undefined,
-  });
-  if (!parse.success) {
-    return { success: false, error: { row: rowIdx, message: parse.error.issues[0]?.message ?? "Validation failed" } };
-  }
-  const data = parse.data;
-
-  const staffProfileId = await findStaffByEmail(data.staffEmail);
-  if (!staffProfileId) {
-    return { success: false, error: { row: rowIdx, field: "staffEmail", message: `Staff not found: ${data.staffEmail}` } };
-  }
-
-  await db
-    .insert(callouts)
-    .values({
-      staffProfileId,
-      calloutAt: new Date(`${data.date}T${data.startTime ?? "00:00"}:00`),
-      calloutType: "manual",
-      reason: data.comments ?? "Imported callout",
-      outcome: data.endTime ? `End: ${data.endTime}, Hours: ${data.hours}` : `Hours: ${data.hours}`,
-    })
-    .onConflictDoNothing();
-
-  return { success: true };
-}
 
 async function processRosterRow(
   rawRow: Record<string, string>,
@@ -1084,13 +986,7 @@ async function processAppraisalRow(
     periodStart: rawRow.periodStart || rawRow.period_start,
     periodEnd: rawRow.periodEnd || rawRow.period_end,
     evaluationType: (rawRow.evaluationType || rawRow.evaluation_type) as "Standard" | "Employee of the Month" | undefined,
-    status: (rawRow.status || rawRow.workflow_status) as
-      | "Draft"
-      | "Pending_Approval"
-      | "Approved_By_Manager"
-      | "Processed_By_PA"
-      | "Completed"
-      | undefined,
+    status: (rawRow.status || rawRow.workflow_status) as string | undefined,
     totalScore: rawRow.totalScore || rawRow.total_score || undefined,
     scheduledDate: rawRow.scheduledDate || rawRow.scheduled_date || undefined,
     completedDate: rawRow.completedDate || rawRow.completed_date || undefined,
@@ -1114,7 +1010,12 @@ async function processAppraisalRow(
   }
 
   const reviewerId = data.reviewerEmail ? await findStaffByEmail(data.reviewerEmail) : null;
-  const appraisalStatus = data.status ?? "Draft";
+  const legacyStatusMap: Record<string, string> = {
+    Draft: "draft", Pending_Approval: "submitted",
+    Approved_By_Manager: "approved", Processed_By_PA: "completed", Completed: "completed",
+  };
+  const appraisalStatus = (legacyStatusMap[data.status ?? ""] ?? data.status ?? "draft") as
+    "draft" | "in_progress" | "submitted" | "approved" | "rejected" | "completed" | "overdue";
   const existingAppraisal = await db.query.appraisals.findFirst({
     where: and(
       eq(appraisals.staffProfileId, staffProfileId),
@@ -1260,11 +1161,11 @@ async function processExamDateRow(
   if (!staffProfileId) {
     return { success: false, error: { row: rowIdx, field: "staffEmail", message: `Staff not found: ${data.staffEmail}` } };
   }
-  await db.insert(examDates).values({
-    staffId: staffProfileId,
+  await db.insert(examSchedule).values({
+    staffProfileId,
     examName: data.examName,
     scheduledDate: data.scheduledDate,
-    status: data.status ?? "Scheduled",
+    status: data.status ?? "scheduled",
   });
   return { success: true };
 }
@@ -1365,12 +1266,10 @@ export const importRouter = {
           "roster",
           "leave",
           "ppe",
-          "attendance",
-          "callouts",
           "appraisals",
           "calendar_events",
           "promotions",
-          "exam_dates",
+          "exam_schedule",
           "onboarding",
           "policy",
           "forms",
@@ -1437,12 +1336,6 @@ export const importRouter = {
             case "ppe":
               result = await processPpeRow(row, i + 1, context.session.user.id);
               break;
-            case "attendance":
-              result = await processAttendanceRow(row, i + 1, context.session.user.id);
-              break;
-            case "callouts":
-              result = await processCalloutRow(row, i + 1, context.session.user.id);
-              break;
             case "appraisals":
               result = await processAppraisalRow(row, i + 1, context.session.user.id);
               break;
@@ -1452,7 +1345,7 @@ export const importRouter = {
             case "promotions":
               result = await processPromotionRow(row, i + 1);
               break;
-            case "exam_dates":
+            case "exam_schedule":
               result = await processExamDateRow(row, i + 1);
               break;
             case "onboarding":
@@ -1506,7 +1399,6 @@ export const importRouter = {
             .update(staffProfiles)
             .set({
               reportsTo: reportsToId,
-              teamLeadId: reportsToId,
               updatedAt: new Date(),
             })
             .where(eq(staffProfiles.id, staged.profileId));
@@ -1563,12 +1455,10 @@ export const importRouter = {
           "platform_accounts",
           "leave",
           "ppe",
-          "attendance",
-          "callouts",
           "appraisals",
           "calendar_events",
           "promotions",
-          "exam_dates",
+          "exam_schedule",
           "onboarding",
           "policy",
           "forms",

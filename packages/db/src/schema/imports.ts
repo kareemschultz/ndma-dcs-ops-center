@@ -35,7 +35,7 @@ export const importTypeEnum = pgEnum("import_type", [
   "appraisals",
   "calendar_events",
   "promotions",
-  "exam_dates",
+  "exam_schedule",
   "onboarding",
   "policy",
   "forms",

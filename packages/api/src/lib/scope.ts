@@ -1,4 +1,4 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import type { Context } from "../context";
 import { db, departmentAssignments, departments, staffProfiles } from "@ndma-dcs-staff-portal/db";
@@ -55,7 +55,6 @@ export async function getCallerStaffProfile(context: Context) {
     where: eq(staffProfiles.userId, context.session.user.id),
     with: {
       department: true,
-      teamLead: true,
       user: true,
     },
   });
@@ -86,10 +85,7 @@ export async function getDirectReports(context: Context) {
   }
 
   return db.query.staffProfiles.findMany({
-    where: or(
-      eq(staffProfiles.teamLeadId, caller.id),
-      eq(staffProfiles.reportsTo, caller.id),
-    ),
+    where: eq(staffProfiles.reportsTo, caller.id),
     with: {
       department: true,
       user: true,
@@ -131,7 +127,6 @@ export async function getManagedStaffIds(context: Context) {
   const staffRows = await db.select({
     id: staffProfiles.id,
     departmentId: staffProfiles.departmentId,
-    teamLeadId: staffProfiles.teamLeadId,
     reportsTo: staffProfiles.reportsTo,
   }).from(staffProfiles);
 
@@ -140,7 +135,6 @@ export async function getManagedStaffIds(context: Context) {
     if (
       accessibleDepartments.has(row.departmentId) ||
       directReportIds.has(row.id) ||
-      row.teamLeadId === caller.id ||
       row.reportsTo === caller.id
     ) {
       managedIds.add(row.id);
@@ -171,16 +165,11 @@ export async function canAccessStaffPrivate(
     where: eq(staffProfiles.id, staffProfileId),
     with: {
       department: true,
-      teamLead: true,
     },
   });
 
   if (!target) {
     return false;
-  }
-
-  if (target.teamLeadId === caller.id) {
-    return true;
   }
 
   if (target.reportsTo === caller.id) {

@@ -64,8 +64,6 @@ import { Route as AuthenticatedLeaveCalendarRouteImport } from './routes/_authen
 import { Route as AuthenticatedIncidentsNewRouteImport } from './routes/_authenticated/incidents/new'
 import { Route as AuthenticatedIncidentsIncidentIdRouteImport } from './routes/_authenticated/incidents/$incidentId'
 import { Route as AuthenticatedHrPpeRouteImport } from './routes/_authenticated/hr/ppe'
-import { Route as AuthenticatedHrCalloutsRouteImport } from './routes/_authenticated/hr/callouts'
-import { Route as AuthenticatedHrAttendanceRouteImport } from './routes/_authenticated/hr/attendance'
 import { Route as AuthenticatedCyclesCycleIdRouteImport } from './routes/_authenticated/cycles/$cycleId'
 import { Route as AuthenticatedComplianceTrainingRouteImport } from './routes/_authenticated/compliance/training'
 import { Route as AuthenticatedCompliancePpeRouteImport } from './routes/_authenticated/compliance/ppe'
@@ -395,17 +393,6 @@ const AuthenticatedHrPpeRoute = AuthenticatedHrPpeRouteImport.update({
   path: '/hr/ppe',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedHrCalloutsRoute = AuthenticatedHrCalloutsRouteImport.update({
-  id: '/hr/callouts',
-  path: '/hr/callouts',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedHrAttendanceRoute =
-  AuthenticatedHrAttendanceRouteImport.update({
-    id: '/hr/attendance',
-    path: '/hr/attendance',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedCyclesCycleIdRoute =
   AuthenticatedCyclesCycleIdRouteImport.update({
     id: '/cycles/$cycleId',
@@ -497,8 +484,6 @@ export interface FileRoutesByFullPath {
   '/compliance/ppe': typeof AuthenticatedCompliancePpeRoute
   '/compliance/training': typeof AuthenticatedComplianceTrainingRoute
   '/cycles/$cycleId': typeof AuthenticatedCyclesCycleIdRoute
-  '/hr/attendance': typeof AuthenticatedHrAttendanceRoute
-  '/hr/callouts': typeof AuthenticatedHrCalloutsRoute
   '/hr/ppe': typeof AuthenticatedHrPpeRoute
   '/incidents/$incidentId': typeof AuthenticatedIncidentsIncidentIdRoute
   '/incidents/new': typeof AuthenticatedIncidentsNewRoute
@@ -568,8 +553,6 @@ export interface FileRoutesByTo {
   '/compliance/ppe': typeof AuthenticatedCompliancePpeRoute
   '/compliance/training': typeof AuthenticatedComplianceTrainingRoute
   '/cycles/$cycleId': typeof AuthenticatedCyclesCycleIdRoute
-  '/hr/attendance': typeof AuthenticatedHrAttendanceRoute
-  '/hr/callouts': typeof AuthenticatedHrCalloutsRoute
   '/hr/ppe': typeof AuthenticatedHrPpeRoute
   '/incidents/$incidentId': typeof AuthenticatedIncidentsIncidentIdRoute
   '/incidents/new': typeof AuthenticatedIncidentsNewRoute
@@ -641,8 +624,6 @@ export interface FileRoutesById {
   '/_authenticated/compliance/ppe': typeof AuthenticatedCompliancePpeRoute
   '/_authenticated/compliance/training': typeof AuthenticatedComplianceTrainingRoute
   '/_authenticated/cycles/$cycleId': typeof AuthenticatedCyclesCycleIdRoute
-  '/_authenticated/hr/attendance': typeof AuthenticatedHrAttendanceRoute
-  '/_authenticated/hr/callouts': typeof AuthenticatedHrCalloutsRoute
   '/_authenticated/hr/ppe': typeof AuthenticatedHrPpeRoute
   '/_authenticated/incidents/$incidentId': typeof AuthenticatedIncidentsIncidentIdRoute
   '/_authenticated/incidents/new': typeof AuthenticatedIncidentsNewRoute
@@ -714,8 +695,6 @@ export interface FileRouteTypes {
     | '/compliance/ppe'
     | '/compliance/training'
     | '/cycles/$cycleId'
-    | '/hr/attendance'
-    | '/hr/callouts'
     | '/hr/ppe'
     | '/incidents/$incidentId'
     | '/incidents/new'
@@ -785,8 +764,6 @@ export interface FileRouteTypes {
     | '/compliance/ppe'
     | '/compliance/training'
     | '/cycles/$cycleId'
-    | '/hr/attendance'
-    | '/hr/callouts'
     | '/hr/ppe'
     | '/incidents/$incidentId'
     | '/incidents/new'
@@ -857,8 +834,6 @@ export interface FileRouteTypes {
     | '/_authenticated/compliance/ppe'
     | '/_authenticated/compliance/training'
     | '/_authenticated/cycles/$cycleId'
-    | '/_authenticated/hr/attendance'
-    | '/_authenticated/hr/callouts'
     | '/_authenticated/hr/ppe'
     | '/_authenticated/incidents/$incidentId'
     | '/_authenticated/incidents/new'
@@ -1308,20 +1283,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHrPpeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/hr/callouts': {
-      id: '/_authenticated/hr/callouts'
-      path: '/hr/callouts'
-      fullPath: '/hr/callouts'
-      preLoaderRoute: typeof AuthenticatedHrCalloutsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/hr/attendance': {
-      id: '/_authenticated/hr/attendance'
-      path: '/hr/attendance'
-      fullPath: '/hr/attendance'
-      preLoaderRoute: typeof AuthenticatedHrAttendanceRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/cycles/$cycleId': {
       id: '/_authenticated/cycles/$cycleId'
       path: '/cycles/$cycleId'
@@ -1428,8 +1389,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCompliancePpeRoute: typeof AuthenticatedCompliancePpeRoute
   AuthenticatedComplianceTrainingRoute: typeof AuthenticatedComplianceTrainingRoute
   AuthenticatedCyclesCycleIdRoute: typeof AuthenticatedCyclesCycleIdRoute
-  AuthenticatedHrAttendanceRoute: typeof AuthenticatedHrAttendanceRoute
-  AuthenticatedHrCalloutsRoute: typeof AuthenticatedHrCalloutsRoute
   AuthenticatedHrPpeRoute: typeof AuthenticatedHrPpeRoute
   AuthenticatedIncidentsIncidentIdRoute: typeof AuthenticatedIncidentsIncidentIdRoute
   AuthenticatedIncidentsNewRoute: typeof AuthenticatedIncidentsNewRoute
@@ -1500,8 +1459,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCompliancePpeRoute: AuthenticatedCompliancePpeRoute,
   AuthenticatedComplianceTrainingRoute: AuthenticatedComplianceTrainingRoute,
   AuthenticatedCyclesCycleIdRoute: AuthenticatedCyclesCycleIdRoute,
-  AuthenticatedHrAttendanceRoute: AuthenticatedHrAttendanceRoute,
-  AuthenticatedHrCalloutsRoute: AuthenticatedHrCalloutsRoute,
   AuthenticatedHrPpeRoute: AuthenticatedHrPpeRoute,
   AuthenticatedIncidentsIncidentIdRoute: AuthenticatedIncidentsIncidentIdRoute,
   AuthenticatedIncidentsNewRoute: AuthenticatedIncidentsNewRoute,

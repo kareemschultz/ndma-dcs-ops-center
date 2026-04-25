@@ -15,8 +15,8 @@ setup("authenticate", async ({ page }) => {
   await page.waitForLoadState("domcontentloaded");
 
   // Fill email (htmlFor="email", type="email")
-  await page.fill('input[name="email"]', "admin@ndma.gov.gh");
-  await page.fill('input[name="password"]', "password123");
+  await page.fill('input[name="email"]', "admin@ndma.gov");
+  await page.fill('input[name="password"]', "admin1234");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
 
   // Wait for redirect to dashboard (unauthenticated redirects to /login, so

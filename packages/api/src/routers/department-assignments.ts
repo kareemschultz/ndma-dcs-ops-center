@@ -66,7 +66,6 @@ export const departmentAssignmentsRouter = {
           with: {
             user: true,
             department: true,
-            teamLead: true,
           },
         },
         department: true,

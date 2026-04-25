@@ -7,6 +7,15 @@ export const calendarEventTypeEnum = pgEnum("calendar_event_type", [
   "Birthday",
   "Training",
   "Event",
+  "public_holiday",
+  "exam",
+  "contract_renewal",
+  "appraisal_due",
+  "appraisal_followup",
+  "ppe_review",
+  "routine_maintenance",
+  "server_room_cleaning",
+  "custom",
 ]);
 
 export const calendarEvents = pgTable("calendar_events", {

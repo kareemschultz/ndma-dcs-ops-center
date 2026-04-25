@@ -643,13 +643,13 @@ function AppraisalsPage() {
                             Submit for Approval
                           </Button>
                         )}
-                        {(row.status === "Pending_Approval" || row.status === "submitted") && (
+                        {row.status === "submitted" && (
                           <Button size="sm" onClick={() => approveWorkflow.mutate({ id: row.id })}>
                             <ShieldCheck className="mr-1.5 size-3.5" />
                             Approve
                           </Button>
                         )}
-                        {(row.status === "Approved_By_Manager" || row.status === "approved") && (
+                        {row.status === "approved" && (
                           <Button size="sm" onClick={() => processWorkflow.mutate({ id: row.id })}>
                             <Inbox className="mr-1.5 size-3.5" />
                             Export &amp; Send to HR

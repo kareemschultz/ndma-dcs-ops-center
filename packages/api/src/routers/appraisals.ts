@@ -6,7 +6,7 @@ import {
   appraisals,
   appraisalFollowups,
   appraisalTracker,
-  examDates,
+  examSchedule,
   db,
   staffProfiles,
   staffPromotions,
@@ -35,7 +35,6 @@ const ratingMatrixSchema = z.object({
 
 const appraisalStatusSchema = z.enum([
   "draft",
-  "scheduled",
   "in_progress",
   "submitted",
   "approved",
@@ -43,10 +42,6 @@ const appraisalStatusSchema = z.enum([
   "completed",
   "overdue",
 ]);
-
-function normalizeKey(value: string) {
-  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
-}
 
 function computePercentage(ratingMatrix: Record<string, number>) {
   const values = Object.values(ratingMatrix);
@@ -118,7 +113,7 @@ async function fetchAppraisal(id: string) {
   return db.query.appraisals.findFirst({
     where: eq(appraisals.id, id),
     with: {
-      staffProfile: { with: { user: true, department: true, teamLead: true } },
+      staffProfile: { with: { user: true, department: true } },
       reviewer: { with: { user: true } },
       teamLead: { with: { user: true } },
       scores: true,
@@ -147,17 +142,15 @@ function parseAverageScore(rows: Array<{ totalScore: number | null }>) {
   return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
 }
 
-function normalizeKpiStatus(status: string | null | undefined) {
-  const normalized = normalizeKey(String(status ?? ""));
-  if (!normalized) return "Other";
-  if (normalized.includes("draft")) return "Draft";
-  if (normalized.includes("pending") || normalized.includes("submit")) return "Pending_Approval";
-  if (normalized.includes("approved")) return "Approved_By_Manager";
-  if (normalized.includes("processed")) return "Processed_By_PA";
-  if (normalized.includes("complete")) return "Completed";
-  if (normalized.includes("reject")) return "Rejected";
-  if (normalized.includes("overdue")) return "Overdue";
-  return "Other";
+function normalizeKpiStatus(status: string | null | undefined): string {
+  const s = String(status ?? "").toLowerCase();
+  if (s === "draft" || s === "in_progress") return "draft";
+  if (s === "submitted") return "submitted";
+  if (s === "approved") return "approved";
+  if (s === "completed") return "completed";
+  if (s === "rejected") return "rejected";
+  if (s === "overdue") return "overdue";
+  return "other";
 }
 
 async function resolveAppraisalScope(
@@ -278,7 +271,7 @@ export const appraisalsRouter = {
       return db.query.appraisals.findMany({
         where: conditions.length > 0 ? and(...conditions) : undefined,
         with: {
-          staffProfile: { with: { user: true, department: true, teamLead: true } },
+          staffProfile: { with: { user: true, department: true } },
           reviewer: { with: { user: true } },
           teamLead: { with: { user: true } },
           cycle: true,
@@ -335,7 +328,7 @@ export const appraisalsRouter = {
 
       const staffProfile = await db.query.staffProfiles.findFirst({
         where: eq(staffProfiles.id, input.staffProfileId),
-        with: { user: true, department: true, teamLead: true },
+        with: { user: true, department: true },
       });
       if (!staffProfile) {
         throw new ORPCError("NOT_FOUND", { message: "Staff profile not found." });
@@ -438,7 +431,7 @@ export const appraisalsRouter = {
         for (const appraisal of appraisalRows) {
           const bucket = normalizeKpiStatus(appraisal.status);
           statusCounts.set(bucket, (statusCounts.get(bucket) ?? 0) + 1);
-          if (bucket === "Completed" || bucket === "Processed_By_PA") {
+          if (bucket === "completed" || bucket === "approved") {
             completedFinal += 1;
           }
 
@@ -460,7 +453,7 @@ export const appraisalsRouter = {
             averageScore: null,
           };
           existing.total += 1;
-          if (bucket === "Completed" || bucket === "Processed_By_PA") {
+          if (bucket === "completed" || bucket === "approved") {
             existing.completed += 1;
           }
           if (typeof appraisal.totalScore === "number") {
@@ -511,11 +504,11 @@ export const appraisalsRouter = {
           totalEvaluations,
           averageScore,
           completionRate,
-          pendingCount: statusCounts.get("Pending_Approval") ?? 0,
-          approvedCount: statusCounts.get("Approved_By_Manager") ?? 0,
-          processedCount: statusCounts.get("Processed_By_PA") ?? 0,
-          completedCount: statusCounts.get("Completed") ?? 0,
-          overdueCount: statusCounts.get("Overdue") ?? 0,
+          pendingCount: statusCounts.get("submitted") ?? 0,
+          approvedCount: statusCounts.get("approved") ?? 0,
+          processedCount: statusCounts.get("approved") ?? 0,
+          completedCount: statusCounts.get("completed") ?? 0,
+          overdueCount: statusCounts.get("overdue") ?? 0,
           dueSoonFollowups,
           overdueFollowups,
           scoreBands: [...scoreBands.entries()].map(([label, count]) => ({ label, count })),
@@ -661,11 +654,11 @@ export const appraisalsRouter = {
           team: z.enum(["DCS", "NOC"]).optional(),
           status: z
             .enum([
-              "Draft",
-              "Pending_Approval",
-              "Approved_By_Manager",
-              "Processed_By_PA",
-              "Completed",
+              "draft",
+              "in_progress",
+              "submitted",
+              "approved",
+              "completed",
             ])
             .optional(),
         }),
@@ -682,12 +675,8 @@ export const appraisalsRouter = {
         } else {
           conditions.push(
             inArray(appraisals.status, [
-              "Draft",
-              "Pending_Approval",
-              "Approved_By_Manager",
-              "Processed_By_PA",
-              "Completed",
               "draft",
+              "in_progress",
               "submitted",
               "approved",
               "completed",
@@ -725,7 +714,7 @@ export const appraisalsRouter = {
         const [updated] = await db
           .update(appraisals)
           .set({
-            status: "Pending_Approval",
+            status: "submitted",
             submittedAt: new Date(),
             submittedById: context.session.user.id,
             updatedAt: new Date(),
@@ -771,7 +760,7 @@ export const appraisalsRouter = {
         const [updated] = await db
           .update(appraisals)
           .set({
-            status: "Approved_By_Manager",
+            status: "approved",
             approvedAt: new Date(),
             approvedById: context.session.user.id,
             updatedAt: new Date(),
@@ -817,7 +806,7 @@ export const appraisalsRouter = {
         const [updated] = await db
           .update(appraisals)
           .set({
-            status: "Processed_By_PA",
+            status: "completed",
             updatedAt: new Date(),
           })
           .where(eq(appraisals.id, input.id))
@@ -859,18 +848,18 @@ export const appraisalsRouter = {
         z.object({
           staffProfileId: z.string().optional(),
           team: z.enum(["DCS", "NOC"]).optional(),
-          status: z.enum(["Scheduled", "Passed", "Failed"]).optional(),
+          status: z.enum(["scheduled", "passed", "failed", "cancelled", "rescheduled"]).optional(),
         }),
       )
       .handler(async ({ input, context }) => {
         const conditions = [];
         if (input.staffProfileId) {
           await assertVisibleOrThrow(context, input.staffProfileId);
-          conditions.push(eq(examDates.staffId, input.staffProfileId));
+          conditions.push(eq(examSchedule.staffProfileId, input.staffProfileId));
         } else if (input.team) {
           const teamStaffIds = await getTeamStaffIds(input.team);
           if (teamStaffIds.length === 0) return [];
-          conditions.push(inArray(examDates.staffId, teamStaffIds));
+          conditions.push(inArray(examSchedule.staffProfileId, teamStaffIds));
         } else {
           const role = context.userRole ?? "";
           if (role !== "admin" && role !== "hrAdminOps") {
@@ -878,16 +867,16 @@ export const appraisalsRouter = {
             const caller = await getCallerStaffProfile(context);
             if (caller?.id) managed.add(caller.id);
             if (managed.size === 0) return [];
-            conditions.push(inArray(examDates.staffId, [...managed]));
+            conditions.push(inArray(examSchedule.staffProfileId, [...managed]));
           }
         }
 
-        if (input.status) conditions.push(eq(examDates.status, input.status));
+        if (input.status) conditions.push(eq(examSchedule.status, input.status));
 
-        return db.query.examDates.findMany({
+        return db.query.examSchedule.findMany({
           where: conditions.length > 0 ? and(...conditions) : undefined,
           with: { staffProfile: { with: { user: true, department: true } } },
-          orderBy: [asc(examDates.scheduledDate), asc(examDates.examName)],
+          orderBy: [asc(examSchedule.scheduledDate), asc(examSchedule.examName)],
         });
       }),
   },
@@ -993,7 +982,7 @@ export const appraisalsRouter = {
     return db.query.appraisals.findMany({
       where: and(...conditions),
       with: {
-        staffProfile: { with: { user: true, department: true, teamLead: true } },
+        staffProfile: { with: { user: true, department: true } },
         reviewer: { with: { user: true } },
         teamLead: { with: { user: true } },
       },
@@ -1048,11 +1037,11 @@ export const appraisalsRouter = {
           year: input.year ?? Number(input.periodStart.slice(0, 4)),
           period: input.period ?? `${input.periodStart} - ${input.periodEnd}`,
           totalScore: input.totalScore ?? null,
-          teamLeadId: staffProfile.teamLeadId ?? null,
+          teamLeadId: null,
           periodStart: input.periodStart,
           periodEnd: input.periodEnd,
           scheduledDate: input.scheduledDate ?? null,
-          status: input.scheduledDate ? "scheduled" : "draft",
+          status: "draft",
           objectives: input.objectives ?? null,
           achievements: input.achievements ?? null,
           goals: input.goals ?? null,

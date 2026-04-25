@@ -200,11 +200,11 @@ export const appraisalCyclesRouter = {
           .values({
             cycleId: cycle.id,
             staffProfileId: profile.id,
-            teamLeadId: profile.teamLeadId ?? null,
+            teamLeadId: null,
             periodStart: cycle.startDate,
             periodEnd: cycle.endDate,
             scheduledDate: input.scheduledDate ?? cycle.startDate,
-            status: "scheduled",
+            status: "draft",
           })
           .returning();
         if (row) {

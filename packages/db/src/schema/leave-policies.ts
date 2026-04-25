@@ -32,6 +32,8 @@ export const leavePolicies = pgTable(
       .notNull()
       .default(false),
     allowCarryOver: boolean("allow_carry_over").notNull().default(false),
+    allowRollover: boolean("allow_rollover").notNull().default(false),
+    blockedMonths: text("blocked_months").array().default([]),
     isActive: boolean("is_active").notNull().default(true),
     notes: text("notes"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
