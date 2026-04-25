@@ -5,6 +5,18 @@
 >
 > Authoritative spec: [`docs/superpowers/plans/2026-04-23-master-remediation-plan.md`](docs/superpowers/plans/2026-04-23-master-remediation-plan.md)
 
+## ⚠️ Hard rules from 2026-04-25 course correction
+
+The following multi-agent failure modes are documented in CLAUDE.md "Lessons learned" — they apply to every agent (Codex, Copilot, Claude, etc.):
+
+1. **Verify by SHA, not by prose.** Before claiming a phase is done or starting the next phase, check `git log <gate-SHA> --stat` to confirm the migration files are actually in the commit. CHANGELOG/AGENT_LOG can be aspirational.
+2. **No aspirational CHANGELOG entries.** Write the CHANGELOG as part of the gate-ceremony commit AFTER the phase merges, OR prefix with `⚠️ ASPIRATIONAL — not yet shipped`.
+3. **One PR per phase.** If a branch's PR is merged but new commits are pushed to that branch afterward, those commits are stranded — open a new PR.
+4. **CI > local typecheck.** Turbo caches stale results. `rm -rf .turbo` before final verification, or rely on GitHub Actions CI.
+5. **Read AGENT_LOG's last 3 entries literally.** The most recent entry may override the one below it (e.g., a course correction).
+
+**Do NOT merge from these stale Codex branches:** `codex/phase1-foundation`, `codex/phase2-appraisals`, `codex/phase3-operational-hr`, `codex/phase4-shift-scheduling`, `codex/phase5-leave-policy`. Their phase numbering predates and does not match the 2026-04-23 master plan.
+
 > This file is for AI assistants (OpenAI Codex, GitHub Copilot Workspace, etc.).
 > It contains the same critical project context as CLAUDE.md, written in
 > AI-assistant-neutral language.

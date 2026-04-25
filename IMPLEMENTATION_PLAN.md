@@ -19,7 +19,7 @@
 | # | Phase | Status | Branch | Agent | Gate commit | Date |
 |---|---|---|---|---|---|---|
 | — | Planning session | 🟢 Done | `planning/2026-04-23-master` | Claude Code opusplan + Claude web opus-4.7 audit | (this commit) | 2026-04-23 |
-| 0 | Stabilise & delete | 🟢 Done | — | Claude Code (opusplan) | 324f3f6 | 2026-04-23 |
+| 0 | Stabilise & delete | 🟢 Done | — | Claude Code + Codex (course-corrected) | 3916721 | 2026-04-25 |
 | 1 | People & access registry | ⬜ Queued | — | — | — | — |
 | 2 | Leave refactor | ⬜ Queued | — | — | — | — |
 | 3 | Scheduling unification | ⬜ Queued | — | — | — | — |
