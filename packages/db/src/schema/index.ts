@@ -37,3 +37,8 @@ export * from "./automation";
 export * from "./leave-policies";
 export * from "./attendance-logs";
 export * from "./lateness-records";
+// Phase 1 — Access Registry (3-layer hybrid sync model, master plan §5.2)
+export * from "./platforms";
+export * from "./sync-adapters";
+export * from "./sync-adapter-runs";
+export * from "./service-access-registry";

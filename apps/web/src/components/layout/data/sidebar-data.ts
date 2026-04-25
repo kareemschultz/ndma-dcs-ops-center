@@ -126,7 +126,6 @@ export const sidebarData: Omit<SidebarData, "user"> = {
             { title: "Leave Management", url: "/leave", icon: CalendarOff },
             { title: "Career Progression", url: "/career-progression", icon: ClipboardCheck },
             { title: "Contracts", url: "/contracts", icon: FileText, requiredResource: "contract" },
-            { title: "PPE & Tools", url: "/hr/ppe", icon: Shield },
             { title: "PPE Compliance", url: "/compliance/ppe", icon: Shield, requiredResource: "compliance" },
           ],
         },
