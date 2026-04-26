@@ -9,9 +9,11 @@ import {
   Clock3,
   Download,
   HardHat,
+  Key,
   ListChecks,
   Mail,
   Pencil,
+  Shield,
   ShieldCheck,
   Users,
   BookOpen,
@@ -519,6 +521,128 @@ function AppraisalsTab({ staffProfileId }: { staffProfileId: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Access Tab
+// ---------------------------------------------------------------------------
+
+const PRIVILEGE_COLORS: Record<string, string> = {
+  admin: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
+  operator: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
+  read_only: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200",
+  auditor: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200",
+  custom: "bg-muted text-muted-foreground",
+  none: "bg-muted text-muted-foreground line-through",
+};
+
+function PrivilegePill({ level }: { level: string | null }) {
+  if (!level) return <span className="text-xs text-muted-foreground">—</span>;
+  return (
+    <span
+      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+        PRIVILEGE_COLORS[level] ?? PRIVILEGE_COLORS.custom
+      }`}
+    >
+      {level.replace(/_/g, " ")}
+    </span>
+  );
+}
+
+function AccessTab({ staffProfileId }: { staffProfileId: string }) {
+  const { data: rows, isLoading } = useQuery(
+    orpc.accessRegistry.listByStaff.queryOptions({ input: { staffId: staffProfileId } }),
+  );
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-10 w-full" />
+        ))}
+      </div>
+    );
+  }
+
+  if (!rows || rows.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed py-12 text-center text-muted-foreground">
+        <Shield className="mx-auto mb-3 h-8 w-8 opacity-50" />
+        <p className="font-medium text-foreground">No platform accounts</p>
+        <p className="mt-1 text-sm">
+          No service access registry entries found for this staff member.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {rows.length} platform account{rows.length !== 1 ? "s" : ""} registered
+        </p>
+        <Link to="/access/registry/$staffId" params={{ staffId: staffProfileId }}>
+          <Button variant="outline" size="sm">
+            <Key className="mr-1.5 size-3.5" />
+            Full registry view
+          </Button>
+        </Link>
+      </div>
+      <div className="rounded-md border">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-muted/50">
+              <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Platform</th>
+              <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Username</th>
+              <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Privilege</th>
+              <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Groups</th>
+              <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} className="border-b last:border-0">
+                <td className="px-4 py-3 font-medium">
+                  {r.platform?.name ?? <span className="text-muted-foreground">—</span>}
+                </td>
+                <td className="px-4 py-3 font-mono text-xs">
+                  {r.accountUsername ?? <span className="text-muted-foreground">—</span>}
+                </td>
+                <td className="px-4 py-3">
+                  <PrivilegePill level={r.privilegeLevel} />
+                </td>
+                <td className="px-4 py-3 max-w-xs">
+                  {r.privilegeGroups && r.privilegeGroups.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {r.privilegeGroups.map((g) => (
+                        <span key={g} className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+                          {g}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  <span
+                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                      r.accountActive
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200"
+                        : "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200"
+                    }`}
+                  >
+                    {r.accountActive ? "Active" : "Inactive"}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
@@ -617,6 +741,7 @@ function StaffProfilePage() {
             <TabsTrigger value="appraisals">Appraisals</TabsTrigger>
             <TabsTrigger value="operational">Operational HR</TabsTrigger>
             <TabsTrigger value="policy">Policy & Compliance</TabsTrigger>
+            <TabsTrigger value="access">Access</TabsTrigger>
           </TabsList>
 
           {/* ----------------------------------------------------------------
@@ -856,6 +981,13 @@ function StaffProfilePage() {
                 </Link>
               </div>
             </div>
+          </TabsContent>
+
+          {/* ----------------------------------------------------------------
+              Access Tab
+          ---------------------------------------------------------------- */}
+          <TabsContent value="access" className="space-y-4">
+            <AccessTab staffProfileId={staffId} />
           </TabsContent>
         </Tabs>
       </Main>
