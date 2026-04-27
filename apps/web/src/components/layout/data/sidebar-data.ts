@@ -81,7 +81,8 @@ export const sidebarData: Omit<SidebarData, "user"> = {
           title: "DCS On-Call",
           icon: CalendarClock,
           items: [
-            { title: "On-Call", url: "/rota", icon: CalendarClock },
+            { title: "DCS Weekly View", url: "/scheduling/dcs-oncall", icon: CalendarClock },
+            { title: "On-Call (Legacy)", url: "/rota", icon: CalendarClock },
             { title: "Planner", url: "/rota/planner", icon: Wrench },
             { title: "Swaps", url: "/rota/swaps", icon: CalendarRange },
             { title: "Calendar", url: "/rota/calendar", icon: CalendarClock },
@@ -94,7 +95,8 @@ export const sidebarData: Omit<SidebarData, "user"> = {
           title: "NOC Scheduling",
           icon: CalendarRange,
           items: [
-            { title: "NOC Shifts", url: "/roster", icon: CalendarRange },
+            { title: "NOC Shift Grid", url: "/scheduling/noc-shifts", icon: CalendarRange },
+            { title: "NOC Shifts (Legacy)", url: "/roster", icon: CalendarRange },
             { title: "Planner", url: "/roster/planner", icon: Wrench },
             { title: "Today", url: "/roster/today", icon: CalendarClock },
             { title: "My Roster", url: "/roster/my-roster", icon: Users },

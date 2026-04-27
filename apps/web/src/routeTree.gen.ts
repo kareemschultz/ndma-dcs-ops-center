@@ -50,6 +50,8 @@ import { Route as AuthenticatedSettingsEscalationRouteImport } from './routes/_a
 import { Route as AuthenticatedSettingsDepartmentsRouteImport } from './routes/_authenticated/settings/departments'
 import { Route as AuthenticatedSettingsDepartmentAssignmentsRouteImport } from './routes/_authenticated/settings/department-assignments'
 import { Route as AuthenticatedSettingsAutomationRouteImport } from './routes/_authenticated/settings/automation'
+import { Route as AuthenticatedSchedulingNocShiftsRouteImport } from './routes/_authenticated/scheduling/noc-shifts'
+import { Route as AuthenticatedSchedulingDcsOncallRouteImport } from './routes/_authenticated/scheduling/dcs-oncall'
 import { Route as AuthenticatedRotaSwapsRouteImport } from './routes/_authenticated/rota/swaps'
 import { Route as AuthenticatedRotaPlannerRouteImport } from './routes/_authenticated/rota/planner'
 import { Route as AuthenticatedRotaHistoryRouteImport } from './routes/_authenticated/rota/history'
@@ -316,6 +318,18 @@ const AuthenticatedSettingsAutomationRoute =
     path: '/settings/automation',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSchedulingNocShiftsRoute =
+  AuthenticatedSchedulingNocShiftsRouteImport.update({
+    id: '/scheduling/noc-shifts',
+    path: '/scheduling/noc-shifts',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSchedulingDcsOncallRoute =
+  AuthenticatedSchedulingDcsOncallRouteImport.update({
+    id: '/scheduling/dcs-oncall',
+    path: '/scheduling/dcs-oncall',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRotaSwapsRoute = AuthenticatedRotaSwapsRouteImport.update({
   id: '/rota/swaps',
   path: '/rota/swaps',
@@ -528,6 +542,8 @@ export interface FileRoutesByFullPath {
   '/rota/history': typeof AuthenticatedRotaHistoryRoute
   '/rota/planner': typeof AuthenticatedRotaPlannerRoute
   '/rota/swaps': typeof AuthenticatedRotaSwapsRoute
+  '/scheduling/dcs-oncall': typeof AuthenticatedSchedulingDcsOncallRoute
+  '/scheduling/noc-shifts': typeof AuthenticatedSchedulingNocShiftsRoute
   '/settings/automation': typeof AuthenticatedSettingsAutomationRoute
   '/settings/department-assignments': typeof AuthenticatedSettingsDepartmentAssignmentsRoute
   '/settings/departments': typeof AuthenticatedSettingsDepartmentsRoute
@@ -601,6 +617,8 @@ export interface FileRoutesByTo {
   '/rota/history': typeof AuthenticatedRotaHistoryRoute
   '/rota/planner': typeof AuthenticatedRotaPlannerRoute
   '/rota/swaps': typeof AuthenticatedRotaSwapsRoute
+  '/scheduling/dcs-oncall': typeof AuthenticatedSchedulingDcsOncallRoute
+  '/scheduling/noc-shifts': typeof AuthenticatedSchedulingNocShiftsRoute
   '/settings/automation': typeof AuthenticatedSettingsAutomationRoute
   '/settings/department-assignments': typeof AuthenticatedSettingsDepartmentAssignmentsRoute
   '/settings/departments': typeof AuthenticatedSettingsDepartmentsRoute
@@ -676,6 +694,8 @@ export interface FileRoutesById {
   '/_authenticated/rota/history': typeof AuthenticatedRotaHistoryRoute
   '/_authenticated/rota/planner': typeof AuthenticatedRotaPlannerRoute
   '/_authenticated/rota/swaps': typeof AuthenticatedRotaSwapsRoute
+  '/_authenticated/scheduling/dcs-oncall': typeof AuthenticatedSchedulingDcsOncallRoute
+  '/_authenticated/scheduling/noc-shifts': typeof AuthenticatedSchedulingNocShiftsRoute
   '/_authenticated/settings/automation': typeof AuthenticatedSettingsAutomationRoute
   '/_authenticated/settings/department-assignments': typeof AuthenticatedSettingsDepartmentAssignmentsRoute
   '/_authenticated/settings/departments': typeof AuthenticatedSettingsDepartmentsRoute
@@ -751,6 +771,8 @@ export interface FileRouteTypes {
     | '/rota/history'
     | '/rota/planner'
     | '/rota/swaps'
+    | '/scheduling/dcs-oncall'
+    | '/scheduling/noc-shifts'
     | '/settings/automation'
     | '/settings/department-assignments'
     | '/settings/departments'
@@ -824,6 +846,8 @@ export interface FileRouteTypes {
     | '/rota/history'
     | '/rota/planner'
     | '/rota/swaps'
+    | '/scheduling/dcs-oncall'
+    | '/scheduling/noc-shifts'
     | '/settings/automation'
     | '/settings/department-assignments'
     | '/settings/departments'
@@ -898,6 +922,8 @@ export interface FileRouteTypes {
     | '/_authenticated/rota/history'
     | '/_authenticated/rota/planner'
     | '/_authenticated/rota/swaps'
+    | '/_authenticated/scheduling/dcs-oncall'
+    | '/_authenticated/scheduling/noc-shifts'
     | '/_authenticated/settings/automation'
     | '/_authenticated/settings/department-assignments'
     | '/_authenticated/settings/departments'
@@ -1236,6 +1262,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsAutomationRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/scheduling/noc-shifts': {
+      id: '/_authenticated/scheduling/noc-shifts'
+      path: '/scheduling/noc-shifts'
+      fullPath: '/scheduling/noc-shifts'
+      preLoaderRoute: typeof AuthenticatedSchedulingNocShiftsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/scheduling/dcs-oncall': {
+      id: '/_authenticated/scheduling/dcs-oncall'
+      path: '/scheduling/dcs-oncall'
+      fullPath: '/scheduling/dcs-oncall'
+      preLoaderRoute: typeof AuthenticatedSchedulingDcsOncallRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/rota/swaps': {
       id: '/_authenticated/rota/swaps'
       path: '/rota/swaps'
@@ -1500,6 +1540,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRotaHistoryRoute: typeof AuthenticatedRotaHistoryRoute
   AuthenticatedRotaPlannerRoute: typeof AuthenticatedRotaPlannerRoute
   AuthenticatedRotaSwapsRoute: typeof AuthenticatedRotaSwapsRoute
+  AuthenticatedSchedulingDcsOncallRoute: typeof AuthenticatedSchedulingDcsOncallRoute
+  AuthenticatedSchedulingNocShiftsRoute: typeof AuthenticatedSchedulingNocShiftsRoute
   AuthenticatedSettingsAutomationRoute: typeof AuthenticatedSettingsAutomationRoute
   AuthenticatedSettingsDepartmentAssignmentsRoute: typeof AuthenticatedSettingsDepartmentAssignmentsRoute
   AuthenticatedSettingsDepartmentsRoute: typeof AuthenticatedSettingsDepartmentsRoute
@@ -1574,6 +1616,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRotaHistoryRoute: AuthenticatedRotaHistoryRoute,
   AuthenticatedRotaPlannerRoute: AuthenticatedRotaPlannerRoute,
   AuthenticatedRotaSwapsRoute: AuthenticatedRotaSwapsRoute,
+  AuthenticatedSchedulingDcsOncallRoute: AuthenticatedSchedulingDcsOncallRoute,
+  AuthenticatedSchedulingNocShiftsRoute: AuthenticatedSchedulingNocShiftsRoute,
   AuthenticatedSettingsAutomationRoute: AuthenticatedSettingsAutomationRoute,
   AuthenticatedSettingsDepartmentAssignmentsRoute:
     AuthenticatedSettingsDepartmentAssignmentsRoute,

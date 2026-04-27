@@ -44,3 +44,5 @@ export * from "./sync-adapter-runs";
 export * from "./service-access-registry";
 // Phase 2 — Leave refactor
 export * from "./tosd-records";
+// Phase 3 — Scheduling unification
+export * from "./scheduling";
