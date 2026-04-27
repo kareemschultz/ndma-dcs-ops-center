@@ -190,4 +190,151 @@ export const contractsRouter = {
         with: { staffProfile: { with: { user: true, department: true } } },
       });
     }),
+
+  /** Compute and store lifecycle dates from endDate. */
+  setLifecycleDates: requireRole("contract", "update")
+    .input(
+      z.object({
+        id: z.string(),
+        renewalLetterDueDate: z.string().optional(),
+        appraisal1DueDate: z.string().optional(),
+        appraisal2DueDate: z.string().optional(),
+      }),
+    )
+    .handler(async ({ input, context }) => {
+      const { id, ...dates } = input;
+      const before = await db.query.contracts.findFirst({ where: eq(contracts.id, id) });
+      if (!before) throw new ORPCError("NOT_FOUND");
+
+      // Auto-compute from endDate if individual dates not supplied
+      let renewalLetterDueDate = dates.renewalLetterDueDate;
+      let appraisal1DueDate = dates.appraisal1DueDate;
+      let appraisal2DueDate = dates.appraisal2DueDate;
+
+      function addMonths(dateStr: string, months: number): string {
+        const d = new Date(dateStr);
+        d.setMonth(d.getMonth() + months);
+        return d.toISOString().slice(0, 10);
+      }
+
+      if (!renewalLetterDueDate && before.endDate) {
+        renewalLetterDueDate = addMonths(before.endDate, -3);
+      }
+      if (!appraisal2DueDate && renewalLetterDueDate) {
+        appraisal2DueDate = renewalLetterDueDate;
+      }
+      if (!appraisal1DueDate && renewalLetterDueDate) {
+        appraisal1DueDate = addMonths(renewalLetterDueDate, -6);
+      }
+
+      const [updated] = await db
+        .update(contracts)
+        .set({ renewalLetterDueDate, appraisal1DueDate, appraisal2DueDate })
+        .where(eq(contracts.id, id))
+        .returning();
+      if (!updated) throw new ORPCError("INTERNAL_SERVER_ERROR");
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+        action: "contract.setLifecycleDates",
+        module: "contracts",
+        resourceType: "contract",
+        resourceId: id,
+        beforeValue: { renewalLetterDueDate: before.renewalLetterDueDate, appraisal1DueDate: before.appraisal1DueDate } as Record<string, unknown>,
+        afterValue: { renewalLetterDueDate, appraisal1DueDate, appraisal2DueDate } as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+      });
+
+      return updated;
+    }),
+
+  /** Record when contract was submitted to HR. */
+  submitToHR: requireRole("contract", "update")
+    .input(z.object({ id: z.string() }))
+    .handler(async ({ input, context }) => {
+      const before = await db.query.contracts.findFirst({ where: eq(contracts.id, input.id) });
+      if (!before) throw new ORPCError("NOT_FOUND");
+
+      const [updated] = await db
+        .update(contracts)
+        .set({ submittedToHrAt: new Date(), renewalStatus: "submitted_to_hr" })
+        .where(eq(contracts.id, input.id))
+        .returning();
+      if (!updated) throw new ORPCError("INTERNAL_SERVER_ERROR");
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+        action: "contract.submitToHR",
+        module: "contracts",
+        resourceType: "contract",
+        resourceId: input.id,
+        afterValue: { submittedToHrAt: updated.submittedToHrAt } as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+      });
+
+      return updated;
+    }),
+
+  /** Record the final renewal outcome. */
+  setOutcome: requireRole("contract", "update")
+    .input(
+      z.object({
+        id: z.string(),
+        renewalOutcome: z.enum(["renewed", "not_renewed", "left", "terminated"]),
+      }),
+    )
+    .handler(async ({ input, context }) => {
+      const before = await db.query.contracts.findFirst({ where: eq(contracts.id, input.id) });
+      if (!before) throw new ORPCError("NOT_FOUND");
+
+      const newStatus =
+        input.renewalOutcome === "renewed"
+          ? "renewed"
+          : input.renewalOutcome === "terminated"
+            ? "terminated"
+            : "expired";
+
+      const [updated] = await db
+        .update(contracts)
+        .set({ renewalOutcome: input.renewalOutcome, status: newStatus })
+        .where(eq(contracts.id, input.id))
+        .returning();
+      if (!updated) throw new ORPCError("INTERNAL_SERVER_ERROR");
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+        action: "contract.setOutcome",
+        module: "contracts",
+        resourceType: "contract",
+        resourceId: input.id,
+        beforeValue: { renewalOutcome: before.renewalOutcome } as Record<string, unknown>,
+        afterValue: { renewalOutcome: input.renewalOutcome, status: newStatus } as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+      });
+
+      return updated;
+    }),
+
+  /** Get all contracts for a staff member with lifecycle timeline. */
+  getTimeline: requireRole("contract", "read")
+    .input(z.object({ staffProfileId: z.string() }))
+    .handler(async ({ input }) => {
+      return db.query.contracts.findMany({
+        where: eq(contracts.staffProfileId, input.staffProfileId),
+        orderBy: (table, { desc }) => [desc(table.startDate)],
+        with: { staffProfile: { with: { user: true } } },
+      });
+    }),
 };

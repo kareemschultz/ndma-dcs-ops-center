@@ -50,3 +50,5 @@ export * from "./scheduling";
 export * from "./appraisal-ratings";
 // Phase 5 — NOC Performance
 export * from "./noc-performance";
+// Phase 6 — Contracts lifecycle
+export * from "./career-progression";
