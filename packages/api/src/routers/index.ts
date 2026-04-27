@@ -38,6 +38,8 @@ import { platformsRouter } from "./platforms";
 import { accessRegistryRouter } from "./access-registry";
 // Phase 3 — Scheduling unification
 import { schedulingRouter } from "./scheduling";
+// Phase 5 — NOC Performance
+import { nocPerformanceRouter } from "./noc-performance";
 
 const healthCheck = publicProcedure.handler(() => "OK");
 const privateData = protectedProcedure.handler(({ context }) => ({
@@ -84,6 +86,7 @@ export type AppRouter = {
   platforms: typeof platformsRouter;
   accessRegistry: typeof accessRegistryRouter;
   scheduling: typeof schedulingRouter;
+  nocPerformance: typeof nocPerformanceRouter;
 };
 
 export const appRouter: AppRouter = {
@@ -125,6 +128,7 @@ export const appRouter: AppRouter = {
   platforms: platformsRouter,
   accessRegistry: accessRegistryRouter,
   scheduling: schedulingRouter,
+  nocPerformance: nocPerformanceRouter,
 };
 
 export type AppRouterClient = RouterClient<AppRouter>;

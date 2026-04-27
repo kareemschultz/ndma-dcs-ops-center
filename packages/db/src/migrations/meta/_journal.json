@@ -169,6 +169,13 @@
       "when": 1745884800000,
       "tag": "0023_appraisal_system",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1745971200000,
+      "tag": "0024_noc_performance",
+      "breakpoints": true
     }
   ]
 }

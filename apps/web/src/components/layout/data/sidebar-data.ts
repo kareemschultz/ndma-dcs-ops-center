@@ -147,6 +147,13 @@ export const sidebarData: Omit<SidebarData, "user"> = {
             { title: "Team Pipeline", url: "/appraisals/inbox", icon: ClipboardCheck },
           ],
         },
+        {
+          title: "NOC Performance",
+          icon: BarChart2,
+          items: [
+            { title: "Monthly Metrics", url: "/noc-performance", icon: BarChart2 },
+          ],
+        },
       ],
     },
     {
