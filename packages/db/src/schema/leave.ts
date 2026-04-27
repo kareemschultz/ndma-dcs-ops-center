@@ -3,6 +3,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -102,6 +103,12 @@ export const leaveRequests = pgTable(
     rejectionReason: text("rejection_reason"),
     // Allows a manager to force-approve despite rota overlap
     overlapOverride: boolean("overlap_override").default(false).notNull(),
+    // Override fields — set when a manager forces approval despite violations
+    overrideReason: text("override_reason"),
+    overriddenBy: text("overridden_by").references(() => staffProfiles.id, {
+      onDelete: "set null",
+    }),
+    violations: jsonb("violations").$type<string[]>(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -145,5 +152,10 @@ export const leaveRequestsRelations = relations(leaveRequests, ({ one }) => ({
   approvedBy: one(user, {
     fields: [leaveRequests.approvedById],
     references: [user.id],
+  }),
+  overriddenByStaff: one(staffProfiles, {
+    fields: [leaveRequests.overriddenBy],
+    references: [staffProfiles.id],
+    relationName: "leaveRequestOverriddenBy",
   }),
 }));

@@ -59,6 +59,7 @@ import { Route as AuthenticatedRosterPlannerRouteImport } from './routes/_authen
 import { Route as AuthenticatedRosterMyRosterRouteImport } from './routes/_authenticated/roster/my-roster'
 import { Route as AuthenticatedRosterMaintenanceRouteImport } from './routes/_authenticated/roster/maintenance'
 import { Route as AuthenticatedProcurementNewRouteImport } from './routes/_authenticated/procurement/new'
+import { Route as AuthenticatedLeaveTosdRouteImport } from './routes/_authenticated/leave/tosd'
 import { Route as AuthenticatedLeaveNewRouteImport } from './routes/_authenticated/leave/new'
 import { Route as AuthenticatedLeaveCalendarRouteImport } from './routes/_authenticated/leave/calendar'
 import { Route as AuthenticatedIncidentsNewRouteImport } from './routes/_authenticated/incidents/new'
@@ -368,6 +369,11 @@ const AuthenticatedProcurementNewRoute =
     path: '/procurement/new',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedLeaveTosdRoute = AuthenticatedLeaveTosdRouteImport.update({
+  id: '/leave/tosd',
+  path: '/leave/tosd',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedLeaveNewRoute = AuthenticatedLeaveNewRouteImport.update({
   id: '/leave/new',
   path: '/leave/new',
@@ -512,6 +518,7 @@ export interface FileRoutesByFullPath {
   '/incidents/new': typeof AuthenticatedIncidentsNewRoute
   '/leave/calendar': typeof AuthenticatedLeaveCalendarRoute
   '/leave/new': typeof AuthenticatedLeaveNewRoute
+  '/leave/tosd': typeof AuthenticatedLeaveTosdRoute
   '/procurement/new': typeof AuthenticatedProcurementNewRoute
   '/roster/maintenance': typeof AuthenticatedRosterMaintenanceRoute
   '/roster/my-roster': typeof AuthenticatedRosterMyRosterRoute
@@ -584,6 +591,7 @@ export interface FileRoutesByTo {
   '/incidents/new': typeof AuthenticatedIncidentsNewRoute
   '/leave/calendar': typeof AuthenticatedLeaveCalendarRoute
   '/leave/new': typeof AuthenticatedLeaveNewRoute
+  '/leave/tosd': typeof AuthenticatedLeaveTosdRoute
   '/procurement/new': typeof AuthenticatedProcurementNewRoute
   '/roster/maintenance': typeof AuthenticatedRosterMaintenanceRoute
   '/roster/my-roster': typeof AuthenticatedRosterMyRosterRoute
@@ -658,6 +666,7 @@ export interface FileRoutesById {
   '/_authenticated/incidents/new': typeof AuthenticatedIncidentsNewRoute
   '/_authenticated/leave/calendar': typeof AuthenticatedLeaveCalendarRoute
   '/_authenticated/leave/new': typeof AuthenticatedLeaveNewRoute
+  '/_authenticated/leave/tosd': typeof AuthenticatedLeaveTosdRoute
   '/_authenticated/procurement/new': typeof AuthenticatedProcurementNewRoute
   '/_authenticated/roster/maintenance': typeof AuthenticatedRosterMaintenanceRoute
   '/_authenticated/roster/my-roster': typeof AuthenticatedRosterMyRosterRoute
@@ -732,6 +741,7 @@ export interface FileRouteTypes {
     | '/incidents/new'
     | '/leave/calendar'
     | '/leave/new'
+    | '/leave/tosd'
     | '/procurement/new'
     | '/roster/maintenance'
     | '/roster/my-roster'
@@ -804,6 +814,7 @@ export interface FileRouteTypes {
     | '/incidents/new'
     | '/leave/calendar'
     | '/leave/new'
+    | '/leave/tosd'
     | '/procurement/new'
     | '/roster/maintenance'
     | '/roster/my-roster'
@@ -877,6 +888,7 @@ export interface FileRouteTypes {
     | '/_authenticated/incidents/new'
     | '/_authenticated/leave/calendar'
     | '/_authenticated/leave/new'
+    | '/_authenticated/leave/tosd'
     | '/_authenticated/procurement/new'
     | '/_authenticated/roster/maintenance'
     | '/_authenticated/roster/my-roster'
@@ -1287,6 +1299,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProcurementNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/leave/tosd': {
+      id: '/_authenticated/leave/tosd'
+      path: '/leave/tosd'
+      fullPath: '/leave/tosd'
+      preLoaderRoute: typeof AuthenticatedLeaveTosdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/leave/new': {
       id: '/_authenticated/leave/new'
       path: '/leave/new'
@@ -1471,6 +1490,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIncidentsNewRoute: typeof AuthenticatedIncidentsNewRoute
   AuthenticatedLeaveCalendarRoute: typeof AuthenticatedLeaveCalendarRoute
   AuthenticatedLeaveNewRoute: typeof AuthenticatedLeaveNewRoute
+  AuthenticatedLeaveTosdRoute: typeof AuthenticatedLeaveTosdRoute
   AuthenticatedProcurementNewRoute: typeof AuthenticatedProcurementNewRoute
   AuthenticatedRosterMaintenanceRoute: typeof AuthenticatedRosterMaintenanceRoute
   AuthenticatedRosterMyRosterRoute: typeof AuthenticatedRosterMyRosterRoute
@@ -1544,6 +1564,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIncidentsNewRoute: AuthenticatedIncidentsNewRoute,
   AuthenticatedLeaveCalendarRoute: AuthenticatedLeaveCalendarRoute,
   AuthenticatedLeaveNewRoute: AuthenticatedLeaveNewRoute,
+  AuthenticatedLeaveTosdRoute: AuthenticatedLeaveTosdRoute,
   AuthenticatedProcurementNewRoute: AuthenticatedProcurementNewRoute,
   AuthenticatedRosterMaintenanceRoute: AuthenticatedRosterMaintenanceRoute,
   AuthenticatedRosterMyRosterRoute: AuthenticatedRosterMyRosterRoute,
