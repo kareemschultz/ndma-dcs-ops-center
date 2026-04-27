@@ -43,6 +43,12 @@ import { Route as AuthenticatedAccessIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedWorkWorkloadRouteImport } from './routes/_authenticated/work/workload'
 import { Route as AuthenticatedWorkNewRouteImport } from './routes/_authenticated/work/new'
 import { Route as AuthenticatedWorkWorkItemIdRouteImport } from './routes/_authenticated/work/$workItemId'
+import { Route as AuthenticatedTrainingVouchersRouteImport } from './routes/_authenticated/training/vouchers'
+import { Route as AuthenticatedTrainingPlanRouteImport } from './routes/_authenticated/training/plan'
+import { Route as AuthenticatedTrainingInHouseRouteImport } from './routes/_authenticated/training/in-house'
+import { Route as AuthenticatedTrainingExamsRouteImport } from './routes/_authenticated/training/exams'
+import { Route as AuthenticatedTrainingEventsRouteImport } from './routes/_authenticated/training/events'
+import { Route as AuthenticatedTrainingCatalogRouteImport } from './routes/_authenticated/training/catalog'
 import { Route as AuthenticatedStaffStaffIdRouteImport } from './routes/_authenticated/staff/$staffId'
 import { Route as AuthenticatedSettingsRolesRouteImport } from './routes/_authenticated/settings/roles'
 import { Route as AuthenticatedSettingsLeaveTypesRouteImport } from './routes/_authenticated/settings/leave-types'
@@ -69,6 +75,7 @@ import { Route as AuthenticatedIncidentsNewRouteImport } from './routes/_authent
 import { Route as AuthenticatedIncidentsIncidentIdRouteImport } from './routes/_authenticated/incidents/$incidentId'
 import { Route as AuthenticatedHrPpeRouteImport } from './routes/_authenticated/hr/ppe'
 import { Route as AuthenticatedCyclesCycleIdRouteImport } from './routes/_authenticated/cycles/$cycleId'
+import { Route as AuthenticatedContractsContractIdRouteImport } from './routes/_authenticated/contracts/$contractId'
 import { Route as AuthenticatedComplianceTrainingRouteImport } from './routes/_authenticated/compliance/training'
 import { Route as AuthenticatedCompliancePpeRouteImport } from './routes/_authenticated/compliance/ppe'
 import { Route as AuthenticatedComplianceItemsRouteImport } from './routes/_authenticated/compliance/items'
@@ -277,6 +284,42 @@ const AuthenticatedWorkWorkItemIdRoute =
     path: '/work/$workItemId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedTrainingVouchersRoute =
+  AuthenticatedTrainingVouchersRouteImport.update({
+    id: '/training/vouchers',
+    path: '/training/vouchers',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedTrainingPlanRoute =
+  AuthenticatedTrainingPlanRouteImport.update({
+    id: '/training/plan',
+    path: '/training/plan',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedTrainingInHouseRoute =
+  AuthenticatedTrainingInHouseRouteImport.update({
+    id: '/training/in-house',
+    path: '/training/in-house',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedTrainingExamsRoute =
+  AuthenticatedTrainingExamsRouteImport.update({
+    id: '/training/exams',
+    path: '/training/exams',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedTrainingEventsRoute =
+  AuthenticatedTrainingEventsRouteImport.update({
+    id: '/training/events',
+    path: '/training/events',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedTrainingCatalogRoute =
+  AuthenticatedTrainingCatalogRouteImport.update({
+    id: '/training/catalog',
+    path: '/training/catalog',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedStaffStaffIdRoute =
   AuthenticatedStaffStaffIdRouteImport.update({
     id: '/staff/$staffId',
@@ -429,6 +472,12 @@ const AuthenticatedCyclesCycleIdRoute =
     path: '/cycles/$cycleId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedContractsContractIdRoute =
+  AuthenticatedContractsContractIdRouteImport.update({
+    id: '/contracts/$contractId',
+    path: '/contracts/$contractId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedComplianceTrainingRoute =
   AuthenticatedComplianceTrainingRouteImport.update({
     id: '/compliance/training',
@@ -533,6 +582,7 @@ export interface FileRoutesByFullPath {
   '/compliance/items': typeof AuthenticatedComplianceItemsRoute
   '/compliance/ppe': typeof AuthenticatedCompliancePpeRoute
   '/compliance/training': typeof AuthenticatedComplianceTrainingRoute
+  '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/cycles/$cycleId': typeof AuthenticatedCyclesCycleIdRoute
   '/hr/ppe': typeof AuthenticatedHrPpeRoute
   '/incidents/$incidentId': typeof AuthenticatedIncidentsIncidentIdRoute
@@ -559,6 +609,12 @@ export interface FileRoutesByFullPath {
   '/settings/leave-types': typeof AuthenticatedSettingsLeaveTypesRoute
   '/settings/roles': typeof AuthenticatedSettingsRolesRoute
   '/staff/$staffId': typeof AuthenticatedStaffStaffIdRoute
+  '/training/catalog': typeof AuthenticatedTrainingCatalogRoute
+  '/training/events': typeof AuthenticatedTrainingEventsRoute
+  '/training/exams': typeof AuthenticatedTrainingExamsRoute
+  '/training/in-house': typeof AuthenticatedTrainingInHouseRoute
+  '/training/plan': typeof AuthenticatedTrainingPlanRoute
+  '/training/vouchers': typeof AuthenticatedTrainingVouchersRoute
   '/work/$workItemId': typeof AuthenticatedWorkWorkItemIdRoute
   '/work/new': typeof AuthenticatedWorkNewRoute
   '/work/workload': typeof AuthenticatedWorkWorkloadRoute
@@ -609,6 +665,7 @@ export interface FileRoutesByTo {
   '/compliance/items': typeof AuthenticatedComplianceItemsRoute
   '/compliance/ppe': typeof AuthenticatedCompliancePpeRoute
   '/compliance/training': typeof AuthenticatedComplianceTrainingRoute
+  '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/cycles/$cycleId': typeof AuthenticatedCyclesCycleIdRoute
   '/hr/ppe': typeof AuthenticatedHrPpeRoute
   '/incidents/$incidentId': typeof AuthenticatedIncidentsIncidentIdRoute
@@ -635,6 +692,12 @@ export interface FileRoutesByTo {
   '/settings/leave-types': typeof AuthenticatedSettingsLeaveTypesRoute
   '/settings/roles': typeof AuthenticatedSettingsRolesRoute
   '/staff/$staffId': typeof AuthenticatedStaffStaffIdRoute
+  '/training/catalog': typeof AuthenticatedTrainingCatalogRoute
+  '/training/events': typeof AuthenticatedTrainingEventsRoute
+  '/training/exams': typeof AuthenticatedTrainingExamsRoute
+  '/training/in-house': typeof AuthenticatedTrainingInHouseRoute
+  '/training/plan': typeof AuthenticatedTrainingPlanRoute
+  '/training/vouchers': typeof AuthenticatedTrainingVouchersRoute
   '/work/$workItemId': typeof AuthenticatedWorkWorkItemIdRoute
   '/work/new': typeof AuthenticatedWorkNewRoute
   '/work/workload': typeof AuthenticatedWorkWorkloadRoute
@@ -687,6 +750,7 @@ export interface FileRoutesById {
   '/_authenticated/compliance/items': typeof AuthenticatedComplianceItemsRoute
   '/_authenticated/compliance/ppe': typeof AuthenticatedCompliancePpeRoute
   '/_authenticated/compliance/training': typeof AuthenticatedComplianceTrainingRoute
+  '/_authenticated/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/_authenticated/cycles/$cycleId': typeof AuthenticatedCyclesCycleIdRoute
   '/_authenticated/hr/ppe': typeof AuthenticatedHrPpeRoute
   '/_authenticated/incidents/$incidentId': typeof AuthenticatedIncidentsIncidentIdRoute
@@ -713,6 +777,12 @@ export interface FileRoutesById {
   '/_authenticated/settings/leave-types': typeof AuthenticatedSettingsLeaveTypesRoute
   '/_authenticated/settings/roles': typeof AuthenticatedSettingsRolesRoute
   '/_authenticated/staff/$staffId': typeof AuthenticatedStaffStaffIdRoute
+  '/_authenticated/training/catalog': typeof AuthenticatedTrainingCatalogRoute
+  '/_authenticated/training/events': typeof AuthenticatedTrainingEventsRoute
+  '/_authenticated/training/exams': typeof AuthenticatedTrainingExamsRoute
+  '/_authenticated/training/in-house': typeof AuthenticatedTrainingInHouseRoute
+  '/_authenticated/training/plan': typeof AuthenticatedTrainingPlanRoute
+  '/_authenticated/training/vouchers': typeof AuthenticatedTrainingVouchersRoute
   '/_authenticated/work/$workItemId': typeof AuthenticatedWorkWorkItemIdRoute
   '/_authenticated/work/new': typeof AuthenticatedWorkNewRoute
   '/_authenticated/work/workload': typeof AuthenticatedWorkWorkloadRoute
@@ -765,6 +835,7 @@ export interface FileRouteTypes {
     | '/compliance/items'
     | '/compliance/ppe'
     | '/compliance/training'
+    | '/contracts/$contractId'
     | '/cycles/$cycleId'
     | '/hr/ppe'
     | '/incidents/$incidentId'
@@ -791,6 +862,12 @@ export interface FileRouteTypes {
     | '/settings/leave-types'
     | '/settings/roles'
     | '/staff/$staffId'
+    | '/training/catalog'
+    | '/training/events'
+    | '/training/exams'
+    | '/training/in-house'
+    | '/training/plan'
+    | '/training/vouchers'
     | '/work/$workItemId'
     | '/work/new'
     | '/work/workload'
@@ -841,6 +918,7 @@ export interface FileRouteTypes {
     | '/compliance/items'
     | '/compliance/ppe'
     | '/compliance/training'
+    | '/contracts/$contractId'
     | '/cycles/$cycleId'
     | '/hr/ppe'
     | '/incidents/$incidentId'
@@ -867,6 +945,12 @@ export interface FileRouteTypes {
     | '/settings/leave-types'
     | '/settings/roles'
     | '/staff/$staffId'
+    | '/training/catalog'
+    | '/training/events'
+    | '/training/exams'
+    | '/training/in-house'
+    | '/training/plan'
+    | '/training/vouchers'
     | '/work/$workItemId'
     | '/work/new'
     | '/work/workload'
@@ -918,6 +1002,7 @@ export interface FileRouteTypes {
     | '/_authenticated/compliance/items'
     | '/_authenticated/compliance/ppe'
     | '/_authenticated/compliance/training'
+    | '/_authenticated/contracts/$contractId'
     | '/_authenticated/cycles/$cycleId'
     | '/_authenticated/hr/ppe'
     | '/_authenticated/incidents/$incidentId'
@@ -944,6 +1029,12 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/leave-types'
     | '/_authenticated/settings/roles'
     | '/_authenticated/staff/$staffId'
+    | '/_authenticated/training/catalog'
+    | '/_authenticated/training/events'
+    | '/_authenticated/training/exams'
+    | '/_authenticated/training/in-house'
+    | '/_authenticated/training/plan'
+    | '/_authenticated/training/vouchers'
     | '/_authenticated/work/$workItemId'
     | '/_authenticated/work/new'
     | '/_authenticated/work/workload'
@@ -1226,6 +1317,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkWorkItemIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/training/vouchers': {
+      id: '/_authenticated/training/vouchers'
+      path: '/training/vouchers'
+      fullPath: '/training/vouchers'
+      preLoaderRoute: typeof AuthenticatedTrainingVouchersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/training/plan': {
+      id: '/_authenticated/training/plan'
+      path: '/training/plan'
+      fullPath: '/training/plan'
+      preLoaderRoute: typeof AuthenticatedTrainingPlanRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/training/in-house': {
+      id: '/_authenticated/training/in-house'
+      path: '/training/in-house'
+      fullPath: '/training/in-house'
+      preLoaderRoute: typeof AuthenticatedTrainingInHouseRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/training/exams': {
+      id: '/_authenticated/training/exams'
+      path: '/training/exams'
+      fullPath: '/training/exams'
+      preLoaderRoute: typeof AuthenticatedTrainingExamsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/training/events': {
+      id: '/_authenticated/training/events'
+      path: '/training/events'
+      fullPath: '/training/events'
+      preLoaderRoute: typeof AuthenticatedTrainingEventsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/training/catalog': {
+      id: '/_authenticated/training/catalog'
+      path: '/training/catalog'
+      fullPath: '/training/catalog'
+      preLoaderRoute: typeof AuthenticatedTrainingCatalogRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/staff/$staffId': {
       id: '/_authenticated/staff/$staffId'
       path: '/staff/$staffId'
@@ -1408,6 +1541,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCyclesCycleIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/contracts/$contractId': {
+      id: '/_authenticated/contracts/$contractId'
+      path: '/contracts/$contractId'
+      fullPath: '/contracts/$contractId'
+      preLoaderRoute: typeof AuthenticatedContractsContractIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/compliance/training': {
       id: '/_authenticated/compliance/training'
       path: '/compliance/training'
@@ -1544,6 +1684,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedComplianceItemsRoute: typeof AuthenticatedComplianceItemsRoute
   AuthenticatedCompliancePpeRoute: typeof AuthenticatedCompliancePpeRoute
   AuthenticatedComplianceTrainingRoute: typeof AuthenticatedComplianceTrainingRoute
+  AuthenticatedContractsContractIdRoute: typeof AuthenticatedContractsContractIdRoute
   AuthenticatedCyclesCycleIdRoute: typeof AuthenticatedCyclesCycleIdRoute
   AuthenticatedHrPpeRoute: typeof AuthenticatedHrPpeRoute
   AuthenticatedIncidentsIncidentIdRoute: typeof AuthenticatedIncidentsIncidentIdRoute
@@ -1570,6 +1711,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsLeaveTypesRoute: typeof AuthenticatedSettingsLeaveTypesRoute
   AuthenticatedSettingsRolesRoute: typeof AuthenticatedSettingsRolesRoute
   AuthenticatedStaffStaffIdRoute: typeof AuthenticatedStaffStaffIdRoute
+  AuthenticatedTrainingCatalogRoute: typeof AuthenticatedTrainingCatalogRoute
+  AuthenticatedTrainingEventsRoute: typeof AuthenticatedTrainingEventsRoute
+  AuthenticatedTrainingExamsRoute: typeof AuthenticatedTrainingExamsRoute
+  AuthenticatedTrainingInHouseRoute: typeof AuthenticatedTrainingInHouseRoute
+  AuthenticatedTrainingPlanRoute: typeof AuthenticatedTrainingPlanRoute
+  AuthenticatedTrainingVouchersRoute: typeof AuthenticatedTrainingVouchersRoute
   AuthenticatedWorkWorkItemIdRoute: typeof AuthenticatedWorkWorkItemIdRoute
   AuthenticatedWorkNewRoute: typeof AuthenticatedWorkNewRoute
   AuthenticatedWorkWorkloadRoute: typeof AuthenticatedWorkWorkloadRoute
@@ -1621,6 +1768,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedComplianceItemsRoute: AuthenticatedComplianceItemsRoute,
   AuthenticatedCompliancePpeRoute: AuthenticatedCompliancePpeRoute,
   AuthenticatedComplianceTrainingRoute: AuthenticatedComplianceTrainingRoute,
+  AuthenticatedContractsContractIdRoute: AuthenticatedContractsContractIdRoute,
   AuthenticatedCyclesCycleIdRoute: AuthenticatedCyclesCycleIdRoute,
   AuthenticatedHrPpeRoute: AuthenticatedHrPpeRoute,
   AuthenticatedIncidentsIncidentIdRoute: AuthenticatedIncidentsIncidentIdRoute,
@@ -1648,6 +1796,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsLeaveTypesRoute: AuthenticatedSettingsLeaveTypesRoute,
   AuthenticatedSettingsRolesRoute: AuthenticatedSettingsRolesRoute,
   AuthenticatedStaffStaffIdRoute: AuthenticatedStaffStaffIdRoute,
+  AuthenticatedTrainingCatalogRoute: AuthenticatedTrainingCatalogRoute,
+  AuthenticatedTrainingEventsRoute: AuthenticatedTrainingEventsRoute,
+  AuthenticatedTrainingExamsRoute: AuthenticatedTrainingExamsRoute,
+  AuthenticatedTrainingInHouseRoute: AuthenticatedTrainingInHouseRoute,
+  AuthenticatedTrainingPlanRoute: AuthenticatedTrainingPlanRoute,
+  AuthenticatedTrainingVouchersRoute: AuthenticatedTrainingVouchersRoute,
   AuthenticatedWorkWorkItemIdRoute: AuthenticatedWorkWorkItemIdRoute,
   AuthenticatedWorkNewRoute: AuthenticatedWorkNewRoute,
   AuthenticatedWorkWorkloadRoute: AuthenticatedWorkWorkloadRoute,
