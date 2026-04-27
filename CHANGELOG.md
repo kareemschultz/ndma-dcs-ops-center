@@ -4,6 +4,62 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
+## [Phase 6 — Contracts Lifecycle] — shipped 2026-04-27 via #27 squash `66fa5c9`
+
+### Added
+- **Migration 0025** — extends `contracts` with `renewal_letter_due_date`, `appraisal_1_due_date`, `appraisal_2_due_date`, `submitted_to_hr_at`, `renewal_outcome`; adds `career_progression_plans` table
+- **Career progression plans** — per-staff multi-year progression plan (2026-2035 range); upsert by (staff, year); status: pending/achieved/missed
+- **Contracts router** — new procedures: `setLifecycleDates` (auto-computes from endDate), `submitToHR`, `setOutcome` (records final outcome + updates status), `getTimeline`; new `careerProgression` router (list/upsert/delete)
+- **`/contracts/$contractId` detail page** — lifecycle timeline (Appraisal 1/2 Due, Renewal Letter Due, Submitted to HR), inline Submit to HR + Record Outcome actions, career progression plan editor
+
+---
+
+## [Phase 5 — NOC Performance] — shipped 2026-04-27 via #26 squash `7916454`
+
+### Added
+- **Migration 0024** — `noc_ticket_activity`, `noc_monthly_metrics`, `employee_of_the_month` tables
+- **`nocPerformance` router** — `metrics.list/upsert`, `tickets.list/create`, `eom.get/compute`; `computeEOM` calculates 7 recognition categories from monthly metrics
+- **`/noc-performance`** — tabbed page: Monthly Metrics (staff × metrics grid + upsert dialog), EOM Awards (monthly winner cards + Compute Now), Ticket Activity (read-only table)
+
+---
+
+## [Phase 4 — Appraisal System] — shipped 2026-04-27 via #25 squash `82c109b`
+
+### Added
+- **Migration 0023** — `appraisal_ratings`, `appraisal_responsibilities`, `appraisal_achievements`, `appraisal_goals`, `appraisal_signatures` tables; extends `appraisals` with `total_score`, `max_score`, `percentage`, `increment_pct`, `submitted_at`
+- **Appraisal router** — `setRatings` (upserts ratings + auto-computes score/percentage/increment), `setResponsibilities`, `setAchievements` (min 3 enforced), `setGoals` (min 3 enforced), `sign`, `getDetail`
+- **Score tiers** — ≤60%→1%, 61-70%→2%, 71-80%→3%, 81-90%→4%, 91-100%→5% increment
+
+---
+
+## [Phase 3 — Scheduling Unification] — shipped 2026-04-27 via #24 squash `b3cad77`
+
+### Added
+- **Migration 0022** — `noc_shifts` (staff × date, shift_type D/S/N/sick/off/al/ml), `dcs_on_call_weeks` (4-role weekly), `routine_maintenance` (quarterly tasks), `shift_swaps` + `on_call_swaps`
+- **`scheduling` router** — `nocShifts.list/bulkSet/update`, `dcsOnCall.list/get/upsertWeek`, `maintenance.list/upsert`, `swaps.noc.request/review`, `swaps.dcs.request/review`
+- **`/scheduling/noc-shifts`** — monthly grid UI (staff × day 31 columns, color-coded shift badges, click-to-edit)
+- **`/scheduling/dcs-oncall`** — weekly grid (4-role columns, edit-row dialog)
+
+---
+
+## [Phase 2 — Leave Refactor] — shipped 2026-04-27 via #23 squash `a88f36b`
+
+### Added
+- **Migration 0021** — extends `leave_requests` with `override_reason`, `overridden_by`, `violations`; adds `tosd_records` table (Time Off / Sick Days register, 7 types including `callout_legacy`)
+- **Leave router** — `tosd.list/create/update/delete`, `validateRequest` (returns `{status, violations}` — warns on blocked months/insufficient balance, blocks on invalid date range)
+- **`/leave/tosd`** — TOSD list page with staff + year filter, Add Record dialog
+
+---
+
+## [Phase 1 polish] — shipped 2026-04-27 via #22 squash `2972287`
+
+### Added
+- **`/access/registry/$staffId`** — per-staff access detail page listing all platform access records for one staff member
+- **Staff profile Access tab** — 6th tab on `/staff/$staffId` showing read-only platform access (visible to self + leads + HR)
+- **RBAC matrix tests** — `packages/api/tests/rbac-matrix.test.ts` covering `platforms.*` + `accessRegistry.*`
+
+---
+
 ## [Phase 1 — UI screens] — shipped 2026-04-25 via #20 squash `fea4835`
 
 ### Added

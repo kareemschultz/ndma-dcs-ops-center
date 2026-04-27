@@ -20,12 +20,12 @@
 |---|---|---|---|---|---|---|
 | — | Planning session | 🟢 Done | `planning/2026-04-23-master` | Claude Code opusplan + Claude web opus-4.7 audit | (this commit) | 2026-04-23 |
 | 0 | Stabilise & delete | 🟢 Done | — | Claude Code + Codex (course-corrected) | 3916721 | 2026-04-25 |
-| 1 | People & access registry | 🟡 Core shipped (schema+API+UI); detail page + RBAC tests pending | `phase/1-ui` (merged) | Claude Code (autonomous overnight) | fea4835 | 2026-04-25 |
-| 2 | Leave refactor | ⬜ Queued | — | — | — | — |
-| 3 | Scheduling unification | ⬜ Queued | — | — | — | — |
-| 4 | Appraisal system | ⬜ Queued | — | — | — | — |
-| 5 | NOC performance | ⬜ Queued | — | — | — | — |
-| 6 | Contracts lifecycle | ⬜ Queued | — | — | — | — |
+| 1 | People & access registry | 🟢 Done | `phase/1-polish` (merged) | Claude Code | 2972287 | 2026-04-27 |
+| 2 | Leave refactor | 🟢 Done | `phase/2-leave` (merged) | Claude Code | a88f36b | 2026-04-27 |
+| 3 | Scheduling unification | 🟢 Done | `phase/3-scheduling` (merged) | Claude Code | b3cad77 | 2026-04-27 |
+| 4 | Appraisal system | 🟢 Done | `phase/4-appraisals` (merged) | Claude Code | 82c109b | 2026-04-27 |
+| 5 | NOC performance | 🟢 Done | `phase/5-noc-perf` (merged) | Claude Code | 7916454 | 2026-04-27 |
+| 6 | Contracts lifecycle | 🟢 Done | `phase/6-contracts` (merged) | Claude Code | 66fa5c9 | 2026-04-27 |
 | 7 | Training | ⬜ Queued | — | — | — | — |
 | 8 | PPE, lateness, timesheets, TOSD | ⬜ Queued | — | — | — | — |
 | 9 | Self-service + policies + forms | ⬜ Queued | — | — | — | — |
