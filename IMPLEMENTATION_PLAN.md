@@ -26,7 +26,7 @@
 | 4 | Appraisal system | 🟢 Done | `phase/4-appraisals` (merged) | Claude Code | 82c109b | 2026-04-27 |
 | 5 | NOC performance | 🟢 Done | `phase/5-noc-perf` (merged) | Claude Code | 7916454 | 2026-04-27 |
 | 6 | Contracts lifecycle | 🟢 Done | `phase/6-contracts` (merged) | Claude Code | 66fa5c9 | 2026-04-27 |
-| 7 | Training | ⬜ Queued | — | — | — | — |
+| 7 | Training | 🟢 Done | `phase/7-training` (merged) | Claude Code | a4c1a53 | 2026-04-27 |
 | 8 | PPE, lateness, timesheets, TOSD | ⬜ Queued | — | — | — | — |
 | 9 | Self-service + policies + forms | ⬜ Queued | — | — | — | — |
 | 10 | Notifications & calendar | ⬜ Queued | — | — | — | — |

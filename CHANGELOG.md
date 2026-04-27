@@ -4,6 +4,28 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
+## [Phase 7 — Training] — shipped 2026-04-27 via #29 squash `a4c1a53`
+
+### Added
+- **Migrations 0026-0027** — 9 new tables: `training_plans`, `certification_catalog`, `exam_vouchers`, `training_events`, `training_event_participants`, `in_house_training_log`, `training_syllabi`, `assessment_questions`, `onboarding_task_templates`; extends `exam_schedule` with window columns; extends `onboarding_tasks` with `template_id`
+- **`trainingPlans` router** — `list`, `upsert` (per-staff per-year jsonb plan)
+- **`certCatalog` router** — `list`, `create`, `update` (visible to all staff)
+- **`examVouchers` router** — `list`, `create`, `assign`, `updateStatus`, `sendExpiryReminders` (fires in-app notifications at 30/14/7-day thresholds)
+- **`trainingEvents` router** — `list`, `get`, `create`, `update` with auto-sum total cost; `addParticipant`, `removeParticipant`
+- **`inHouseLog` router** — full CRUD (`list`, `create`, `update`, `delete`)
+- **`syllabi` + `assessmentQuestions` routers** — read-only list (data model ready for historical seed)
+- **`onboarding.createFromTemplates`** — auto-creates 8 standard onboarding tasks for new hires from seeded templates
+- **`/training/`** — overview dashboard (expiring vouchers, recent events, in-house sessions, cert catalog preview)
+- **`/training/plan`** — staff × training areas matrix (year filter, per-staff edit dialog)
+- **`/training/exams`** — exam schedule view (training records + assigned vouchers)
+- **`/training/vouchers`** — voucher registry with create/assign dialogs and expiry reminder button
+- **`/training/events`** — training events with cost-breakdown form (total auto-sums)
+- **`/training/in-house`** — in-house log CRUD (year + staff filter, assessment completed toggle)
+- **`/training/catalog`** — certification catalog grouped by training area
+- **Sidebar** — replaced 3 stub "Training" items with 7 real routes
+
+---
+
 ## [Phase 6 — Contracts Lifecycle] — shipped 2026-04-27 via #27 squash `66fa5c9`
 
 ### Added
