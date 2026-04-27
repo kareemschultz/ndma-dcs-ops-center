@@ -54,6 +54,9 @@ import {
   assessmentQuestionsRouter,
   onboardingRouter,
 } from "./training-phase7";
+// Phase 8 — PPE matrix, lateness quarterly grid, timesheet documents
+import { latenessRouter } from "./lateness";
+import { timesheetDocumentsRouter } from "./timesheet-documents";
 
 const healthCheck = publicProcedure.handler(() => "OK");
 const privateData = protectedProcedure.handler(({ context }) => ({
@@ -112,6 +115,9 @@ export type AppRouter = {
   syllabi: typeof syllabiRouter;
   assessmentQuestions: typeof assessmentQuestionsRouter;
   onboarding: typeof onboardingRouter;
+  // Phase 8 — PPE matrix, lateness quarterly grid, timesheet documents
+  lateness: typeof latenessRouter;
+  timesheetDocuments: typeof timesheetDocumentsRouter;
 };
 
 export const appRouter: AppRouter = {
@@ -165,6 +171,9 @@ export const appRouter: AppRouter = {
   syllabi: syllabiRouter,
   assessmentQuestions: assessmentQuestionsRouter,
   onboarding: onboardingRouter,
+  // Phase 8 — PPE matrix, lateness quarterly grid, timesheet documents
+  lateness: latenessRouter,
+  timesheetDocuments: timesheetDocumentsRouter,
 };
 
 export type AppRouterClient = RouterClient<AppRouter>;

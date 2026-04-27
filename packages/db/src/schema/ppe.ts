@@ -15,9 +15,12 @@ import { user } from "./auth";
 
 export const ppeIssuanceStatusEnum = pgEnum("ppe_issuance_status", [
   "issued",
-  "returned",
+  "not_issued",
+  "n_a",
+  "stolen",
   "lost",
   "damaged",
+  "returned",
   "replaced",
 ]);
 
@@ -32,6 +35,8 @@ export const ppeItems = pgTable(
     category: text("category"),
     description: text("description"),
     defaultSize: text("default_size"),
+    hasSize: boolean("has_size").notNull().default(false),
+    hasAssetTag: boolean("has_asset_tag").notNull().default(false),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
@@ -64,6 +69,7 @@ export const ppeIssuances = pgTable(
       onDelete: "set null",
     }),
     serialNumber: text("serial_number"),
+    assetTag: text("asset_tag"),
     size: text("size"),
     issuedDate: date("issued_date").notNull(),
     dueDate: date("due_date"),
@@ -78,7 +84,11 @@ export const ppeIssuances = pgTable(
       .notNull(),
   },
   (table) => [
-    unique("ppe_issuances_staff_item_unique").on(table.staffProfileId, table.ppeItemId),
+    unique("ppe_issuances_staff_item_date_unique").on(
+      table.staffProfileId,
+      table.ppeItemId,
+      table.issuedDate,
+    ),
     index("ppe_issuances_staffProfileId_idx").on(table.staffProfileId),
     index("ppe_issuances_ppeItemId_idx").on(table.ppeItemId),
     index("ppe_issuances_status_idx").on(table.status),

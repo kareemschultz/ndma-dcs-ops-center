@@ -54,3 +54,5 @@ export * from "./noc-performance";
 export * from "./career-progression";
 // Phase 7 — Training (plans, cert catalog, exam vouchers, events, in-house log, syllabi, assessment questions, onboarding templates)
 export * from "./training-phase7";
+// Phase 8 — PPE matrix, lateness quarterly grid, timesheet documents
+export * from "./timesheet-documents";
