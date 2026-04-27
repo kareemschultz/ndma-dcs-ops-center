@@ -36,6 +36,8 @@ import { analyticsRouter } from "./analytics";
 // Phase 1 — Access Registry (master plan §5.2)
 import { platformsRouter } from "./platforms";
 import { accessRegistryRouter } from "./access-registry";
+// Phase 3 — Scheduling unification
+import { schedulingRouter } from "./scheduling";
 
 const healthCheck = publicProcedure.handler(() => "OK");
 const privateData = protectedProcedure.handler(({ context }) => ({
@@ -81,6 +83,7 @@ export type AppRouter = {
   analytics: typeof analyticsRouter;
   platforms: typeof platformsRouter;
   accessRegistry: typeof accessRegistryRouter;
+  scheduling: typeof schedulingRouter;
 };
 
 export const appRouter: AppRouter = {
@@ -121,6 +124,7 @@ export const appRouter: AppRouter = {
   analytics: analyticsRouter,
   platforms: platformsRouter,
   accessRegistry: accessRegistryRouter,
+  scheduling: schedulingRouter,
 };
 
 export type AppRouterClient = RouterClient<AppRouter>;
