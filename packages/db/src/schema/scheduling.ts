@@ -1,4 +1,4 @@
-import { date, index, integer, pgEnum, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { date, integer, pgEnum, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { staffProfiles } from "./staff";
 

@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/server";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -17,19 +17,6 @@ import { logAudit } from "../lib/audit";
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 const DCS_ROLES = ["lead_engineer", "asn_support", "enterprise_support", "core_support"] as const;
-type DcsRole = (typeof DCS_ROLES)[number];
-
-function weekWithStaff() {
-  return db.query.dcsOnCallWeeks.findMany({
-    with: {
-      leadEngineer: { with: { user: true } },
-      asnSupport: { with: { user: true } },
-      enterpriseSupport: { with: { user: true } },
-      coreSupport: { with: { user: true } },
-    },
-    orderBy: (t, { asc }) => [asc(t.year), asc(t.weekNum)],
-  });
-}
 
 // ── Scheduling router ──────────────────────────────────────────────────────
 
