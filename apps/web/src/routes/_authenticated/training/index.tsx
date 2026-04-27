@@ -1,286 +1,241 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { BookOpen, RefreshCw, Send, ShieldCheck, LibraryBig } from "lucide-react";
-import { toast } from "sonner";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import {
+  BookOpen,
+  Calendar,
+  CheckCircle2,
+  GraduationCap,
+  LayoutList,
+  Tag,
+  Ticket,
+  Users,
+} from "lucide-react";
 
 import { Badge } from "@ndma-dcs-staff-portal/ui/components/badge";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@ndma-dcs-staff-portal/ui/components/card";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ndma-dcs-staff-portal/ui/components/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@ndma-dcs-staff-portal/ui/components/table";
 
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { useTeamFilter } from "@/lib/team-filter";
 import { orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_authenticated/training/")({
-  component: TrainingRecordsPage,
+  component: TrainingOverviewPage,
 });
 
-function TrainingRecordsPage() {
-  const queryClient = useQueryClient();
-  const [tab, setTab] = useState("logs");
-  const { team } = useTeamFilter();
+function TrainingOverviewPage() {
+  const navigate = useNavigate();
+  const { data: vouchers, isLoading: vouchersLoading } = useQuery(
+    orpc.examVouchers.list.queryOptions({ input: { expiringWithinDays: 30 } }),
+  );
+  const { data: events, isLoading: eventsLoading } = useQuery(
+    orpc.trainingEvents.list.queryOptions({ input: { limit: 5 } }),
+  );
+  const { data: inHouseLog, isLoading: logLoading } = useQuery(
+    orpc.inHouseLog.list.queryOptions({ input: { limit: 5 } }),
+  );
+  const { data: catalog } = useQuery(orpc.certCatalog.list.queryOptions());
 
-  const { data: records, isLoading: recordsLoading } = useQuery(
-    orpc.compliance.training.records.list.queryOptions({
-      input: { team: team === "All" ? undefined : team, limit: 200 },
-    }),
-  );
-  const { data: courses, isLoading: coursesLoading } = useQuery(orpc.compliance.training.courses.list.queryOptions());
-  const { data: budgets, isLoading: budgetsLoading } = useQuery(
-    orpc.compliance.training.budgets.list.queryOptions({
-      input: {},
-    }),
-  );
-
-  const sendReminder = useMutation(
-    orpc.compliance.training.records.sendReminder.mutationOptions({
-      onSuccess: async () => {
-        toast.success("Reminder sent");
-        await queryClient.invalidateQueries({ queryKey: orpc.notifications.list.key() });
-      },
-      onError: (error: Error) => toast.error(error.message),
-    }),
-  );
-
-  const pendingCount = useMemo(
-    () => (records ?? []).filter((record) => record.status !== "Completed").length,
-    [records],
-  );
-  const budgetSummary = useMemo(() => {
-    const grouped = new Map<number, { estimated: number; actual: number; count: number }>();
-    for (const row of budgets ?? []) {
-      const current = grouped.get(row.year) ?? { estimated: 0, actual: 0, count: 0 };
-      grouped.set(row.year, {
-        estimated: current.estimated + Number(row.estimatedCost ?? 0),
-        actual: current.actual + Number(row.actualCost ?? 0),
-        count: current.count + 1,
-      });
-    }
-    return [...grouped.entries()].map(([year, summary]) => ({ year, ...summary })).sort((a, b) => a.year - b.year);
-  }, [budgets]);
+  const expiringVouchers =
+    vouchers?.filter((v) => v.status === "unused" || v.status === "assigned") ?? [];
 
   return (
     <>
-      <Header fixed>
+      <Header>
         <div className="flex items-center gap-2">
-          <BookOpen className="size-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Training Records</span>
+          <GraduationCap className="h-5 w-5" />
+          <h1 className="text-xl font-semibold">Training &amp; Development</h1>
         </div>
-        <div className="ms-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2">
           <ThemeSwitch />
-            <Button
-            size="sm"
-            variant="outline"
-            onClick={() => queryClient.invalidateQueries({ queryKey: orpc.compliance.training.records.list.key() })}
-          >
-            <RefreshCw className="mr-1.5 size-3.5" />
-            Refresh
-          </Button>
         </div>
       </Header>
 
-      <Main className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Training Records</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Staff training logs, syllabus materials, and budget forecasting by department.
+      <Main>
+        <div className="mb-6">
+          <p className="text-muted-foreground text-sm">
+            Overview of training plans, exam schedules, vouchers, events, and in-house logs.
           </p>
         </div>
 
-        <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-          <TabsList variant="line" className="justify-start">
-            <TabsTrigger value="logs">Staff Training Logs</TabsTrigger>
-            <TabsTrigger value="syllabus">Curriculum &amp; Syllabus</TabsTrigger>
-            <TabsTrigger value="budgets">Budget &amp; Forecasting</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="logs" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Training Records</CardTitle>
-                </CardHeader>
-                <CardContent className="text-2xl font-bold">{records?.length ?? "—"}</CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Pending Follow-ups</CardTitle>
-                </CardHeader>
-                <CardContent className="text-2xl font-bold">{pendingCount}</CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Scope</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-muted-foreground">
-                  {team === "All" ? "All staff" : `${team} only`}
+        {/* Quick-nav tiles */}
+        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          {[
+            { to: "/training/plan", icon: LayoutList, label: "Training Plan", color: "text-blue-600" },
+            { to: "/training/exams", icon: Calendar, label: "Exam Schedule", color: "text-indigo-600" },
+            { to: "/training/vouchers", icon: Ticket, label: "Vouchers", color: "text-amber-600" },
+            { to: "/training/events", icon: Users, label: "Events", color: "text-green-600" },
+            { to: "/training/in-house", icon: BookOpen, label: "In-House Log", color: "text-purple-600" },
+            { to: "/training/catalog", icon: Tag, label: "Cert Catalog", color: "text-rose-600" },
+          ].map((item) => (
+            <Link key={item.to} to={item.to as string}>
+              <Card className="hover:border-primary/50 cursor-pointer transition-colors">
+                <CardContent className="flex flex-col items-center gap-2 p-4">
+                  <item.icon className={`h-7 w-7 ${item.color}`} />
+                  <span className="text-center text-xs font-medium">{item.label}</span>
                 </CardContent>
               </Card>
-            </div>
+            </Link>
+          ))}
+        </div>
 
-            <div className="rounded-xl border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Staff</TableHead>
-                    <TableHead>Course</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Target</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead className="w-40">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recordsLoading ? (
-                    Array.from({ length: 6 }).map((_, i) => (
-                      <TableRow key={i}>
-                        {Array.from({ length: 6 }).map((_, j) => (
-                          <TableCell key={j}>
-                            <Skeleton className="h-4 w-full" />
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : !records?.length ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
-                        No training records found.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    records.map((record) => (
-                      <TableRow key={record.id}>
-                        <TableCell className="font-medium">
-                          {record.staffProfile?.user?.name ?? "—"}
-                        </TableCell>
-                        <TableCell>{record.course?.title ?? "—"}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{record.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {record.targetDate ?? "—"}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {record.course?.vendor ?? "—"}
-                        </TableCell>
-                        <TableCell>
-                          {record.status !== "Completed" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => sendReminder.mutate({ recordId: record.id })}
-                            >
-                              <Send className="mr-1.5 size-3.5" />
-                              Send Reminder
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="syllabus" className="space-y-4">
-            <div className="grid gap-4 lg:grid-cols-2">
-              {coursesLoading ? (
-                Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Expiring Vouchers */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base">
+                <Ticket className="mr-2 inline h-4 w-4 text-amber-500" />
+                Vouchers Expiring in 30 Days
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/training/vouchers" })}>
+                View all
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {vouchersLoading ? (
+                <div className="space-y-2">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-8 w-full" />
+                  ))}
+                </div>
+              ) : expiringVouchers.length === 0 ? (
+                <p className="text-muted-foreground py-4 text-center text-sm">
+                  No vouchers expiring soon
+                </p>
               ) : (
-                (courses ?? []).map((course) => (
-                  <Card key={course.id}>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base">{course.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3 text-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <ShieldCheck className="size-4" />
-                        {course.vendor} · {course.courseType}
+                <ul className="divide-border divide-y text-sm">
+                  {expiringVouchers.slice(0, 5).map((v) => (
+                    <li key={v.id} className="flex items-center justify-between py-2">
+                      <div>
+                        <p className="font-medium">{v.productName}</p>
+                        <p className="text-muted-foreground text-xs">
+                          #{v.voucherNumber} · expires {v.mustBeUsedBy}
+                        </p>
                       </div>
-                      <div className="space-y-2">
-                        {(course.materials ?? []).map((material) => (
-                          <div key={material.id} className="rounded-lg border px-3 py-2">
-                            <p className="font-medium">{material.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {material.materialType}
-                              {material.referenceLink ? ` · ${material.referenceLink}` : ""}
-                            </p>
-                          </div>
-                        ))}
-                        {(!course.materials || course.materials.length === 0) && (
-                          <p className="text-sm text-muted-foreground">No syllabus materials yet.</p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                      <Badge variant={v.status === "unused" ? "destructive" : "secondary"}>
+                        {v.status}
+                      </Badge>
+                    </li>
+                  ))}
+                </ul>
               )}
-            </div>
-          </TabsContent>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="budgets" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Budget &amp; Forecasting</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <LibraryBig className="size-4" />
-                  Certification budget data grouped by year.
+          {/* Recent Events */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base">
+                <Users className="mr-2 inline h-4 w-4 text-green-500" />
+                Recent Training Events
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/training/events" })}>
+                View all
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {eventsLoading ? (
+                <div className="space-y-2">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-8 w-full" />
+                  ))}
                 </div>
-                <div className="rounded-xl border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Year</TableHead>
-                        <TableHead>Certifications</TableHead>
-                        <TableHead>Estimated</TableHead>
-                        <TableHead>Actual</TableHead>
-                        <TableHead>Variance</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {budgetsLoading ? (
-                        Array.from({ length: 4 }).map((_, i) => (
-                          <TableRow key={i}>
-                            {Array.from({ length: 5 }).map((_, j) => (
-                              <TableCell key={j}>
-                                <Skeleton className="h-4 w-full" />
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        ))
-                      ) : !budgetSummary.length ? (
-                        <TableRow>
-                          <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
-                            No certification budget data available.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        budgetSummary.map((row) => (
-                          <TableRow key={row.year}>
-                            <TableCell className="font-medium">{row.year}</TableCell>
-                            <TableCell>{row.count}</TableCell>
-                            <TableCell>{row.estimated}</TableCell>
-                            <TableCell>{row.actual}</TableCell>
-                            <TableCell>{row.estimated - row.actual}</TableCell>
-                          </TableRow>
-                        ))
+              ) : !events?.length ? (
+                <p className="text-muted-foreground py-4 text-center text-sm">No events recorded</p>
+              ) : (
+                <ul className="divide-border divide-y text-sm">
+                  {events.slice(0, 5).map((e) => (
+                    <li key={e.id} className="flex items-center justify-between py-2">
+                      <div>
+                        <p className="font-medium">{e.institution}</p>
+                        <p className="text-muted-foreground text-xs">
+                          {e.startDate} · {e.participants?.length ?? 0} participants
+                        </p>
+                      </div>
+                      <span className="text-muted-foreground text-xs">${e.totalCost}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* In-House Log */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base">
+                <BookOpen className="mr-2 inline h-4 w-4 text-purple-500" />
+                Recent In-House Sessions
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/training/in-house" })}>
+                View all
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {logLoading ? (
+                <div className="space-y-2">
+                  {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-8 w-full" />
+                  ))}
+                </div>
+              ) : !inHouseLog?.length ? (
+                <p className="text-muted-foreground py-4 text-center text-sm">No sessions recorded</p>
+              ) : (
+                <ul className="divide-border divide-y text-sm">
+                  {inHouseLog.slice(0, 5).map((l) => (
+                    <li key={l.id} className="flex items-center justify-between py-2">
+                      <div>
+                        <p className="font-medium">{l.trainingName}</p>
+                        <p className="text-muted-foreground text-xs">
+                          {l.staffProfile?.user?.name} · {l.date}
+                        </p>
+                      </div>
+                      {l.assessmentCompleted && (
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
                       )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Cert Catalog Preview */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base">
+                <Tag className="mr-2 inline h-4 w-4 text-rose-500" />
+                Certification Catalog
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/training/catalog" })}>
+                View all
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {!catalog?.length ? (
+                <p className="text-muted-foreground py-4 text-center text-sm">
+                  No certifications catalogued
+                </p>
+              ) : (
+                <ul className="divide-border divide-y text-sm">
+                  {catalog.slice(0, 5).map((c) => (
+                    <li key={c.id} className="flex items-center justify-between py-2">
+                      <div>
+                        <p className="font-medium">{c.recommendedCert}</p>
+                        <p className="text-muted-foreground text-xs">
+                          {c.trainingArea} · {c.vendor ?? "—"}
+                        </p>
+                      </div>
+                      {c.level && <Badge variant="outline">{c.level}</Badge>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </Main>
     </>
   );

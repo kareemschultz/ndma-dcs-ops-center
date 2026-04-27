@@ -52,3 +52,5 @@ export * from "./appraisal-ratings";
 export * from "./noc-performance";
 // Phase 6 — Contracts lifecycle
 export * from "./career-progression";
+// Phase 7 — Training (plans, cert catalog, exam vouchers, events, in-house log, syllabi, assessment questions, onboarding templates)
+export * from "./training-phase7";

@@ -42,6 +42,18 @@ import { schedulingRouter } from "./scheduling";
 import { nocPerformanceRouter } from "./noc-performance";
 // Phase 6 — Contracts lifecycle
 import { careerProgressionRouter } from "./career-progression";
+// Phase 7 — Training (plans, cert catalog, exam vouchers, events, in-house log, syllabi, onboarding)
+import { trainingRouter } from "./training";
+import {
+  trainingPlansRouter,
+  certCatalogRouter,
+  examVouchersRouter,
+  trainingEventsRouter,
+  inHouseLogRouter,
+  syllabiRouter,
+  assessmentQuestionsRouter,
+  onboardingRouter,
+} from "./training-phase7";
 
 const healthCheck = publicProcedure.handler(() => "OK");
 const privateData = protectedProcedure.handler(({ context }) => ({
@@ -90,6 +102,16 @@ export type AppRouter = {
   scheduling: typeof schedulingRouter;
   nocPerformance: typeof nocPerformanceRouter;
   careerProgression: typeof careerProgressionRouter;
+  // Phase 7 — Training
+  training: typeof trainingRouter;
+  trainingPlans: typeof trainingPlansRouter;
+  certCatalog: typeof certCatalogRouter;
+  examVouchers: typeof examVouchersRouter;
+  trainingEvents: typeof trainingEventsRouter;
+  inHouseLog: typeof inHouseLogRouter;
+  syllabi: typeof syllabiRouter;
+  assessmentQuestions: typeof assessmentQuestionsRouter;
+  onboarding: typeof onboardingRouter;
 };
 
 export const appRouter: AppRouter = {
@@ -133,6 +155,16 @@ export const appRouter: AppRouter = {
   scheduling: schedulingRouter,
   nocPerformance: nocPerformanceRouter,
   careerProgression: careerProgressionRouter,
+  // Phase 7 — Training
+  training: trainingRouter,
+  trainingPlans: trainingPlansRouter,
+  certCatalog: certCatalogRouter,
+  examVouchers: examVouchersRouter,
+  trainingEvents: trainingEventsRouter,
+  inHouseLog: inHouseLogRouter,
+  syllabi: syllabiRouter,
+  assessmentQuestions: assessmentQuestionsRouter,
+  onboarding: onboardingRouter,
 };
 
 export type AppRouterClient = RouterClient<AppRouter>;

@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import { date, index, integer, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { staffProfiles } from "./staff";
+// Phase 7 — exam_vouchers FK imported via circular-safe ref (defined in training-phase7.ts)
 
 export const examScheduleStatusEnum = pgEnum("exam_schedule_status", [
   "scheduled",
@@ -30,6 +31,10 @@ export const examSchedule = pgTable(
     passingScore: integer("passing_score"),
     notes: text("notes"),
     status: examScheduleStatusEnum("status").notNull().default("scheduled"),
+    // Phase 7 additions — exam window + FK to exam_vouchers table
+    windowStart: date("window_start"),
+    windowEnd: date("window_end"),
+    examVoucherId: integer("exam_voucher_id"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
