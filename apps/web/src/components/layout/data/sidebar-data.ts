@@ -117,8 +117,10 @@ export const sidebarData: Omit<SidebarData, "user"> = {
           title: "Attendance Views",
           icon: Clock3,
           items: [
-            { title: "Lateness Dashboard", url: "/attendance", icon: Clock3 },
+            { title: "Attendance Logs", url: "/attendance", icon: Clock3 },
+            { title: "Lateness Report", url: "/lateness", icon: Clock3 },
             { title: "Timesheets", url: "/timesheets", icon: CalendarOff },
+            { title: "Timesheet Documents", url: "/timesheets/documents", icon: FileText },
           ],
         },
       ],

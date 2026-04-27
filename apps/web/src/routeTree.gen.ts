@@ -28,6 +28,7 @@ import { Route as AuthenticatedOpsReadinessIndexRouteImport } from './routes/_au
 import { Route as AuthenticatedNotificationsIndexRouteImport } from './routes/_authenticated/notifications/index'
 import { Route as AuthenticatedNocPerformanceIndexRouteImport } from './routes/_authenticated/noc-performance/index'
 import { Route as AuthenticatedLeaveIndexRouteImport } from './routes/_authenticated/leave/index'
+import { Route as AuthenticatedLatenessIndexRouteImport } from './routes/_authenticated/lateness/index'
 import { Route as AuthenticatedIncidentsIndexRouteImport } from './routes/_authenticated/incidents/index'
 import { Route as AuthenticatedImportIndexRouteImport } from './routes/_authenticated/import/index'
 import { Route as AuthenticatedHrIndexRouteImport } from './routes/_authenticated/hr/index'
@@ -49,6 +50,7 @@ import { Route as AuthenticatedTrainingInHouseRouteImport } from './routes/_auth
 import { Route as AuthenticatedTrainingExamsRouteImport } from './routes/_authenticated/training/exams'
 import { Route as AuthenticatedTrainingEventsRouteImport } from './routes/_authenticated/training/events'
 import { Route as AuthenticatedTrainingCatalogRouteImport } from './routes/_authenticated/training/catalog'
+import { Route as AuthenticatedTimesheetsDocumentsRouteImport } from './routes/_authenticated/timesheets/documents'
 import { Route as AuthenticatedStaffStaffIdRouteImport } from './routes/_authenticated/staff/$staffId'
 import { Route as AuthenticatedSettingsRolesRouteImport } from './routes/_authenticated/settings/roles'
 import { Route as AuthenticatedSettingsLeaveTypesRouteImport } from './routes/_authenticated/settings/leave-types'
@@ -197,6 +199,12 @@ const AuthenticatedLeaveIndexRoute = AuthenticatedLeaveIndexRouteImport.update({
   path: '/leave/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLatenessIndexRoute =
+  AuthenticatedLatenessIndexRouteImport.update({
+    id: '/lateness/',
+    path: '/lateness/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedIncidentsIndexRoute =
   AuthenticatedIncidentsIndexRouteImport.update({
     id: '/incidents/',
@@ -318,6 +326,12 @@ const AuthenticatedTrainingCatalogRoute =
   AuthenticatedTrainingCatalogRouteImport.update({
     id: '/training/catalog',
     path: '/training/catalog',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedTimesheetsDocumentsRoute =
+  AuthenticatedTimesheetsDocumentsRouteImport.update({
+    id: '/timesheets/documents',
+    path: '/timesheets/documents',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedStaffStaffIdRoute =
@@ -609,6 +623,7 @@ export interface FileRoutesByFullPath {
   '/settings/leave-types': typeof AuthenticatedSettingsLeaveTypesRoute
   '/settings/roles': typeof AuthenticatedSettingsRolesRoute
   '/staff/$staffId': typeof AuthenticatedStaffStaffIdRoute
+  '/timesheets/documents': typeof AuthenticatedTimesheetsDocumentsRoute
   '/training/catalog': typeof AuthenticatedTrainingCatalogRoute
   '/training/events': typeof AuthenticatedTrainingEventsRoute
   '/training/exams': typeof AuthenticatedTrainingExamsRoute
@@ -630,6 +645,7 @@ export interface FileRoutesByFullPath {
   '/hr/': typeof AuthenticatedHrIndexRoute
   '/import/': typeof AuthenticatedImportIndexRoute
   '/incidents/': typeof AuthenticatedIncidentsIndexRoute
+  '/lateness/': typeof AuthenticatedLatenessIndexRoute
   '/leave/': typeof AuthenticatedLeaveIndexRoute
   '/noc-performance/': typeof AuthenticatedNocPerformanceIndexRoute
   '/notifications/': typeof AuthenticatedNotificationsIndexRoute
@@ -692,6 +708,7 @@ export interface FileRoutesByTo {
   '/settings/leave-types': typeof AuthenticatedSettingsLeaveTypesRoute
   '/settings/roles': typeof AuthenticatedSettingsRolesRoute
   '/staff/$staffId': typeof AuthenticatedStaffStaffIdRoute
+  '/timesheets/documents': typeof AuthenticatedTimesheetsDocumentsRoute
   '/training/catalog': typeof AuthenticatedTrainingCatalogRoute
   '/training/events': typeof AuthenticatedTrainingEventsRoute
   '/training/exams': typeof AuthenticatedTrainingExamsRoute
@@ -713,6 +730,7 @@ export interface FileRoutesByTo {
   '/hr': typeof AuthenticatedHrIndexRoute
   '/import': typeof AuthenticatedImportIndexRoute
   '/incidents': typeof AuthenticatedIncidentsIndexRoute
+  '/lateness': typeof AuthenticatedLatenessIndexRoute
   '/leave': typeof AuthenticatedLeaveIndexRoute
   '/noc-performance': typeof AuthenticatedNocPerformanceIndexRoute
   '/notifications': typeof AuthenticatedNotificationsIndexRoute
@@ -777,6 +795,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/leave-types': typeof AuthenticatedSettingsLeaveTypesRoute
   '/_authenticated/settings/roles': typeof AuthenticatedSettingsRolesRoute
   '/_authenticated/staff/$staffId': typeof AuthenticatedStaffStaffIdRoute
+  '/_authenticated/timesheets/documents': typeof AuthenticatedTimesheetsDocumentsRoute
   '/_authenticated/training/catalog': typeof AuthenticatedTrainingCatalogRoute
   '/_authenticated/training/events': typeof AuthenticatedTrainingEventsRoute
   '/_authenticated/training/exams': typeof AuthenticatedTrainingExamsRoute
@@ -798,6 +817,7 @@ export interface FileRoutesById {
   '/_authenticated/hr/': typeof AuthenticatedHrIndexRoute
   '/_authenticated/import/': typeof AuthenticatedImportIndexRoute
   '/_authenticated/incidents/': typeof AuthenticatedIncidentsIndexRoute
+  '/_authenticated/lateness/': typeof AuthenticatedLatenessIndexRoute
   '/_authenticated/leave/': typeof AuthenticatedLeaveIndexRoute
   '/_authenticated/noc-performance/': typeof AuthenticatedNocPerformanceIndexRoute
   '/_authenticated/notifications/': typeof AuthenticatedNotificationsIndexRoute
@@ -862,6 +882,7 @@ export interface FileRouteTypes {
     | '/settings/leave-types'
     | '/settings/roles'
     | '/staff/$staffId'
+    | '/timesheets/documents'
     | '/training/catalog'
     | '/training/events'
     | '/training/exams'
@@ -883,6 +904,7 @@ export interface FileRouteTypes {
     | '/hr/'
     | '/import/'
     | '/incidents/'
+    | '/lateness/'
     | '/leave/'
     | '/noc-performance/'
     | '/notifications/'
@@ -945,6 +967,7 @@ export interface FileRouteTypes {
     | '/settings/leave-types'
     | '/settings/roles'
     | '/staff/$staffId'
+    | '/timesheets/documents'
     | '/training/catalog'
     | '/training/events'
     | '/training/exams'
@@ -966,6 +989,7 @@ export interface FileRouteTypes {
     | '/hr'
     | '/import'
     | '/incidents'
+    | '/lateness'
     | '/leave'
     | '/noc-performance'
     | '/notifications'
@@ -1029,6 +1053,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/leave-types'
     | '/_authenticated/settings/roles'
     | '/_authenticated/staff/$staffId'
+    | '/_authenticated/timesheets/documents'
     | '/_authenticated/training/catalog'
     | '/_authenticated/training/events'
     | '/_authenticated/training/exams'
@@ -1050,6 +1075,7 @@ export interface FileRouteTypes {
     | '/_authenticated/hr/'
     | '/_authenticated/import/'
     | '/_authenticated/incidents/'
+    | '/_authenticated/lateness/'
     | '/_authenticated/leave/'
     | '/_authenticated/noc-performance/'
     | '/_authenticated/notifications/'
@@ -1212,6 +1238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaveIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/lateness/': {
+      id: '/_authenticated/lateness/'
+      path: '/lateness'
+      fullPath: '/lateness/'
+      preLoaderRoute: typeof AuthenticatedLatenessIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/incidents/': {
       id: '/_authenticated/incidents/'
       path: '/incidents'
@@ -1357,6 +1390,13 @@ declare module '@tanstack/react-router' {
       path: '/training/catalog'
       fullPath: '/training/catalog'
       preLoaderRoute: typeof AuthenticatedTrainingCatalogRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/timesheets/documents': {
+      id: '/_authenticated/timesheets/documents'
+      path: '/timesheets/documents'
+      fullPath: '/timesheets/documents'
+      preLoaderRoute: typeof AuthenticatedTimesheetsDocumentsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/staff/$staffId': {
@@ -1711,6 +1751,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsLeaveTypesRoute: typeof AuthenticatedSettingsLeaveTypesRoute
   AuthenticatedSettingsRolesRoute: typeof AuthenticatedSettingsRolesRoute
   AuthenticatedStaffStaffIdRoute: typeof AuthenticatedStaffStaffIdRoute
+  AuthenticatedTimesheetsDocumentsRoute: typeof AuthenticatedTimesheetsDocumentsRoute
   AuthenticatedTrainingCatalogRoute: typeof AuthenticatedTrainingCatalogRoute
   AuthenticatedTrainingEventsRoute: typeof AuthenticatedTrainingEventsRoute
   AuthenticatedTrainingExamsRoute: typeof AuthenticatedTrainingExamsRoute
@@ -1732,6 +1773,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHrIndexRoute: typeof AuthenticatedHrIndexRoute
   AuthenticatedImportIndexRoute: typeof AuthenticatedImportIndexRoute
   AuthenticatedIncidentsIndexRoute: typeof AuthenticatedIncidentsIndexRoute
+  AuthenticatedLatenessIndexRoute: typeof AuthenticatedLatenessIndexRoute
   AuthenticatedLeaveIndexRoute: typeof AuthenticatedLeaveIndexRoute
   AuthenticatedNocPerformanceIndexRoute: typeof AuthenticatedNocPerformanceIndexRoute
   AuthenticatedNotificationsIndexRoute: typeof AuthenticatedNotificationsIndexRoute
@@ -1796,6 +1838,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsLeaveTypesRoute: AuthenticatedSettingsLeaveTypesRoute,
   AuthenticatedSettingsRolesRoute: AuthenticatedSettingsRolesRoute,
   AuthenticatedStaffStaffIdRoute: AuthenticatedStaffStaffIdRoute,
+  AuthenticatedTimesheetsDocumentsRoute: AuthenticatedTimesheetsDocumentsRoute,
   AuthenticatedTrainingCatalogRoute: AuthenticatedTrainingCatalogRoute,
   AuthenticatedTrainingEventsRoute: AuthenticatedTrainingEventsRoute,
   AuthenticatedTrainingExamsRoute: AuthenticatedTrainingExamsRoute,
@@ -1818,6 +1861,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHrIndexRoute: AuthenticatedHrIndexRoute,
   AuthenticatedImportIndexRoute: AuthenticatedImportIndexRoute,
   AuthenticatedIncidentsIndexRoute: AuthenticatedIncidentsIndexRoute,
+  AuthenticatedLatenessIndexRoute: AuthenticatedLatenessIndexRoute,
   AuthenticatedLeaveIndexRoute: AuthenticatedLeaveIndexRoute,
   AuthenticatedNocPerformanceIndexRoute: AuthenticatedNocPerformanceIndexRoute,
   AuthenticatedNotificationsIndexRoute: AuthenticatedNotificationsIndexRoute,
