@@ -44,6 +44,12 @@ export const contracts = pgTable(
     status: contractStatusEnum("status").notNull().default("active"),
     documentUrl: text("document_url"),
     notes: text("notes"),
+    // Phase 6 — lifecycle dates (computed from endDate by handler or manually set)
+    renewalLetterDueDate: date("renewal_letter_due_date"),
+    appraisal1DueDate: date("appraisal_1_due_date"),
+    appraisal2DueDate: date("appraisal_2_due_date"),
+    submittedToHrAt: timestamp("submitted_to_hr_at"),
+    renewalOutcome: text("renewal_outcome").$type<"renewed" | "not_renewed" | "left" | "terminated">(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

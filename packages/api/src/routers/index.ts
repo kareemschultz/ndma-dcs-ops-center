@@ -40,6 +40,8 @@ import { accessRegistryRouter } from "./access-registry";
 import { schedulingRouter } from "./scheduling";
 // Phase 5 — NOC Performance
 import { nocPerformanceRouter } from "./noc-performance";
+// Phase 6 — Contracts lifecycle
+import { careerProgressionRouter } from "./career-progression";
 
 const healthCheck = publicProcedure.handler(() => "OK");
 const privateData = protectedProcedure.handler(({ context }) => ({
@@ -87,6 +89,7 @@ export type AppRouter = {
   accessRegistry: typeof accessRegistryRouter;
   scheduling: typeof schedulingRouter;
   nocPerformance: typeof nocPerformanceRouter;
+  careerProgression: typeof careerProgressionRouter;
 };
 
 export const appRouter: AppRouter = {
@@ -129,6 +132,7 @@ export const appRouter: AppRouter = {
   accessRegistry: accessRegistryRouter,
   scheduling: schedulingRouter,
   nocPerformance: nocPerformanceRouter,
+  careerProgression: careerProgressionRouter,
 };
 
 export type AppRouterClient = RouterClient<AppRouter>;
