@@ -10,6 +10,44 @@
 
 ---
 
+## Phase 8 — PPE matrix, lateness quarterly grid, timesheet documents — 🟢 Done
+
+- **Agent:** Claude Code (claude-sonnet-4-6)
+- **Date:** 2026-04-27
+- **Branch:** `phase/8-ppe-lateness-tosd` → squash-merged to main
+- **Gate commit (branch):** `20202ed` / **main squash commit:** `2b4fbc6`
+
+### What shipped
+
+**Migration 0028** (`packages/db/src/migrations/0028_ppe_lateness_timesheets.sql`):
+- `ppe_items`: add `has_size` bool + `has_asset_tag` bool; seed 17 canonical items (ON CONFLICT DO UPDATE)
+- `ppe_issuances`: ALTER TYPE adds `not_issued`, `n_a`, `stolen`; add `asset_tag` text; drop old unique(staff,item) → new unique(staff,item,issued_date)
+- `lateness_records`: add `quarter int`, `notes text`, `days_missing_from_attendance int`, `days_on_schedule int`; add unique(staff_id,year,month)
+- New `timesheet_documents` table with `timesheet_office` enum (castellani/liliendaal)
+
+**Schema changes:** `ppe.ts`, `lateness-records.ts`, new `timesheet-documents.ts`, `schema/index.ts`
+
+**New routers:** `lateness` (list/quarterlyGrid/upsert/delete/stats), `timesheetDocuments` (list/create/update/delete)
+
+**Extended PPE router:** `issuances.upsert` (upsert by staff+item+date), `issuances.matrix` (full staff × item grid)
+
+**New UI routes:**
+- `/lateness` — Q1-Q4 quarterly grid, per-staff × 3-month view, + button per month
+- `/timesheets/documents` — year/month/office filters, register metadata dialog
+- `/compliance/ppe` (rewritten) — interactive 17-column matrix; click cell → set status/size/assetTag
+
+**TOSD:** verified all 7 types already present; no schema/router changes needed.
+
+### Tests
+- ✅ `bun run check-types` clean (3 packages, 0 errors)
+- ✅ Phase 8 RBAC matrix tests appended
+- ⚠️ e2e deferred (needs running DB + dev server)
+
+### Next phase
+Phase 9 — Self-service + policies + forms. Next migration: 0029.
+
+---
+
 ## Phases 1-6 — Full sprint complete — 🟢 All done
 
 - **Agent:** Claude Code (claude-sonnet-4-6, user-directed multi-phase sprint)
