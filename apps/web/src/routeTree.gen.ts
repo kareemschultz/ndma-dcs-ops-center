@@ -26,6 +26,7 @@ import { Route as AuthenticatedProcurementIndexRouteImport } from './routes/_aut
 import { Route as AuthenticatedPolicyIndexRouteImport } from './routes/_authenticated/policy/index'
 import { Route as AuthenticatedOpsReadinessIndexRouteImport } from './routes/_authenticated/ops-readiness/index'
 import { Route as AuthenticatedNotificationsIndexRouteImport } from './routes/_authenticated/notifications/index'
+import { Route as AuthenticatedNocPerformanceIndexRouteImport } from './routes/_authenticated/noc-performance/index'
 import { Route as AuthenticatedLeaveIndexRouteImport } from './routes/_authenticated/leave/index'
 import { Route as AuthenticatedIncidentsIndexRouteImport } from './routes/_authenticated/incidents/index'
 import { Route as AuthenticatedImportIndexRouteImport } from './routes/_authenticated/import/index'
@@ -176,6 +177,12 @@ const AuthenticatedNotificationsIndexRoute =
   AuthenticatedNotificationsIndexRouteImport.update({
     id: '/notifications/',
     path: '/notifications/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedNocPerformanceIndexRoute =
+  AuthenticatedNocPerformanceIndexRouteImport.update({
+    id: '/noc-performance/',
+    path: '/noc-performance/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedLeaveIndexRoute = AuthenticatedLeaveIndexRouteImport.update({
@@ -568,6 +575,7 @@ export interface FileRoutesByFullPath {
   '/import/': typeof AuthenticatedImportIndexRoute
   '/incidents/': typeof AuthenticatedIncidentsIndexRoute
   '/leave/': typeof AuthenticatedLeaveIndexRoute
+  '/noc-performance/': typeof AuthenticatedNocPerformanceIndexRoute
   '/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/ops-readiness/': typeof AuthenticatedOpsReadinessIndexRoute
   '/policy/': typeof AuthenticatedPolicyIndexRoute
@@ -643,6 +651,7 @@ export interface FileRoutesByTo {
   '/import': typeof AuthenticatedImportIndexRoute
   '/incidents': typeof AuthenticatedIncidentsIndexRoute
   '/leave': typeof AuthenticatedLeaveIndexRoute
+  '/noc-performance': typeof AuthenticatedNocPerformanceIndexRoute
   '/notifications': typeof AuthenticatedNotificationsIndexRoute
   '/ops-readiness': typeof AuthenticatedOpsReadinessIndexRoute
   '/policy': typeof AuthenticatedPolicyIndexRoute
@@ -720,6 +729,7 @@ export interface FileRoutesById {
   '/_authenticated/import/': typeof AuthenticatedImportIndexRoute
   '/_authenticated/incidents/': typeof AuthenticatedIncidentsIndexRoute
   '/_authenticated/leave/': typeof AuthenticatedLeaveIndexRoute
+  '/_authenticated/noc-performance/': typeof AuthenticatedNocPerformanceIndexRoute
   '/_authenticated/notifications/': typeof AuthenticatedNotificationsIndexRoute
   '/_authenticated/ops-readiness/': typeof AuthenticatedOpsReadinessIndexRoute
   '/_authenticated/policy/': typeof AuthenticatedPolicyIndexRoute
@@ -797,6 +807,7 @@ export interface FileRouteTypes {
     | '/import/'
     | '/incidents/'
     | '/leave/'
+    | '/noc-performance/'
     | '/notifications/'
     | '/ops-readiness/'
     | '/policy/'
@@ -872,6 +883,7 @@ export interface FileRouteTypes {
     | '/import'
     | '/incidents'
     | '/leave'
+    | '/noc-performance'
     | '/notifications'
     | '/ops-readiness'
     | '/policy'
@@ -948,6 +960,7 @@ export interface FileRouteTypes {
     | '/_authenticated/import/'
     | '/_authenticated/incidents/'
     | '/_authenticated/leave/'
+    | '/_authenticated/noc-performance/'
     | '/_authenticated/notifications/'
     | '/_authenticated/ops-readiness/'
     | '/_authenticated/policy/'
@@ -1092,6 +1105,13 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/notifications/'
       preLoaderRoute: typeof AuthenticatedNotificationsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/noc-performance/': {
+      id: '/_authenticated/noc-performance/'
+      path: '/noc-performance'
+      fullPath: '/noc-performance/'
+      preLoaderRoute: typeof AuthenticatedNocPerformanceIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/leave/': {
@@ -1566,6 +1586,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedImportIndexRoute: typeof AuthenticatedImportIndexRoute
   AuthenticatedIncidentsIndexRoute: typeof AuthenticatedIncidentsIndexRoute
   AuthenticatedLeaveIndexRoute: typeof AuthenticatedLeaveIndexRoute
+  AuthenticatedNocPerformanceIndexRoute: typeof AuthenticatedNocPerformanceIndexRoute
   AuthenticatedNotificationsIndexRoute: typeof AuthenticatedNotificationsIndexRoute
   AuthenticatedOpsReadinessIndexRoute: typeof AuthenticatedOpsReadinessIndexRoute
   AuthenticatedPolicyIndexRoute: typeof AuthenticatedPolicyIndexRoute
@@ -1644,6 +1665,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedImportIndexRoute: AuthenticatedImportIndexRoute,
   AuthenticatedIncidentsIndexRoute: AuthenticatedIncidentsIndexRoute,
   AuthenticatedLeaveIndexRoute: AuthenticatedLeaveIndexRoute,
+  AuthenticatedNocPerformanceIndexRoute: AuthenticatedNocPerformanceIndexRoute,
   AuthenticatedNotificationsIndexRoute: AuthenticatedNotificationsIndexRoute,
   AuthenticatedOpsReadinessIndexRoute: AuthenticatedOpsReadinessIndexRoute,
   AuthenticatedPolicyIndexRoute: AuthenticatedPolicyIndexRoute,
