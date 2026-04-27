@@ -7,6 +7,8 @@ import {
   leaveBalances,
   leaveRequests,
   staffProfiles,
+  tosdRecords,
+  tosdTypeEnum,
 } from "@ndma-dcs-staff-portal/db";
 import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { protectedProcedure, requireRole } from "../index";
@@ -567,6 +569,216 @@ export const leaveRouter = {
           },
           orderBy: (table, { asc }) => [asc(table.eventDate), asc(table.title)],
         });
+      }),
+  },
+
+  // ── Validate leave request (check rules before submission) ───────────────
+  validateRequest: requireRole("leave", "read")
+    .input(
+      z.object({
+        staffId: z.string().min(1),
+        leaveTypeId: z.string().min(1),
+        startDate: z.string(),
+        endDate: z.string(),
+      }),
+    )
+    .handler(async ({ input }) => {
+      const violations: string[] = [];
+      let status: "ok" | "warning" | "blocked" = "ok";
+
+      const start = new Date(input.startDate);
+      const end = new Date(input.endDate);
+
+      // Rule: start must be <= end
+      if (start > end) {
+        violations.push("start_after_end");
+        status = "blocked";
+      }
+
+      // Rule: balance check for annual leave
+      const leaveType = await db.query.leaveTypes.findFirst({
+        where: eq(leaveTypes.id, input.leaveTypeId),
+      });
+
+      if (leaveType && leaveType.name.toLowerCase().includes("annual")) {
+        const yearStart = `${start.getFullYear()}-01-01`;
+        const balance = await db.query.leaveBalances.findFirst({
+          where: and(
+            eq(leaveBalances.staffProfileId, input.staffId),
+            eq(leaveBalances.leaveTypeId, input.leaveTypeId),
+            eq(leaveBalances.contractYearStart, yearStart),
+          ),
+        });
+
+        if (balance) {
+          const requestedDays = Math.ceil(
+            (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+          ) + 1;
+          const available = balance.entitlement + balance.carriedOver + balance.adjustment - balance.used;
+          if (requestedDays > available) {
+            violations.push("insufficient_balance");
+            if (status === "ok") status = "warning";
+          }
+        }
+
+        // Rule: blocked months for annual leave (July, August, November)
+        const startMonth = start.getMonth() + 1; // 1-indexed
+        if ([7, 8, 11].includes(startMonth)) {
+          violations.push("blocked_month");
+          if (status === "ok") status = "warning";
+        }
+      }
+
+      return { status, violations };
+    }),
+
+  // ── TOSD Records (Time Off & Sick Days) ───────────────────────────────────
+  tosd: {
+    list: requireRole("leave", "read")
+      .input(
+        z.object({
+          staffId: z.string().optional(),
+          year: z.number().int().optional(),
+        }),
+      )
+      .handler(async ({ input }) => {
+        const conditions = [];
+        if (input.staffId) {
+          conditions.push(eq(tosdRecords.staffId, input.staffId));
+        }
+        if (input.year) {
+          const yearStart = `${input.year}-01-01`;
+          const yearEnd = `${input.year}-12-31`;
+          conditions.push(gte(tosdRecords.date, yearStart));
+          conditions.push(lte(tosdRecords.date, yearEnd));
+        }
+
+        return db.query.tosdRecords.findMany({
+          where: conditions.length > 0 ? and(...conditions) : undefined,
+          with: {
+            staffProfile: { with: { user: true, department: true } },
+          },
+          orderBy: (table, { desc }) => [desc(table.date)],
+        });
+      }),
+
+    create: requireRole("leave", "create")
+      .input(
+        z.object({
+          staffId: z.string().min(1),
+          date: z.string(),
+          type: z.enum(tosdTypeEnum),
+          reasonText: z.string().optional(),
+          days: z.string().optional(),
+          hours: z.string().optional(),
+        }),
+      )
+      .handler(async ({ input, context }) => {
+        const [created] = await db
+          .insert(tosdRecords)
+          .values({
+            staffId: input.staffId,
+            date: input.date,
+            type: input.type,
+            reasonText: input.reasonText ?? null,
+            days: input.days ?? null,
+            hours: input.hours ?? null,
+          })
+          .returning();
+
+        if (!created) throw new ORPCError("INTERNAL_SERVER_ERROR");
+
+        await logAudit({
+          actorId: context.session.user.id,
+          actorName: context.session.user.name,
+          actorRole: context.userRole ?? undefined,
+          action: "leave.tosd.create",
+          module: "leave",
+          resourceType: "tosd_record",
+          resourceId: created.id,
+          afterValue: created as Record<string, unknown>,
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+          correlationId: context.requestId,
+        });
+
+        return created;
+      }),
+
+    update: requireRole("leave", "update")
+      .input(
+        z.object({
+          id: z.string().min(1),
+          type: z.enum(tosdTypeEnum).optional(),
+          reasonText: z.string().nullable().optional(),
+          days: z.string().nullable().optional(),
+          hours: z.string().nullable().optional(),
+        }),
+      )
+      .handler(async ({ input, context }) => {
+        const before = await db.query.tosdRecords.findFirst({
+          where: eq(tosdRecords.id, input.id),
+        });
+        if (!before) throw new ORPCError("NOT_FOUND");
+
+        const nextValues: Record<string, unknown> = {
+          updatedAt: new Date(),
+        };
+        if (input.type !== undefined) nextValues.type = input.type;
+        if (input.reasonText !== undefined) nextValues.reasonText = input.reasonText;
+        if (input.days !== undefined) nextValues.days = input.days;
+        if (input.hours !== undefined) nextValues.hours = input.hours;
+
+        const [updated] = await db
+          .update(tosdRecords)
+          .set(nextValues)
+          .where(eq(tosdRecords.id, input.id))
+          .returning();
+        if (!updated) throw new ORPCError("INTERNAL_SERVER_ERROR");
+
+        await logAudit({
+          actorId: context.session.user.id,
+          actorName: context.session.user.name,
+          actorRole: context.userRole ?? undefined,
+          action: "leave.tosd.update",
+          module: "leave",
+          resourceType: "tosd_record",
+          resourceId: input.id,
+          beforeValue: before as Record<string, unknown>,
+          afterValue: updated as Record<string, unknown>,
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+          correlationId: context.requestId,
+        });
+
+        return updated;
+      }),
+
+    delete: requireRole("leave", "delete")
+      .input(z.object({ id: z.string().min(1) }))
+      .handler(async ({ input, context }) => {
+        const before = await db.query.tosdRecords.findFirst({
+          where: eq(tosdRecords.id, input.id),
+        });
+        if (!before) throw new ORPCError("NOT_FOUND");
+
+        await db.delete(tosdRecords).where(eq(tosdRecords.id, input.id));
+
+        await logAudit({
+          actorId: context.session.user.id,
+          actorName: context.session.user.name,
+          actorRole: context.userRole ?? undefined,
+          action: "leave.tosd.delete",
+          module: "leave",
+          resourceType: "tosd_record",
+          resourceId: input.id,
+          beforeValue: before as Record<string, unknown>,
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+          correlationId: context.requestId,
+        });
+
+        return before;
       }),
   },
 };
