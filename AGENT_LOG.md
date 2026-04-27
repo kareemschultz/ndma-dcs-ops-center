@@ -435,3 +435,55 @@ Also: channel-adapter pattern for notifications (Phase 10 AC), master plan secti
 - Phase N+1 branches from {gate commit SHA}
 - (any carry-over context the next agent needs)
 ```
+
+## Phase 7 - Training - Done
+
+- **Agent:** Claude Code
+- **Model:** claude-sonnet-4-5
+- **Date:** 2026-04-27
+- **Branch:** phase/7-training -> merged to main
+- **Gate commit:** a4c1a53
+- **Baseline commit (previous phase):** 66fa5c9
+
+### What shipped
+
+- Migrations 0026 (9 new tables + exam_schedule extension) and 0027 (onboarding_task_templates + onboarding_tasks extension)
+- packages/db/src/schema/training-phase7.ts -- all Phase 7 tables and relations
+- packages/api/src/routers/training-phase7.ts -- 8 new routers (trainingPlans, certCatalog, examVouchers, trainingEvents, inHouseLog, syllabi, assessmentQuestions, onboarding)
+- Wire existing trainingRouter into appRouter (was previously unwired)
+- 6 new UI routes: /training/ overview, /training/plan, /training/exams, /training/vouchers, /training/events, /training/in-house, /training/catalog
+- Sidebar updated: 3 stub items -> 7 real Training items
+- Exam voucher expiry reminders send in-app notifications at configurable threshold (default 30 days)
+- Training events cost breakdown auto-sums totalCost from 4 cost fields
+- New hire onboarding creates 8 tasks from seeded onboarding_task_templates
+
+### Tests
+
+- typecheck: 3 successful, 3 total (server/web/packages all passing)
+- RBAC: all new procedures use requireRole or protectedProcedure correctly
+- e2e: not run (no DB in worktree environment)
+
+### Deferred
+
+- Exam schedule window UI (exam_schedule columns added to DB, UI uses existing training records)
+- Training syllabi editor (data model in place, read-only list only)
+- Assessment questions UI (data model in place, read-only list only)
+- Historical seed for training/exam/syllabus data -> Phase 14
+
+### Blockers hit + resolved
+
+- exam-schedule.ts already had an examSchedule table (migration 0012). Resolved by keeping existing table, adding new Phase 7 columns (window_start, window_end, exam_voucher_id) via ALTER TABLE in migration 0026
+- Base UI Select onValueChange returns string | null; fixed all handlers with null guards
+- Button asChild not supported in shared UI; replaced with useNavigate onClick pattern
+- node_modules missing in worktree; resolved with bun install (1821 packages)
+
+### Files changed
+
+- 20 files, +3533 / -274
+- New: training-phase7.ts (schema + router), 6 route files, 2 migrations, phase checklist
+
+### Next-phase handoff
+
+- Phase 8 branches from a4c1a53
+- Phase 8: PPE, lateness, timesheets, TOSD (existing PPE schema in place, lateness_records in place, timesheets in place -- mostly router/UI gaps)
+- Migration index is at 27 -- next migration is 0028

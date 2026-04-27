@@ -1,30 +1,34 @@
 # Current Phase
 
-**Active phase:** Phase 7 - Training
-**Status:** In Progress
-**Agent:** Claude Code
-**Branch:** phase/7-training
-**Started:** 2026-04-27
+**Active phase:** None -- Phases 1-7 complete
+**Status:** Done through Phase 7
+**Last completed:** Phase 7 Training (commit a4c1a53, PR #29)
+**Branch:** none active -- next work targets Phase 8 (PPE, lateness, timesheets, TOSD)
+**Master plan reference:** docs/superpowers/plans/2026-04-23-master-remediation-plan.md
 
-## What is being built
+## What is on main (Phases 0-7)
 
-Phase 7 adds the full Training and Onboarding module per master plan section 5.10-5.11.
+| Phase | PR | Commit | What shipped |
+|---|---|---|---|
+| 0 | #16 | 3916721 | Migrations 0008-0015 -- stabilise and delete |
+| 1 | #18-22 | 2972287 | Access registry schema + API + UI + RBAC tests + staff detail page |
+| 2 | #23 | a88f36b | Leave refactor -- TOSD table, validateRequest, policy engine |
+| 3 | #24 | b3cad77 | Scheduling -- noc_shifts, dcs_on_call_weeks, routine_maintenance, swap tables + router + UI |
+| 4 | #25 | 82c109b | Appraisal sub-tables (ratings/responsibilities/achievements/goals/signatures) + scoring |
+| 5 | #26 | 7916454 | NOC performance -- ticket activity, monthly metrics, EOM awards + computeEOM |
+| 6 | #27 | 66fa5c9 | Contracts lifecycle -- lifecycle dates, outcome recording, career_progression_plans |
+| 7 | #29 | a4c1a53 | Training -- plans, cert catalog, exam vouchers, events, in-house log, syllabi, onboarding templates |
 
-New tables: training_plans, certification_catalog, exam_schedule, exam_vouchers,
-training_events, training_event_participants, in_house_training_log, training_syllabi,
-assessment_questions, onboarding_task_templates, extend onboarding_tasks.
+## Next phase: Phase 8 -- PPE, lateness, timesheets, TOSD
 
-Training router extended with all new procedures.
-6 training UI routes replacing 3 stub sidebar items.
+Per master plan section 5.12, Phase 8 adds:
+- PPE matrix (17 items x staff + sizes + asset tags)
+- Lateness quarterly grid
+- TOSD register all 7 types; historical callout_legacy rows accessible
+- Timesheet indexing
 
-## Acceptance criteria
-- Training plan matrix (team x staff x training areas) for 2026-2027
-- In-house training log CRUD
-- Exam voucher expiry reminders at 30/14/7 days
-- Training events form with cost breakdown auto-sum
-- New hire onboarding auto-creates 8 tasks from template
-- Certification catalog visible to staff
+## Notes for any agent picking up
 
-## Notes
-- Phase 6 gate commit: 66fa5c9
-- Next migration index: 0026
+- Migration index is at 27 -- next migration is 0028
+- Existing schemas: ppe.ts, lateness-records.ts, timesheets.ts, tosd-records.ts all exist
+- Check which procedures are wired into appRouter vs stub-only before starting
