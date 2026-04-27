@@ -4,6 +4,23 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
+## [Phase 8 — PPE, Lateness, Timesheets, TOSD] — shipped 2026-04-27 squash `2b4fbc6`
+
+### Added
+- **Migration 0028** — extends `ppe_items` (add `has_size` bool, `has_asset_tag` bool), updates `ppe_issuances` status enum (adds `not_issued`, `n_a`, `stolen`; adds `asset_tag` column; replaces old unique(staff,item) with unique(staff,item,issued_date)), extends `lateness_records` (adds `quarter`, `notes`, `days_missing_from_attendance`, `days_on_schedule`; adds unique constraint), creates `timesheet_documents` (year/month/office index table with castellani/liliendaal enum)
+- **17 canonical PPE items seeded**: Long Boots, Overalls, Mousepad, Safety Boots, Bag, Screwdriver, DB9-RJ45, DB9-USB, Monitor, HDMI to Monitor, Laptop, MiFi, CUG Phone, CUG Sim, NDMA Shirts, USB To Ethernet, Umbrella
+- **`lateness` router** — `list`, `quarterlyGrid`, `upsert`, `delete`, `stats` — per-staff monthly records grouped by quarter
+- **`timesheetDocuments` router** — `list`, `create`, `update`, `delete` — PDF timesheet index (metadata only, no parsing)
+- **Extended PPE router** — `issuances.upsert` (upsert by staff+item+date), `issuances.matrix` (full staff × item grid with status/size/assetTag)
+- **`/compliance/ppe`** rewritten as interactive PPE matrix — 17-column grid, click any cell to set status + size + asset tag
+- **`/lateness`** — quarterly lateness grid (Q1-Q4 tabs, per-staff × per-month: time late, days late, days missing, days on schedule)
+- **`/timesheets/documents`** — timesheet document index (year/month/office filters, register metadata dialog, delete)
+- **TOSD verified** — all 7 types confirmed present (`reported_sick`, `medical`, `absent`, `time_off`, `work_from_home`, `lateness`, `callout_legacy`); no schema changes needed
+- **Sidebar** — Attendance & Time section updated: "Lateness Report" → `/lateness`; "Timesheet Documents" → `/timesheets/documents`
+- **Phase 8 RBAC tests** — coverage for `lateness.list/upsert/quarterlyGrid`, `timesheetDocuments.list/create`, `ppe.issuances.matrix/upsert`
+
+---
+
 ## [Phase 7 — Training] — shipped 2026-04-27 via #29 squash `a4c1a53`
 
 ### Added

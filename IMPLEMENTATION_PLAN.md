@@ -27,7 +27,7 @@
 | 5 | NOC performance | 🟢 Done | `phase/5-noc-perf` (merged) | Claude Code | 7916454 | 2026-04-27 |
 | 6 | Contracts lifecycle | 🟢 Done | `phase/6-contracts` (merged) | Claude Code | 66fa5c9 | 2026-04-27 |
 | 7 | Training | 🟢 Done | `phase/7-training` (merged) | Claude Code | a4c1a53 | 2026-04-27 |
-| 8 | PPE, lateness, timesheets, TOSD | ⬜ Queued | — | — | — | — |
+| 8 | PPE, lateness, timesheets, TOSD | 🟢 Done | `phase/8-ppe-lateness-tosd` (merged) | Claude Code | 2b4fbc6 | 2026-04-27 |
 | 9 | Self-service + policies + forms | ⬜ Queued | — | — | — | — |
 | 10 | Notifications & calendar | ⬜ Queued | — | — | — | — |
 | 11 | Work register refactor | ⬜ Queued | — | — | — | — |
