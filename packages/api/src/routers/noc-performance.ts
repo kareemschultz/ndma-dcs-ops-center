@@ -200,6 +200,7 @@ export const nocPerformanceRouter = {
             .insert(nocMonthlyMetrics)
             .values({ staffId, year, month, ...rest })
             .returning();
+          if (!inserted) throw new Error("Insert failed");
           result = inserted;
 
           await logAudit({
@@ -285,6 +286,7 @@ export const nocPerformanceRouter = {
           .insert(nocTicketActivity)
           .values(input)
           .returning();
+        if (!inserted) throw new Error("Insert failed");
 
         await logAudit({
           actorId: context.session.user.id,
@@ -393,8 +395,11 @@ export const nocPerformanceRouter = {
             .insert(employeeOfTheMonth)
             .values(computed)
             .returning();
+          if (!inserted) throw new Error("Insert failed");
           result = inserted;
         }
+
+        if (!result) throw new Error("Upsert returned no row");
 
         await logAudit({
           actorId: context.session.user.id,
