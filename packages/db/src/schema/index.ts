@@ -46,3 +46,5 @@ export * from "./service-access-registry";
 export * from "./tosd-records";
 // Phase 3 — Scheduling unification
 export * from "./scheduling";
+// Phase 4 — Appraisal system
+export * from "./appraisal-ratings";

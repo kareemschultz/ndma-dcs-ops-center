@@ -83,6 +83,9 @@ export const appraisals = pgTable(
     supervisorComments: text("supervisor_comments"),
     managerComments: text("manager_comments"),
     immutableFrom: timestamp("immutable_from"),
+    // Score fields (phase 4)
+    maxScore: integer("max_score").default(65),
+    incrementPct: integer("increment_pct"),
     // 1–5 rating
     overallRating: integer("overall_rating"),
     summary: text("summary"),
