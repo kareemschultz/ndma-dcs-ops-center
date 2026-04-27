@@ -4,7 +4,12 @@ import { z } from "zod";
 
 import {
   appraisals,
+  appraisalAchievements,
   appraisalFollowups,
+  appraisalGoals,
+  appraisalRatings,
+  appraisalResponsibilities,
+  appraisalSignatures,
   appraisalTracker,
   examSchedule,
   db,
@@ -1461,4 +1466,237 @@ export const appraisalsRouter = {
 
       return fetchAppraisal(input.id);
   }),
+
+  // ── Phase 4: structured sub-tables ──────────────────────────────────────
+
+  setResponsibilities: requireRole("appraisal", "update")
+    .input(
+      z.object({
+        appraisalId: z.string().min(1),
+        responsibilities: z.array(
+          z.object({
+            seq: z.number().int().min(1),
+            title: z.string().min(1),
+            description: z.string().optional(),
+          }),
+        ),
+      }),
+    )
+    .handler(async ({ input, context }) => {
+      const before = await db.query.appraisalResponsibilities.findMany({
+        where: eq(appraisalResponsibilities.appraisalId, input.appraisalId),
+      });
+
+      await db
+        .delete(appraisalResponsibilities)
+        .where(eq(appraisalResponsibilities.appraisalId, input.appraisalId));
+
+      if (input.responsibilities.length > 0) {
+        await db.insert(appraisalResponsibilities).values(
+          input.responsibilities.map((r) => ({
+            appraisalId: input.appraisalId,
+            seq: r.seq,
+            title: r.title,
+            description: r.description ?? null,
+          })),
+        );
+      }
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        actorRole: context.userRole ?? undefined,
+        action: "appraisal.setResponsibilities",
+        module: "staff",
+        resourceType: "appraisal",
+        resourceId: input.appraisalId,
+        beforeValue: { responsibilities: before } as Record<string, unknown>,
+        afterValue: { responsibilities: input.responsibilities } as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        correlationId: context.requestId,
+      });
+
+      return db.query.appraisalResponsibilities.findMany({
+        where: eq(appraisalResponsibilities.appraisalId, input.appraisalId),
+        orderBy: (t, { asc }) => [asc(t.seq)],
+      });
+    }),
+
+  setAchievements: requireRole("appraisal", "update")
+    .input(
+      z.object({
+        appraisalId: z.string().min(1),
+        achievements: z.array(z.string().min(1)).min(3, "At least 3 achievements required"),
+      }),
+    )
+    .handler(async ({ input, context }) => {
+      await db
+        .delete(appraisalAchievements)
+        .where(eq(appraisalAchievements.appraisalId, input.appraisalId));
+
+      if (input.achievements.length > 0) {
+        await db.insert(appraisalAchievements).values(
+          input.achievements.map((text, i) => ({
+            appraisalId: input.appraisalId,
+            seq: i + 1,
+            text,
+          })),
+        );
+      }
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        actorRole: context.userRole ?? undefined,
+        action: "appraisal.setAchievements",
+        module: "staff",
+        resourceType: "appraisal",
+        resourceId: input.appraisalId,
+        afterValue: { count: input.achievements.length } as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        correlationId: context.requestId,
+      });
+
+      return db.query.appraisalAchievements.findMany({
+        where: eq(appraisalAchievements.appraisalId, input.appraisalId),
+        orderBy: (t, { asc }) => [asc(t.seq)],
+      });
+    }),
+
+  setGoals: requireRole("appraisal", "update")
+    .input(
+      z.object({
+        appraisalId: z.string().min(1),
+        goals: z.array(z.string().min(1)).min(3, "At least 3 goals required"),
+      }),
+    )
+    .handler(async ({ input, context }) => {
+      await db
+        .delete(appraisalGoals)
+        .where(eq(appraisalGoals.appraisalId, input.appraisalId));
+
+      if (input.goals.length > 0) {
+        await db.insert(appraisalGoals).values(
+          input.goals.map((text, i) => ({
+            appraisalId: input.appraisalId,
+            seq: i + 1,
+            text,
+          })),
+        );
+      }
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        actorRole: context.userRole ?? undefined,
+        action: "appraisal.setGoals",
+        module: "staff",
+        resourceType: "appraisal",
+        resourceId: input.appraisalId,
+        afterValue: { count: input.goals.length } as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        correlationId: context.requestId,
+      });
+
+      return db.query.appraisalGoals.findMany({
+        where: eq(appraisalGoals.appraisalId, input.appraisalId),
+        orderBy: (t, { asc }) => [asc(t.seq)],
+      });
+    }),
+
+  sign: requireRole("appraisal", "approve")
+    .input(
+      z.object({
+        appraisalId: z.string().min(1),
+        role: z.enum(["employee", "manager_director", "hr_manager", "deputy_gm", "gm"]),
+        signatureSvg: z.string().optional(),
+      }),
+    )
+    .handler(async ({ input, context }) => {
+      const callerProfile = await db.query.staffProfiles.findFirst({
+        where: eq(staffProfiles.userId, context.session.user.id),
+      });
+
+      const [upserted] = await db
+        .insert(appraisalSignatures)
+        .values({
+          appraisalId: input.appraisalId,
+          role: input.role,
+          signedBy: callerProfile?.id ?? null,
+          signedAt: new Date(),
+          signatureSvg: input.signatureSvg ?? null,
+        })
+        .onConflictDoUpdate({
+          target: [appraisalSignatures.appraisalId, appraisalSignatures.role],
+          set: {
+            signedBy: callerProfile?.id ?? null,
+            signedAt: new Date(),
+            signatureSvg: input.signatureSvg ?? null,
+          },
+        })
+        .returning();
+
+      if (!upserted) throw new ORPCError("INTERNAL_SERVER_ERROR");
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        actorRole: context.userRole ?? undefined,
+        action: "appraisal.sign",
+        module: "staff",
+        resourceType: "appraisal",
+        resourceId: input.appraisalId,
+        afterValue: upserted as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        correlationId: context.requestId,
+      });
+
+      return upserted;
+    }),
+
+  getDetail: requireRole("appraisal", "read")
+    .input(z.object({ id: z.string().min(1) }))
+    .handler(async ({ input, context }) => {
+      const appraisal = await fetchAppraisal(input.id);
+      if (!appraisal) throw new ORPCError("NOT_FOUND");
+
+      if (!(await canAccessAppraisal(context, appraisal.staffProfileId))) {
+        throw new ORPCError("FORBIDDEN");
+      }
+
+      const [responsibilities, achievements, goals, signatures, ratings] = await Promise.all([
+        db.query.appraisalResponsibilities.findMany({
+          where: eq(appraisalResponsibilities.appraisalId, input.id),
+          orderBy: (t, { asc }) => [asc(t.seq)],
+        }),
+        db.query.appraisalAchievements.findMany({
+          where: eq(appraisalAchievements.appraisalId, input.id),
+          orderBy: (t, { asc }) => [asc(t.seq)],
+        }),
+        db.query.appraisalGoals.findMany({
+          where: eq(appraisalGoals.appraisalId, input.id),
+          orderBy: (t, { asc }) => [asc(t.seq)],
+        }),
+        db.query.appraisalSignatures.findMany({
+          where: eq(appraisalSignatures.appraisalId, input.id),
+          with: { signer: { with: { user: true } } },
+        }),
+        db.query.appraisalRatings.findMany({
+          where: eq(appraisalRatings.appraisalId, input.id),
+        }),
+      ]);
+
+      return {
+        ...appraisal,
+        responsibilities,
+        achievements,
+        goals,
+        signatures,
+        ratings,
+      };
+    }),
 };
