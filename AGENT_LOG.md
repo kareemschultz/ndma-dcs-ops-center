@@ -10,6 +10,53 @@
 
 ---
 
+## Phases 1-6 — Full sprint complete — 🟢 All done
+
+- **Agent:** Claude Code (claude-sonnet-4-6, user-directed multi-phase sprint)
+- **Date:** 2026-04-27
+- **PRs merged:** #22 (Phase 1 polish), #23 (Phase 2), #24 (Phase 3), #25 (Phase 4), #26 (Phase 5), #27 (Phase 6)
+- **Gate commits:** 2972287, a88f36b, b3cad77, 82c109b, 7916454, 66fa5c9
+
+### What shipped
+
+**Phase 1 polish (PR #22, commit `2972287`):**
+- `/access/registry/$staffId` per-staff detail page
+- Staff profile Access tab (6th tab, read-only)
+- RBAC matrix test file (`packages/api/tests/rbac-matrix.test.ts`)
+
+**Phase 2 — Leave refactor (PR #23, commit `a88f36b`):**
+- Migration 0021: `tosd_records` table + extend `leave_requests`
+- Leave router: `tosd.list/create/update/delete`, `validateRequest` policy engine
+- `/leave/tosd` TOSD register UI page
+
+**Phase 3 — Scheduling (PR #24, commit `b3cad77`):**
+- Migration 0022: `noc_shifts`, `dcs_on_call_weeks`, `routine_maintenance`, `shift_swaps`, `on_call_swaps`
+- `scheduling` router with all sub-procedures
+- `/scheduling/noc-shifts` monthly grid, `/scheduling/dcs-oncall` weekly grid
+
+**Phase 4 — Appraisal system (PR #25, commit `82c109b`):**
+- Migration 0023: ratings/responsibilities/achievements/goals/signatures tables + appraisals extensions
+- Appraisal router: setRatings (with auto-score), setResponsibilities, setAchievements, setGoals, sign, getDetail
+
+**Phase 5 — NOC performance (PR #26, commit `7916454`):**
+- Migration 0024: `noc_ticket_activity`, `noc_monthly_metrics`, `employee_of_the_month`
+- `nocPerformance` router with computeEOM algorithm
+- `/noc-performance` tabbed page
+
+**Phase 6 — Contracts lifecycle (PR #27, commit `66fa5c9`):**
+- Migration 0025: lifecycle columns on contracts + `career_progression_plans`
+- contracts router: setLifecycleDates, submitToHR, setOutcome, getTimeline
+- `careerProgression` router
+- `/contracts/$contractId` detail page with lifecycle timeline + career plan editor
+
+### CI passes
+All 6 PRs: `type-check: pass` + `build: pass` on GitHub Actions before merge.
+
+### Next phase
+Phase 7 — Training (master plan §5.10). Next migration: 0026. See CURRENT_PHASE.md for scope.
+
+---
+
 ## Phase 1 — Access registry UI shipped — 🟡 Core complete, polish TBD
 
 - **Agent:** Claude Code (opusplan, autonomous overnight session at user request)
