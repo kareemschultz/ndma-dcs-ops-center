@@ -1,11 +1,12 @@
 # Current Phase
 
-**Active phase:** None — Phases 0-8 complete; queued: Phase 9
-**Status:** Done through Phase 8 + 2026-05-04 documentation hygiene pass
-**Last completed:** Phase 8 PPE/Lateness/Timesheets/TOSD (main commit `fb46d00` after 2026-05-04 rebase-merge of PR #29; pre-rebase squash was `2b4fbc6` and feature-branch tip was `20202ed` — same content)
-**Branch:** none active — next work targets Phase 9 (Self-service, policies, forms)
+**Active phase:** Phase 9 — Self-service + policies + forms (🔵 In Progress)
+**Status:** WIP — server `staff.updateSelf` covers all 5 self-editable fields; UI form has CUG/MiFi inputs; remaining work is /profile page section expansion + RBAC scope verification + Policies "My Profile" tab decision
+**Last completed:** 2026-05-04 spec follow-ups (migration 0029 commendations + appraisal_tracker_view; migration 0030 noc_performance_journal Option B)
+**Branch:** `phase/9-self-service` (active WIP)
 **Master plan reference:** `docs/superpowers/plans/2026-04-23-master-remediation-plan.md`
-**Pre-Phase-9 audit + hygiene:** `docs/audit/STATE-AUDIT-2026-05-04.md` (read this before Phase 9)
+**Phase 9 checklist:** `docs/superpowers/plans/phase-9-self-service.md` (read this for current state + remaining work)
+**Pre-Phase-9 audit:** `docs/audit/STATE-AUDIT-2026-05-04.md`
 
 ## What is on main (Phases 0-8)
 

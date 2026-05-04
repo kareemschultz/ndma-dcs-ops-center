@@ -28,7 +28,7 @@
 | 6 | Contracts lifecycle | 🟢 Done | `phase/6-contracts` (merged) | Claude Code | 66fa5c9 | 2026-04-27 |
 | 7 | Training | 🟢 Done | `phase/7-training` (merged) | Claude Code | 2ced91b | 2026-04-27 |
 | 8 | PPE, lateness, timesheets, TOSD | 🟢 Done | `phase/8-ppe-lateness-tosd` (merged) | Claude Code | fb46d00 | 2026-04-27 |
-| 9 | Self-service + policies + forms | ⬜ Queued | — | — | — | — |
+| 9 | Self-service + policies + forms | 🔵 In Progress | `phase/9-self-service` | Claude Code | — | started 2026-05-04 |
 | 10 | Notifications & calendar | ⬜ Queued | — | — | — | — |
 | 11 | Work register refactor | ⬜ Queued | — | — | — | — |
 | 12 | Import module | ⬜ Queued | — | — | — | — |

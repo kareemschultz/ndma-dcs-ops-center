@@ -4,6 +4,25 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
+## [Phase 9 — Self-service WIP] — 2026-05-04 (🔵 In Progress)
+
+### Added
+- Profile self-service editor (`/profile`) now exposes 3 additional editable fields per master plan §6.5: **CUG phone number**, **CUG SIM number**, **MiFi asset tag** (existing fields: phone number, emergency contacts).
+- `staff.updateSelf` router mutation accepts the 3 new fields; writes through to `staff_profiles` columns added in Phase 1 migration 0016. Audit log emits `staff.self_update` action with `actorRole` + `correlationId`.
+- New phase checklist `docs/superpowers/plans/phase-9-self-service.md` with full audit of pre-existing surface, master plan §8 acceptance criteria status, and detailed remaining-work breakdown (Sections A-E).
+
+### Changed
+- IMPLEMENTATION_PLAN.md phase status table: Phase 9 marked 🔵 In Progress on `phase/9-self-service` branch.
+- CURRENT_PHASE.md updated to reflect active Phase 9 WIP work.
+
+### Not yet shipped (Phase 9 acceptance criteria — see phase-9-self-service.md)
+- 11 of the 16 "My Everything" sections from handoff §11 (shift / leave balance / lateness / appraisals / performance journal / commendations / training / PPE / access registry / onboarding / career progression). Each is a useQuery+Card pattern against existing routers.
+- RBAC scope verification (Team Lead direct-reports / Sachin+Ataybia full DCS+NOC) + Playwright e2e tests
+- Decision on "Policies > My Profile" third tab (master plan §8 mentions it; currently `/profile` is the canonical entry)
+- RBAC matrix test rows for `staff.updateSelf` + policy mutations
+
+---
+
 ## [Phase 5 follow-up — `noc_performance_journal`] — 2026-05-04
 
 ### Added

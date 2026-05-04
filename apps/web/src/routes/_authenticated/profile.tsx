@@ -49,12 +49,10 @@ type EmergencyContactForm = {
 };
 
 const selfServiceSchema = z.object({
-  phoneNumber: z
-    .string()
-    .trim()
-    .max(32, "Phone number is too long")
-    .optional()
-    .or(z.literal("")),
+  phoneNumber: z.string().trim().max(32, "Phone number is too long").optional().or(z.literal("")),
+  cugPhoneNumber: z.string().trim().max(32, "CUG phone number is too long").optional().or(z.literal("")),
+  cugSimNumber: z.string().trim().max(32, "CUG SIM number is too long").optional().or(z.literal("")),
+  mifiAssetTag: z.string().trim().max(64, "MiFi asset tag is too long").optional().or(z.literal("")),
   emergencyContacts: z
     .array(
       z.object({
@@ -168,6 +166,9 @@ function ProfilePage() {
   }
 
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [cugPhoneNumber, setCugPhoneNumber] = useState("");
+  const [cugSimNumber, setCugSimNumber] = useState("");
+  const [mifiAssetTag, setMifiAssetTag] = useState("");
   const [contacts, setContacts] = useState<EmergencyContactForm[]>([
     { name: "", phone: "", relation: "" },
   ]);
@@ -176,6 +177,9 @@ function ProfilePage() {
   useEffect(() => {
     if (!ownStaff) return;
     setPhoneNumber(ownStaff.phoneNumber ?? "");
+    setCugPhoneNumber(ownStaff.cugPhoneNumber ?? "");
+    setCugSimNumber(ownStaff.cugSimNumber ?? "");
+    setMifiAssetTag(ownStaff.mifiAssetTag ?? "");
     const nextContacts = (ownStaff.emergencyContacts ?? []).map((contact) => ({
       name: contact.name ?? "",
       phone: contact.phone ?? "",
@@ -198,6 +202,9 @@ function ProfilePage() {
             return {
               ...current,
               phoneNumber: input.phoneNumber ?? current.phoneNumber,
+              cugPhoneNumber: input.cugPhoneNumber ?? current.cugPhoneNumber,
+              cugSimNumber: input.cugSimNumber ?? current.cugSimNumber,
+              mifiAssetTag: input.mifiAssetTag ?? current.mifiAssetTag,
               emergencyContacts: input.emergencyContacts ?? current.emergencyContacts,
             };
           },
@@ -242,6 +249,9 @@ function ProfilePage() {
 
     const parsed = selfServiceSchema.safeParse({
       phoneNumber: phoneNumber.trim(),
+      cugPhoneNumber: cugPhoneNumber.trim(),
+      cugSimNumber: cugSimNumber.trim(),
+      mifiAssetTag: mifiAssetTag.trim(),
       emergencyContacts: normalizedContacts,
     });
 
@@ -254,6 +264,9 @@ function ProfilePage() {
     try {
       await updateSelfMutation.mutateAsync({
         phoneNumber: parsed.data.phoneNumber || undefined,
+        cugPhoneNumber: parsed.data.cugPhoneNumber || undefined,
+        cugSimNumber: parsed.data.cugSimNumber || undefined,
+        mifiAssetTag: parsed.data.mifiAssetTag || undefined,
         emergencyContacts: parsed.data.emergencyContacts,
       });
     } finally {
@@ -379,6 +392,36 @@ function ProfilePage() {
                     <p className="text-xs text-muted-foreground">
                       This number is visible in the directory and used for internal contact.
                     </p>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="self-cug-phone">CUG Phone</Label>
+                      <Input
+                        id="self-cug-phone"
+                        value={cugPhoneNumber}
+                        onChange={(e) => setCugPhoneNumber(e.target.value)}
+                        placeholder="+592 000-0000"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="self-cug-sim">CUG SIM Number</Label>
+                      <Input
+                        id="self-cug-sim"
+                        value={cugSimNumber}
+                        onChange={(e) => setCugSimNumber(e.target.value)}
+                        placeholder="SIM identifier"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="self-mifi">MiFi Asset Tag</Label>
+                      <Input
+                        id="self-mifi"
+                        value={mifiAssetTag}
+                        onChange={(e) => setMifiAssetTag(e.target.value)}
+                        placeholder="e.g. NDMA-MIFI-2300"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-3">
