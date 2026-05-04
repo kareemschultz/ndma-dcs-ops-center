@@ -2,7 +2,7 @@
 
 **Active phase:** None — Phases 0-8 complete; queued: Phase 9
 **Status:** Done through Phase 8 + 2026-05-04 documentation hygiene pass
-**Last completed:** Phase 8 PPE/Lateness/Timesheets/TOSD (main squash `2b4fbc6` — feature-branch tip was `20202ed`; both refer to the same content)
+**Last completed:** Phase 8 PPE/Lateness/Timesheets/TOSD (main commit `fb46d00` after 2026-05-04 rebase-merge of PR #29; pre-rebase squash was `2b4fbc6` and feature-branch tip was `20202ed` — same content)
 **Branch:** none active — next work targets Phase 9 (Self-service, policies, forms)
 **Master plan reference:** `docs/superpowers/plans/2026-04-23-master-remediation-plan.md`
 **Pre-Phase-9 audit + hygiene:** `docs/audit/STATE-AUDIT-2026-05-04.md` (read this before Phase 9)
@@ -18,8 +18,8 @@
 | 4 | #25 | 82c109b | Appraisal sub-tables (ratings/responsibilities/achievements/goals/signatures) + scoring |
 | 5 | #26 | 7916454 | NOC performance — ticket activity, monthly metrics, EOM awards + computeEOM |
 | 6 | #27 | 66fa5c9 | Contracts lifecycle — lifecycle dates, outcome recording, career_progression_plans |
-| 7 | #29 | a4c1a53 | Training — plans, cert catalog, exam vouchers, events, in-house log, syllabi, onboarding templates |
-| 8 | — | 20202ed | PPE matrix (17 items), lateness quarterly grid (Q1-Q4), timesheet documents index |
+| 7 | #29 (orig) | 2ced91b | Training — plans, cert catalog, exam vouchers, events, in-house log, syllabi, onboarding templates |
+| 8 | rebased | fb46d00 | PPE matrix (17 items), lateness quarterly grid (Q1-Q4), timesheet documents index |
 
 ## Next phase: Phase 9 — Self-service + policies + forms
 

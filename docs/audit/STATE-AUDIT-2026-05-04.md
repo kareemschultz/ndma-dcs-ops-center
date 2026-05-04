@@ -37,8 +37,8 @@ status: SNAPSHOT (informational; not a remediation order)
 | 4 | Appraisal system | 🟢 Done | `82c109b` | migration 0023 |
 | 5 | NOC performance | 🟢 Done | `7916454` | migration 0024 |
 | 6 | Contracts lifecycle | 🟢 Done | `66fa5c9` | migration 0025 |
-| 7 | Training | 🟢 Done | `a4c1a53` | migrations 0026-0027 |
-| 8 | PPE / lateness / timesheets / TOSD | 🟢 Done | `2b4fbc6` | migration 0028 |
+| 7 | Training | 🟢 Done | `2ced91b` (was `a4c1a53` pre-rebase) | migrations 0026-0027 |
+| 8 | PPE / lateness / timesheets / TOSD | 🟢 Done | `fb46d00` (was `2b4fbc6` pre-rebase) | migration 0028 |
 | 9 | Self-service + policies + forms | ⬜ Queued | — | Master plan §5.12, §6.5 |
 | 10 | Notifications & calendar | ⬜ Queued | — | 15 reminder triggers; channel-adapter pattern (open Q #5 deferred to Phase 15 stretch) |
 | 11 | Work register refactor | ⬜ Queued | — | year/period/week_start_date + filter pills |
@@ -145,9 +145,17 @@ CLAUDE.md is the authoritative agent-facing doc and is mostly accurate on gotcha
 
 **Missing routers** (CLAUDE.md table says ~18; actual is 41): `access-registry`, `appraisal-cycles`, `attendance-time`, `career-progression`, `lateness`, `leave-policies`, `noc-performance`, `noc-shifts`, `platforms`, `policy`, `scheduling`, `timesheet-documents`, `timesheets`, `training-phase7`.
 
-### 2.6 🟢 `CURRENT_PHASE.md` — minor SHA mismatch (cosmetic)
+### 2.6 🟢 `CURRENT_PHASE.md` — SHA mismatch (resolved 2026-05-04)
 
-Says Phase 8 "Last completed" SHA is `20202ed`. IMPLEMENTATION_PLAN's status table says `2b4fbc6`. Both commits are real and have identical content — `20202ed` is the feature-branch tip, `2b4fbc6` is the squash-merge to main. AGENT_LOG correctly records both. Phase status table SHA is the canonical "what's on main" answer per Hard Invariant #1.
+> **Original finding:** said Phase 8 "Last completed" SHA was `20202ed` (feature-branch tip) while IMPLEMENTATION_PLAN's status table said `2b4fbc6` (pre-rebase squash to main).
+>
+> **2026-05-04 update:** the 2026-05-04 PR #29 was rebase-merged (not squash-merged), changing Phase 7 + 8 SHAs on main:
+> - Phase 7: `a4c1a53` → `2ced91b`
+> - Phase 7 coord: `fce3f10` → `1aa728a`
+> - Phase 8: `2b4fbc6` → `fb46d00`
+> - Phase 8 coord: `fcdd442` → `750f938`
+>
+> Both `20202ed` (feature-branch tip — still reachable from `phase/8-ppe-lateness-tosd` branch) and the pre-rebase squashes are content-equivalent to the current main SHAs. CURRENT_PHASE.md, IMPLEMENTATION_PLAN.md, CHANGELOG.md, and AGENT_LOG.md (in the 2026-05-04 entry) have been updated to point at the canonical post-rebase SHAs. Older AGENT_LOG entries retain their original SHAs as historical records.
 
 ### 2.7 🟡 `CHANGELOG.md` — phase entries clean, "[Unreleased]" section stale
 
@@ -278,7 +286,7 @@ Stale entries from 2026-04-12 and 2026-04-17 describe shipped work. Should be: s
 ### C. Phase 9 launch (master plan §5.12 + §6.5)
 
 13. **Write `docs/superpowers/plans/phase-9-self-service.md`** per protocol (acceptance criteria from master plan §8 Phase 9).
-14. **Branch `phase/9-self-service` from main** at the Phase 8 gate SHA `2b4fbc6`.
+14. **Branch `phase/9-self-service` from main** at the Phase 8 gate SHA `fb46d00` (post-rebase canonical; pre-rebase was `2b4fbc6`).
 15. **Update `CURRENT_PHASE.md`** to claim Phase 9.
 16. **Build self-service "My Everything" page**, profile editor (audit-logged), policy/forms admin UI.
 

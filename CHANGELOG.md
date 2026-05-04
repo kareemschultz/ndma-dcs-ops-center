@@ -30,7 +30,7 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
-## [Phase 8 — PPE, Lateness, Timesheets, TOSD] — shipped 2026-04-27 squash `2b4fbc6`
+## [Phase 8 — PPE, Lateness, Timesheets, TOSD] — shipped 2026-04-27 (currently on main as `fb46d00` after 2026-05-04 PR #29 rebase; pre-rebase squash `2b4fbc6`)
 
 ### Added
 - **Migration 0028** — extends `ppe_items` (add `has_size` bool, `has_asset_tag` bool), updates `ppe_issuances` status enum (adds `not_issued`, `n_a`, `stolen`; adds `asset_tag` column; replaces old unique(staff,item) with unique(staff,item,issued_date)), extends `lateness_records` (adds `quarter`, `notes`, `days_missing_from_attendance`, `days_on_schedule`; adds unique constraint), creates `timesheet_documents` (year/month/office index table with castellani/liliendaal enum)
@@ -47,7 +47,7 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
-## [Phase 7 — Training] — shipped 2026-04-27 via #29 squash `a4c1a53`
+## [Phase 7 — Training] — shipped 2026-04-27 via PR #29 (currently on main as `2ced91b` after 2026-05-04 rebase; pre-rebase squash `a4c1a53`)
 
 ### Added
 - **Migrations 0026-0027** — 9 new tables: `training_plans`, `certification_catalog`, `exam_vouchers`, `training_events`, `training_event_participants`, `in_house_training_log`, `training_syllabi`, `assessment_questions`, `onboarding_task_templates`; extends `exam_schedule` with window columns; extends `onboarding_tasks` with `template_id`
