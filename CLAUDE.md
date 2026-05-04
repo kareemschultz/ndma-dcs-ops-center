@@ -413,6 +413,7 @@ correlationId: context.requestId,
 | `appraisal-followups.ts` | appraisal_followups (three_month / six_month, pending / done / skipped) |
 | `noc-performance.ts` | noc_ticket_activity, noc_monthly_metrics, employee_of_the_month — write only via `eom-calculator.ts` (Phase 5) |
 | `commendations.ts` | commendations — per-staff per-month positive recognition narrative; unique on (staff_profile_id, year, month). Migration 0029 (Phase 4-5 follow-up). Source: NOC StaffCommendationJournal_20231216_v01.xlsx |
+| `noc-performance-journal.ts` | noc_performance_journal + noc_perf_journal_category enum — NOC monthly mistake-matrix tracker; per-(staff, year, month, category in tickets_itop/alarms/slack_whatsapp/task_incomplete) count + narrative; unique 4-tuple. Migration 0030 (Phase 5 follow-up Option B). Source: NOC StaffPerformanceJournal_20230731_v01.xlsx (~2,304 historical rows). Distinct from `performance_journal_entries` in `hr-docs.ts` (appraisal-period feedback log). |
 | `appraisal-tracker-view.ts` | `appraisal_tracker_view` — **read-only DB VIEW** (Drizzle `pgView().existing()`); joins appraisals + staff_profiles + user filtered to status='completed'. Migration 0029. Mirrors `APPRAISAL TRACKER DCS.xlsx` (63 rows) + `AppraisalTracker_20241210_v01.xlsx` (NOC, 80 rows). Phase 14 gate `appraisalTrackerView.rowCount >= 130` |
 | `hr-docs.ts` | promotion_recommendations, promotion_letters, performance_journal_entries (appraisal-period feedback log; **NOT** the master plan §5.3 mistake-matrix tracker — see `docs/plan-questions.md` open question), career_path_plans, career_path_years, staff_feedback |
 | `ppe.ts` | ppe_items (17 canonical, has_size + has_asset_tag flags), ppe_issuances (matrix; status: issued / not_issued / n_a / stolen / lost / damaged / returned; unique on staff+item+date) — Phase 8 |
@@ -471,6 +472,7 @@ correlationId: context.requestId,
 | `appraisal-cycles.ts` | list, get, create, close |
 | `noc-performance.ts` | metrics.{list,upsert}, tickets.{list,create}, eom.{get,compute} (Phase 5; computeEOM derives 7 recognition categories) |
 | `commendations.ts` | `commendations.{list,get,create,update,delete}` (RBAC `performance_journal` resource) + `appraisalTracker.list` (protectedProcedure over `appraisal_tracker_view`) — Phase 4-5 follow-up |
+| `noc-performance-journal.ts` | `nocPerformanceJournal.{list,upsert,delete}` (RBAC `performance_journal`; upsert by (staff, year, month, category) tuple) — Phase 5 follow-up |
 | `department-assignments.ts` | list, create, update, delete |
 | `ppe.ts` | items.{list,create,update}, issuances.{list,upsert,matrix,markReturned,markDamaged,markLost} (Phase 8) |
 | `lateness.ts` | list, quarterlyGrid, upsert, delete, stats (Phase 8) |

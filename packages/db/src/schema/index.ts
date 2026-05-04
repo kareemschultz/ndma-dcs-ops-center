@@ -59,3 +59,5 @@ export * from "./timesheet-documents";
 // Phase 4-5 spec follow-up (migration 0029) — commendations table + appraisal_tracker_view
 export * from "./commendations";
 export * from "./appraisal-tracker-view";
+// Phase 5 follow-up (migration 0030) — noc_performance_journal (monthly mistake-matrix)
+export * from "./noc-performance-journal";

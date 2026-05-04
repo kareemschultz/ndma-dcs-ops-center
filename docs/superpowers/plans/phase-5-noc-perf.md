@@ -18,13 +18,13 @@
 
 ### Spec'd in master plan §5.3 (resolved 2026-05-04 + open Phase 5 follow-up)
 - [x] **`commendations` table** — shipped 2026-05-04 via migration 0029. Master plan §5.3 spec verbatim. Source: `NOC/appraisals/StaffCommendationJournal_20231216_v01.xlsx` (2 sheets: 2025, 2026; per-staff per-month positive recognition narrative). Schema: `packages/db/src/schema/commendations.ts`. Router: `commendations.{list,get,create,update,delete}` (RBAC: `performance_journal` resource).
-- [ ] **`performance_journal_entries` naming alignment** (Phase 5 follow-up — BLOCKS Phase 14 seed step 10) — master plan §5.3 specifies a separate matrix-tracker `performance_journal_entries` for `StaffPerformanceJournal_20230731_v01.xlsx` (count + narrative per staff × year × month × category in `'tickets_itop' | 'alarms' | 'slack_whatsapp' | 'task_incomplete'`). The existing `performance_journal_entries` in `hr-docs.ts` is a DIFFERENT entity (appraisal-period feedback log keyed by `entryDate` / `entryType` / `body`). Decision needed: rename existing, add new under different name, or reshape existing — see `docs/plan-questions.md`.
+- [x] **`performance_journal_entries` naming alignment** — RESOLVED 2026-05-04 via migration 0030 (Option B). Added new table `noc_performance_journal` with the master plan §5.3 mistake-matrix shape (count + narrative per (staff, year, month, category) where category ∈ `tickets_itop / alarms / slack_whatsapp / task_incomplete`); existing `performance_journal_entries` in `hr-docs.ts` left as-is for the appraisal-period feedback log flow. Schema: `packages/db/src/schema/noc-performance-journal.ts`. Router: `nocPerformanceJournal.{list,upsert,delete}` (RBAC `performance_journal` resource). Phase 14 seed step 10 unblocked.
 
 ### Deferred to Phase 14 (historical seed) — **CRITICAL acceptance gate**
 - [ ] `noc_monthly_metrics` populated for 19 historical months (Aug2024 → Mar2026) from `EmployeeOfTheMonth_20240923_v01.xlsx` (~209 rows)
 - [ ] `noc_ticket_activity` populated from `IncidentProblem_CreatedandClose_20252905.xlsx` (24 sheets, ~5,000 ticket-rows)
 - [ ] **EoM 19/19 validation gate**: `eom-calculator.ts` computed `overall_best_staff_id` MUST match the recorded "Overall Best Technician" label string in each of the 19 historical months. Any mismatch blocks the seed (Hard Invariant #4).
-- [ ] `performance_journal_entries` populated from `StaffPerformanceJournal_20230731_v01.xlsx` (12 staff × 4 years × 12 months × 4 categories = ~2,304 rows)
+- [ ] `noc_performance_journal` populated from `StaffPerformanceJournal_20230731_v01.xlsx` (12 staff × 4 years × 12 months × 4 categories = ~2,304 rows) — Phase 14 seed step 10. Renamed from `performance_journal_entries` per Option B resolution 2026-05-04.
 - [ ] `commendations` (or equivalent) populated from `StaffCommendationJournal_20231216_v01.xlsx` (~250 rows)
 
 ### Deferred (RBAC scoping verification)

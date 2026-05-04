@@ -10,6 +10,43 @@
 
 ---
 
+## 2026-05-04 — Phase 5 follow-up: noc_performance_journal (Option B) — 🟢 Done
+
+- **Agent:** Claude Code (claude-opus-4-7, 1M context)
+- **Date:** 2026-05-04
+- **Branch:** `feat/noc-performance-journal`
+- **Type:** Phase 5 spec-compliance follow-up; closes Phase 14 seed step 10 blocker
+- **Decision authority:** Kareem authorised autonomous selection ("you can run and do all the things that needs my attention")
+
+### What shipped
+
+- Migration 0030 + .down.sql (creates `noc_performance_journal` table + `noc_perf_journal_category` enum)
+- `packages/db/src/schema/noc-performance-journal.ts` (Drizzle schema + relations)
+- `packages/api/src/routers/noc-performance-journal.ts` (`list` / `upsert` / `delete`)
+- Wired into appRouter
+- RBAC matrix tests appended (covers staff-denied for list/upsert/delete; admin-allowed for list)
+- Closed `docs/plan-questions.md` `[OPEN]` question with `[ANSWERED]` resolution (Option B)
+
+### Decision rationale (recap)
+Master plan §5.3 specified `performance_journal_entries` for the NOC mistake-matrix tracker, but that name was already taken by an unrelated entity in `hr-docs.ts` (appraisal-period feedback log keyed by entryDate / entryType / body). Three reconciliation options were considered:
+- Option A: rename existing → potentially breaks shipped HR docs flow
+- Option B: add new under distinct name `noc_performance_journal`, leave existing alone (selected)
+- Option C: reshape existing → most destructive
+
+Option B selected — lowest risk, semantically clearest separation, only requires a small master plan §5.3 reference update (not blocking).
+
+### Tests
+- ⚠️ `bun run check-types` not run locally (no node_modules)
+- ⚠️ RBAC matrix DB-backed tests will run in CI
+
+### Outstanding
+- ⛔ Production migration 0030 apply — pending Kareem (along with 0008-0029 backlog; now 23 migrations total)
+
+### Next phase
+Phase 9 — Self-service + policies + forms. Master plan §5.12 + §6.5.
+
+---
+
 ## 2026-05-04 — Typecheck cleanup (post-PR-#31) — 🟢 Done
 
 - **Agent:** Claude Code (claude-opus-4-7, 1M context)

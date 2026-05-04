@@ -9,6 +9,7 @@ import {
   appraisalTrackerRouter,
   commendationsRouter,
 } from "../src/routers/commendations";
+import { nocPerformanceJournalRouter } from "../src/routers/noc-performance-journal";
 
 type Actor = {
   id: string;
@@ -531,5 +532,51 @@ describe("Phase 4-5 follow-up RBAC matrix (commendations + appraisal_tracker_vie
         { context: makeContext(fixtures.staff) },
       ),
     ).resolves.toBeDefined();
+  });
+
+  test("nocPerformanceJournal.list is performance_journal:read — staff cannot list", async () => {
+    await expectForbidden(
+      call(
+        nocPerformanceJournalRouter.list,
+        { year: 2025 },
+        { context: makeContext(fixtures.staff) },
+      ),
+    );
+  });
+
+  test("nocPerformanceJournal.list is accessible to admin", async () => {
+    await expect(
+      call(
+        nocPerformanceJournalRouter.list,
+        { year: 2025 },
+        { context: makeContext(fixtures.admin) },
+      ),
+    ).resolves.toBeDefined();
+  });
+
+  test("nocPerformanceJournal.upsert is performance_journal:create — staff cannot upsert", async () => {
+    await expectForbidden(
+      call(
+        nocPerformanceJournalRouter.upsert,
+        {
+          staffProfileId: fixtures.staffProfileId,
+          year: 2025,
+          month: 1,
+          category: "tickets_itop",
+          count: 0,
+        },
+        { context: makeContext(fixtures.staff) },
+      ),
+    );
+  });
+
+  test("nocPerformanceJournal.delete is performance_journal:delete — staff cannot delete", async () => {
+    await expectForbidden(
+      call(
+        nocPerformanceJournalRouter.delete,
+        { id: "nonexistent" },
+        { context: makeContext(fixtures.staff) },
+      ),
+    );
   });
 });
