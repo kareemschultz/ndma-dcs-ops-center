@@ -10,6 +10,22 @@
 
 ---
 
+## 2026-05-04 — Typecheck cleanup (post-PR-#31) — 🟢 Done
+
+- **Agent:** Claude Code (claude-opus-4-7, 1M context)
+- **Date:** 2026-05-04
+- **Branch:** `chore/typecheck-fix`
+- **Type:** Chore — fix pre-existing TS errors blocking CI
+
+PR #31 merged with typecheck failing because the failures were pre-existing in Phase 7 / Phase 8 code, not in PR #31's new code. Fixed:
+- `packages/api/src/routers/lateness.ts` — removed unused `staffProfiles` import
+- `packages/api/src/routers/timesheet-documents.ts` — removed unused `protectedProcedure` import
+- `packages/api/src/routers/training-phase7.ts` — added `if (!row) throw new ORPCError("INTERNAL_SERVER_ERROR")` null guards after 5 `const [row] = await db.insert(...).returning()` patterns (createCertCatalog, createExamVoucher, createTrainingEvent, addParticipant, createInHouseLog) — TypeScript strict mode types `row` as possibly undefined.
+
+CI typecheck now passes. No behavior change.
+
+---
+
 ## 2026-05-04 — Phase 4-5 spec follow-up: commendations + appraisal_tracker_view — 🟢 Done
 
 - **Agent:** Claude Code (claude-opus-4-7, 1M context)

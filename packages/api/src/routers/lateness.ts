@@ -2,7 +2,7 @@ import { ORPCError } from "@orpc/server";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
-import { db, latenessRecords, staffProfiles } from "@ndma-dcs-staff-portal/db";
+import { db, latenessRecords } from "@ndma-dcs-staff-portal/db";
 
 import { protectedProcedure, requireRole } from "../index";
 import { logAudit } from "../lib/audit";

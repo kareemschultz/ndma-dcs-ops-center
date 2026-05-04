@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { db, timesheetDocuments } from "@ndma-dcs-staff-portal/db";
 
-import { protectedProcedure, requireRole } from "../index";
+import { requireRole } from "../index";
 import { logAudit } from "../lib/audit";
 import { getCallerStaffProfile, getManagedStaffIds } from "../lib/scope";
 
