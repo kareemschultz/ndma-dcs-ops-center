@@ -119,10 +119,14 @@ Must be done before Phase 1 goes to production.
 
 ---
 
-## [OPEN] — `performance_journal_entries` naming alignment with master plan §5.3 — @kareem [DECISION]
+## [ANSWERED] — `performance_journal_entries` naming alignment with master plan §5.3 — @kareem [DECISION]
 
 **Opened:** 2026-05-04 by Claude Code (Phase 4-5 spec follow-up session)
-**Phase blocked:** Phase 5 follow-up + Phase 14 seed step 10 (cannot ingest mistake-matrix XLSX without target table)
+**Answered:** 2026-05-04 (Kareem authorised autonomous selection — "you can run and do all the things that needs my attention")
+**Decision:** **Option B** — add new table under name `noc_performance_journal`; existing `performance_journal_entries` in `hr-docs.ts` stays as-is for the appraisal-period feedback log flow.
+**Action taken:** migration 0030 ships the new table + enum + indexes; `packages/db/src/schema/noc-performance-journal.ts` + `packages/api/src/routers/noc-performance-journal.ts` added; RBAC matrix tests appended; master plan §5.3 reference will be amended in a follow-up doc commit (not blocking).
+**Phase 14 seed step 10** can now ingest `StaffPerformanceJournal_20230731_v01.xlsx` into `noc_performance_journal` (~2,304 rows expected).
+**Phase blocked:** ~~Phase 5 follow-up + Phase 14 seed step 10~~ (UNBLOCKED)
 
 **Context:**
 The 2026-05-04 source-of-truth inspection confirmed two distinct entities with the same name:

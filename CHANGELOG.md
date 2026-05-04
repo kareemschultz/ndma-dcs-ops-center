@@ -4,6 +4,19 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
+## [Phase 5 follow-up — `noc_performance_journal`] — 2026-05-04
+
+### Added
+- **Migration 0030** (`0030_noc_performance_journal.sql`) — adds `noc_performance_journal` table + `noc_perf_journal_category` enum (`tickets_itop` / `alarms` / `slack_whatsapp` / `task_incomplete`). Per-(staff, year, month, category) count + narrative; unique constraint on the 4-tuple; month CHECK 1-12.
+- **Schema** — `packages/db/src/schema/noc-performance-journal.ts` (table + enum + relations).
+- **Router** — `packages/api/src/routers/noc-performance-journal.ts` (`list` / `upsert` / `delete`; RBAC `performance_journal` resource; mutations audit-logged).
+- **RBAC matrix tests** — appended to `packages/api/tests/rbac-matrix.test.ts`.
+
+### Decision context
+Resolves the naming-alignment question opened earlier today in `docs/plan-questions.md`. Master plan §5.3 originally specified `performance_journal_entries` for this NOC mistake-matrix tracker, but that name was already taken by an unrelated entity in `hr-docs.ts` (appraisal-period feedback log). Selected **Option B** — distinct name `noc_performance_journal`; existing `performance_journal_entries` untouched. Phase 14 seed step 10 (~2,304 rows from `StaffPerformanceJournal_20230731_v01.xlsx`) now has a target table.
+
+---
+
 ## [Phase 4-5 spec follow-up — `commendations` + `appraisal_tracker_view`] — 2026-05-04
 
 ### Added
