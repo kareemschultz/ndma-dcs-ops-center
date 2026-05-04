@@ -1,10 +1,11 @@
 # Current Phase
 
-**Active phase:** None — Phases 1-8 complete
-**Status:** Done through Phase 8
-**Last completed:** Phase 8 PPE/Lateness/Timesheets/TOSD (commit 20202ed)
+**Active phase:** None — Phases 0-8 complete; queued: Phase 9
+**Status:** Done through Phase 8 + 2026-05-04 documentation hygiene pass
+**Last completed:** Phase 8 PPE/Lateness/Timesheets/TOSD (main squash `2b4fbc6` — feature-branch tip was `20202ed`; both refer to the same content)
 **Branch:** none active — next work targets Phase 9 (Self-service, policies, forms)
-**Master plan reference:** docs/superpowers/plans/2026-04-23-master-remediation-plan.md
+**Master plan reference:** `docs/superpowers/plans/2026-04-23-master-remediation-plan.md`
+**Pre-Phase-9 audit + hygiene:** `docs/audit/STATE-AUDIT-2026-05-04.md` (read this before Phase 9)
 
 ## What is on main (Phases 0-8)
 

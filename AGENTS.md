@@ -1,313 +1,103 @@
 # AGENTS.md — DCS Ops Center
 
-> **⚠️ Before working on this repo, read `IMPLEMENTATION_PLAN.md` at repo root first.**
-> It contains the phase status, hard invariants, and session protocols. Do not begin work without following the starting-work protocol in `IMPLEMENTATION_PLAN.md`.
+> **For non-Claude AI assistants (OpenAI Codex, GitHub Copilot Workspace, others).**
 >
-> Authoritative spec: [`docs/superpowers/plans/2026-04-23-master-remediation-plan.md`](docs/superpowers/plans/2026-04-23-master-remediation-plan.md)
+> Project guidance is **canonical in `CLAUDE.md`**. This file is intentionally slim — read the targets it points at.
 
-## ⚠️ Hard rules from 2026-04-25 course correction
+---
 
-The following multi-agent failure modes are documented in CLAUDE.md "Lessons learned" — they apply to every agent (Codex, Copilot, Claude, etc.):
+## Reading order (MANDATORY before any work)
 
-1. **Verify by SHA, not by prose.** Before claiming a phase is done or starting the next phase, check `git log <gate-SHA> --stat` to confirm the migration files are actually in the commit. CHANGELOG/AGENT_LOG can be aspirational.
+1. **`IMPLEMENTATION_PLAN.md`** — phase status table + 10 hard invariants + starting/ending/blocked/escalation protocols
+2. **`CURRENT_PHASE.md`** — who's working on what right now (claim it before starting)
+3. **`AGENT_LOG.md`** last 3 entries (most recent may override the entry below it)
+4. **`CLAUDE.md`** — gotchas, schema/router tables, RBAC enforcement rules, naming conventions, design system
+5. **`docs/superpowers/plans/2026-04-23-master-remediation-plan.md`** — authoritative spec (1,403 lines)
+6. **`docs/superpowers/plans/phase-{N}-{slug}.md`** — your phase's checklist
+7. **`source-of-truth/10-handoff-docs/CLAUDE_CODE_PLANNING_HANDOFF.md`** — for scope questions
+8. **`source-of-truth/10-handoff-docs/DEEP_DIVE_ANALYSIS.md`** — for data-shape questions
+
+> **`source-of-truth/`** lives outside the worktree (gitignored at `.gitignore` line 45). Path: `<repo-root>/source-of-truth/`. Two zip mirrors at `<repo-root>/ndma-source-of-truth-{full,lean}.zip`.
+
+---
+
+## Hard rules from 2026-04-25 course correction
+
+These multi-agent failure modes apply to every agent (Codex, Copilot, Claude, etc.):
+
+1. **Verify by SHA, not by prose.** Before claiming a phase is done or starting the next phase, run `git log <gate-SHA> --stat` to confirm the migration files are actually in the commit. CHANGELOG / AGENT_LOG can be aspirational.
 2. **No aspirational CHANGELOG entries.** Write the CHANGELOG as part of the gate-ceremony commit AFTER the phase merges, OR prefix with `⚠️ ASPIRATIONAL — not yet shipped`.
-3. **One PR per phase.** If a branch's PR is merged but new commits are pushed to that branch afterward, those commits are stranded — open a new PR.
+3. **One PR per phase.** If a branch's PR is merged but new commits land on that branch afterward, those commits are stranded — open a new PR.
 4. **CI > local typecheck.** Turbo caches stale results. `rm -rf .turbo` before final verification, or rely on GitHub Actions CI.
 5. **Read AGENT_LOG's last 3 entries literally.** The most recent entry may override the one below it (e.g., a course correction).
 
-**Do NOT merge from these stale Codex branches:** `codex/phase1-foundation`, `codex/phase2-appraisals`, `codex/phase3-operational-hr`, `codex/phase4-shift-scheduling`, `codex/phase5-leave-policy`. Their phase numbering predates and does not match the 2026-04-23 master plan.
-
-> This file is for AI assistants (OpenAI Codex, GitHub Copilot Workspace, etc.).
-> It contains the same critical project context as CLAUDE.md, written in
-> AI-assistant-neutral language.
+**Do NOT merge from these stale Codex branches:** `codex/phase1-foundation`, `codex/phase2-appraisals`, `codex/phase3-operational-hr`, `codex/phase4-shift-scheduling`, `codex/phase5-leave-policy`. Their phase numbering predates and does NOT match the 2026-04-23 master plan. Treat them as historical reference only.
 
 ---
 
-## Project Overview
+## Critical rules (full detail in `CLAUDE.md`)
 
-Enterprise internal operations platform for **NDMA Data Centre Services (DCS)**.
-Modules: Work Management · Incident Management · On-Call Rota · Procurement · Leave · Staff/Compliance · Audit · Access Management.
+### RBAC enforcement is MANDATORY
+**Every mutation procedure MUST use `requireRole(resource, action)`, NOT `protectedProcedure`.** See `CLAUDE.md` "RBAC Enforcement — MANDATORY" for the full pattern. The RBAC matrix test at `packages/api/tests/rbac-matrix.test.ts` is a blocking CI gate per Hard Invariant #4.
 
-See `/docs/architecture/` for detailed reference docs.
+### Audit logging is MANDATORY
+Every mutation calls `logAudit()` with `actorRole: context.userRole ?? undefined`, `correlationId: context.requestId`, plus standard fields. See `CLAUDE.md` "Audit Logging Rule".
 
----
-
-## Monorepo Structure
-
-```
-apps/web/          → React + TanStack Router frontend (Vite, port 3001)
-apps/server/       → Hono backend (port 3000)
-apps/docs/         → Fumadocs documentation (Next.js, port 4000)
-packages/api/      → oRPC procedures + context (shared by server)
-packages/auth/     → Better Auth config (shared by server + web)
-packages/db/       → Drizzle ORM schema + migrations
-packages/env/      → Zod env validation (server.ts + web.ts)
-packages/ui/       → Shared shadcn/ui components
-packages/config/   → Shared tsconfig base
-```
-
-## Key Package Names (workspace imports)
-
-- `@ndma-dcs-staff-portal/api` — oRPC routers + procedures
-- `@ndma-dcs-staff-portal/auth` — Better Auth instance
-- `@ndma-dcs-staff-portal/db` — Drizzle db connection + schema
-- `@ndma-dcs-staff-portal/env/server` — server env vars
-- `@ndma-dcs-staff-portal/env/web` — web env vars
-- `@ndma-dcs-staff-portal/ui` — shared UI components
+### Source of truth is read-only
+`source-of-truth/` (XLSX/DOCX archive, 200+ files) is read-only per Hard Invariant #10. Never modify; re-parse from the seed script.
 
 ---
 
-## Dev Commands
+## Quick repo facts
 
-```bash
-bun run dev           # Start all apps via Turborepo
-bun run dev:web       # Web only (port 5173)
-bun run dev:server    # Server only (port 3000)
-bun run db:start      # Start PostgreSQL Docker container
-bun run db:push       # Push schema changes (dev)
-bun run db:generate   # Generate migration files
-bun run db:migrate    # Apply migrations
-bun run db:studio     # Open Drizzle Studio
-bun run check-types   # TypeScript type check all packages
-```
+- **Stack:** Bun 1.3 + Turborepo + React 19 + TanStack Router + Hono + oRPC + Drizzle + Better Auth + PostgreSQL 16 + Tailwind v4 + shadcn/ui (Base UI primitives)
+- **Workspace import prefix:** `@ndma-dcs-staff-portal/{api,auth,db,env,ui,config}` (the prefix is legacy — package was renamed to "DCS Ops Center" but workspace names stayed)
+- **Dev ports:** web 3001, server 3000, docs 4000
+- **Migrations:** `packages/db/src/migrations/` — currently 28 forward (8 with `.down.sql`); next index is 0029
+- **Phase status (snapshot 2026-05-04):** Phases 0-8 🟢 Done; Phases 9-15 ⬜ Queued. Authoritative table in `IMPLEMENTATION_PLAN.md`.
 
 ---
 
-## Adding oRPC Procedures
+## Adding new code
 
+### oRPC procedures
 1. Create router file in `packages/api/src/routers/`
-2. Import and add to `appRouter` in `packages/api/src/routers/index.ts`
-3. Use `protectedProcedure` (auth required) or `publicProcedure`
-4. Add `.route()` + `.input()` + `.output()` for OpenAPI spec
-5. Client auto-gets types via `AppRouter` type inference
+2. Import + add to `appRouter` in `packages/api/src/routers/index.ts`
+3. **Mutations:** `requireRole(resource, action)` — NEVER `protectedProcedure`
+4. **Reads:** `protectedProcedure` is acceptable; consider `requireRole(resource, "read")` for sensitive endpoints
+5. Every mutation calls `logAudit({ actorRole, correlationId, ... })`
+6. Add a row to `packages/api/tests/rbac-matrix.test.ts` in the same PR (CI fails otherwise — Hard Invariant #5)
 
-## Adding shadcn/ui Components
+### Schemas
+- All in `packages/db/src/schema/`; export from `index.ts`
+- See `CLAUDE.md` schema table for current 49 files (post-Phase-8) and known cleanup items
+- ⛔ Never recreate `attendance-exceptions.ts` or `callouts.ts` (deleted in Phase 0 migration 0009)
 
-```bash
-# To apps/web (main app)
-cd apps/web && bunx shadcn@latest add <component>
-# To packages/ui (shared)
-cd packages/ui && bunx shadcn@latest add <component>
-```
-
-## Database Schema Pattern
-
-- All schemas in `packages/db/src/schema/`
-- Export from `packages/db/src/schema/index.ts`
-- Use `pgTable`, Drizzle relations, proper indexes
-- Auth tables ALREADY exist in `schema/auth.ts` — do NOT recreate
-
-## Auth Pattern
-
-- Better Auth config: `packages/auth/src/index.ts`
-- oRPC context: `packages/api/src/context.ts` (session injected here)
-- Use `protectedProcedure` for auth-gated API calls
-- Auth Admin plugin adds `role` field to user table
-- Client auth: `apps/web/src/lib/auth-client.ts`
+### UI components
+- Shared lives in `packages/ui` and uses `@base-ui/react` primitives — `render` prop, NOT `asChild` (see `CLAUDE.md` "Base UI" gotcha)
+- App-local lives in `apps/web/src/components/`
 
 ---
 
-## Auth Design Rules
+## Where things are
 
-### Local Admin Account (MANDATORY)
-
-Even though LDAP / Active Directory will be the primary login method, the system
-MUST always support a local email+password admin account. This serves as:
-
-- Emergency fallback if AD is unreachable
-- Initial setup account before AD integration is configured
-- Break-glass admin access
-
-`emailAndPassword: { enabled: true }` must ALWAYS remain in the Better Auth config.
-Do NOT disable it when adding LDAP.
-
-The login page must show BOTH:
-
-1. Email + Password form (always visible)
-2. "Sign in with Active Directory" button (LDAP, can be disabled/enabled via feature flag)
+| Thing | Path |
+|---|---|
+| Phase status + invariants | `IMPLEMENTATION_PLAN.md` |
+| Per-phase checklist | `docs/superpowers/plans/phase-{N}-{slug}.md` (created at phase start) |
+| Authoritative spec | `docs/superpowers/plans/2026-04-23-master-remediation-plan.md` |
+| Architecture reference | `docs/architecture/*.md` |
+| ADRs | `docs/decisions/ADR-*.md` |
+| Open questions for Kareem | `docs/plan-questions.md` |
+| State-of-project audit (2026-05-04) | `docs/audit/STATE-AUDIT-2026-05-04.md` |
+| RBAC matrix test (CI gate) | `packages/api/tests/rbac-matrix.test.ts` |
+| `logAudit` helper | `packages/api/src/lib/audit.ts` |
+| `createNotification` helper | `packages/api/src/lib/notify.ts` |
+| `fireAutomationRules` helper | `packages/api/src/lib/automation.ts` |
+| Sync connectors (Phase 15 stretch) | `packages/api/src/lib/sync/connectors/{ipam,ldap}.ts` |
 
 ---
 
-## KNOWN GOTCHAS — DO NOT REPEAT
+## When in doubt
 
-### Better-T Stack CLI
-
-- **NEVER** combine `--yes` with explicit stack flags — they are mutually exclusive.
-  The `--yes` flag uses defaults ONLY when no other flags are given.
-- **Always** specify `--payments none --web-deploy none --server-deploy none --examples none`
-  to avoid interactive prompts when running non-interactively.
-- The `fumadocs` addon triggers an interactive template prompt that cannot be bypassed
-  with flags alone. Add Fumadocs separately using `bunx create-fumadocs-app`.
-- Correct reproduce command (from scaffold output):
-  ```
-  bun create better-t-stack@latest <name> --frontend tanstack-router --backend hono
-    --runtime bun --database postgres --orm drizzle --api orpc --auth better-auth
-    --payments none --addons turborepo --examples none --db-setup docker
-    --web-deploy none --server-deploy none --git --package-manager bun --no-install
-  ```
-
-### oRPC
-
-- The scaffold puts oRPC procedures in `packages/api/` (not `apps/server/`).
-- `appRouter` must export `AppRouter` type for web client type inference.
-- Both `RPCHandler` (/rpc/*) and `OpenAPIHandler` (/api-reference/*) are mounted in server.
-- `createContext()` in `packages/api/src/context.ts` injects auth session.
-
-### oRPC `queryOptions` — ALWAYS wrap input in `{ input: { ... } }` (CRITICAL)
-
-- **WRONG:** `orpc.staff.list.queryOptions({ limit: 100, offset: 0 })`
-- **CORRECT:** `orpc.staff.list.queryOptions({ input: { limit: 100, offset: 0 } })`
-- The flat-args pattern is BOTH a TypeScript error AND a silent runtime bug (input never sent to server).
-- Procedures with **no `.input()` call** use `queryOptions()` with no args — do NOT pass an empty object.
-  - Examples: `orpc.services.list.queryOptions()`, `orpc.rota.getCurrent.queryOptions()`, `orpc.dashboard.opsReadiness.queryOptions()`, `orpc.leave.types.list.queryOptions()`
-- `mutationOptions({ onSuccess, onError })` is unaffected — input goes in `mutation.mutate(input)`.
-- `queryClient.invalidateQueries({ queryKey: orpc.X.list.key() })` is correct (no args to `key()`).
-- Root cause: `@orpc/tanstack-query` `QueryKeyOptions<TInput>` type requires an `input:` key when `TInput` is not undefined.
-
-### Zod `.default()` conflicts with `zodResolver` in react-hook-form
-
-- **NEVER** use `.default()` in Zod schemas used with `zodResolver`.
-- Instead, set default values via `defaultValues` in `useForm({ defaultValues: { ... } })`.
-- Using `.default()` in the schema causes react-hook-form to behave unexpectedly (fields may
-  appear uncontrolled or values may be silently dropped).
-
-### Better Auth
-
-- Auth config in `packages/auth/src/index.ts`, NOT in apps/server.
-- `sameSite: "none"` + `secure: true` on cookies — requires HTTPS in production.
-  For local dev, may need to change to `sameSite: "lax"` + `secure: false`.
-- When adding the Admin plugin, regenerate DB schema: `bunx @better-auth/cli generate`.
-- `user.role` from the session is typed as `string | undefined` — cast it when comparing:
-  ```ts
-  (session.user.role as string) === "admin"
-  ```
-
-### Base UI — `render` prop, NOT `asChild`
-
-- `packages/ui` uses **`@base-ui/react`** primitives (not Radix UI) for all interactive
-  components: DropdownMenu, AlertDialog, Collapsible, Sidebar, etc.
-- Base UI uses a `render` prop for element composition. `asChild` does NOT exist.
-- **Pattern:** `<DropdownMenuTrigger render={<Button />}>children</DropdownMenuTrigger>`
-- **NOT:** `<DropdownMenuTrigger asChild><Button>children</Button></DropdownMenuTrigger>`
-- Similarly: `<SidebarMenuButton render={<Link to="/" />}>` not `asChild`.
-- Base UI open state attributes: `data-open` / `data-closed` (not `data-[state=open]`).
-- Tailwind classes must use `data-open:` / `group-data-[open]/name:` variants accordingly.
-
-### Tailwind CSS
-
-- This project uses **Tailwind CSS v4** (not v3).
-- v4 uses CSS-first config (`@import "tailwindcss"` in CSS, no `tailwind.config.ts`).
-- shadcn/ui components are configured for Tailwind v4.
-
-### Security Best Practices
-
-- Always validate on the server (oRPC procedures) even when validating on the client.
-- Use `protectedProcedure` for every endpoint that touches user/org data.
-- Never trust client-supplied role or permission claims — always read from session.
-- CORS_ORIGIN must be set to the exact web app origin (port 3001 locally).
-- Content Security Policy headers should be added at the Hono server level.
-- Audit log every mutation — who did what and when.
-
-### Environment Variables
-
-- Server env: validated via `@ndma-dcs-staff-portal/env/server`
-- Web env: validated via `@ndma-dcs-staff-portal/env/web` (only VITE_ prefixed vars)
-- **NEVER import server env in web app code.**
-
----
-
-## Design System
-
-- **Colors:** Blue (primary), Green (success/available), Amber (warning), Red (danger/on-leave), Indigo (info)
-- **Status badges:** Active=Green, On Leave=Red, On Call=Blue, Training=Purple
-- **Icons:** Lucide icons ONLY (`lucide-react`)
-- **Dark/Light mode:** Supported via `next-themes` + CSS variables
-- **Tailwind first:** Use Tailwind utilities for all styling. No custom CSS unless unavoidable.
-
-## Docs Structure
-
-- `/docs/architecture/` — internal developer reference docs
-- `/apps/docs/` — user-facing Fumadocs documentation site
-
----
-
-## Database Schema Files (`packages/db/src/schema/`)
-
-| File | Tables / Enums |
-|------|----------------|
-| `auth.ts` | user, session, account, verification (Better Auth — DO NOT MODIFY) |
-| `audit.ts` | audit_logs (append-only global audit trail) |
-| `notifications.ts` | notifications + channel/status enums |
-| `departments.ts` | departments |
-| `staff.ts` | staff_profiles + employment_type / staff_status enums |
-| `rota.ts` | on_call_schedules, on_call_assignments, on_call_swaps, assignment_history + role/status enums |
-| `escalation.ts` | escalation_policies, escalation_steps, on_call_overrides |
-| `incidents.ts` | services, incidents, incident_affected_services, incident_responders, incident_timeline, post_incident_reviews |
-| `work.ts` | work_items, work_item_comments, work_item_weekly_updates + type/status/priority enums |
-| `leave.ts` | leave_types, leave_balances, leave_requests + leave_request_status enum |
-| `procurement.ts` | purchase_requisitions, pr_line_items, pr_approvals + pr_status / pr_priority enums |
-| `temp-changes.ts` | temporary_changes + temp_change_status enum |
-| `access.ts` | external_contacts, platform_accounts (staffProfileId nullable), access_groups, account_group_memberships (soft-delete), access_reviews, platform_integrations, sync_jobs, reconciliation_issues, service_owners + enums: platform_type, account_status, auth_source, sync_mode, sync_direction, integration_status, sync_job_status, reconciliation_issue_type, user_affiliation, access_review_status, access_group_type |
-| `contracts.ts` | contracts + contract_status enum |
-| `appraisals.ts` | appraisals + appraisal_status enum |
-| `compliance.ts` | training_records, ppe_records, policy_acknowledgements + compliance_item_status enum |
-
----
-
-## API Routers (`packages/api/src/routers/`)
-
-| File | Key Procedures |
-|------|----------------|
-| `audit.ts` | `audit.list`, `audit.getByResource` |
-| `notifications.ts` | `notifications.list`, `markRead`, `markAllRead`, `dismiss` |
-| `rota.ts` | getCurrent, getUpcoming, list, create, assign, removeAssignment, publish, getEligibleStaff, getAssignmentCounts, swap.{request,review,list}, history |
-| `work.ts` | list, get, create, update, assign, addComment, addWeeklyUpdate, getOverdue, getWeeklyReport, stats |
-| `incidents.ts` | list, get, create, update, addTimelineEntry, addResponder, removeResponder, linkService, unlinkService, createPIR, getActive, stats |
-| `services.ts` | list, get, create, update |
-| `leave.ts` | types.{list,create,update}, balances.{getByStaff,adjust}, requests.{list,create,approve,reject,cancel}, getTeamCalendar |
-| `procurement.ts` | list, get, create, update, submit, approve, reject, markOrdered, markReceived, getMyRequests, getPendingApprovals, stats |
-| `temp-changes.ts` | list, get, create, update, markRemoved, getOverdue, stats |
-| `access.ts` | accounts.{list,get,getByStaff,getByPlatform,getExpiring,getOrphaned,getStale,getVpnEnabled,create,update,disable,markReviewed}, externalContacts.{list,get,create,update}, groups.{list,get,create,update,delete,listMembers,addMember,removeMember}, reviews.{list,getPending,getOverdue,create,complete}, integrations.{list,get,create,update,triggerSync}, syncJobs.list, reconciliation.{list,resolve}, serviceOwners.{list,assign,remove,getByService} |
-| `staff.ts` | list, get, create, update, deactivate, getDepartments |
-| `contracts.ts` | list, get, create, update, getExpiringSoon |
-| `appraisals.ts` | list, get, create, update, getOverdue, getByStaff |
-| `compliance.ts` | training.{list,create,update,delete}, ppe.{list,create,update,delete}, policyAck.{list,acknowledge}, getExpiringItems |
-| `dashboard.ts` | main, opsReadiness, recentActivity |
-
-**Shared API utilities:**
-
-- `packages/api/src/lib/audit.ts` — `logAudit(params)` — call from EVERY mutation procedure
-- `packages/api/src/lib/notify.ts` — `createNotification(params)` — call when notifying a user
-
-**Context (`packages/api/src/context.ts`):** Provides `session`, `ipAddress`, `userAgent` to all procedures.
-
----
-
-## RBAC Resources (`packages/auth/src/index.ts`)
-
-13 resources: `staff`, `work`, `leave`, `rota`, `compliance`, `contract`, `appraisal`, `report`, `audit`, `settings`, `procurement`, `notification`, `access`
-
----
-
-## Deployment
-
-```bash
-# Production (Docker Compose)
-cp .env.example .env   # fill in POSTGRES_PASSWORD, BETTER_AUTH_SECRET, etc.
-docker compose -f docker-compose.prod.yml up -d --build
-docker compose -f docker-compose.prod.yml exec app bun run db:push
-```
-
-Key files: `Dockerfile` (multi-stage, non-root bun user), `docker-compose.prod.yml`.
-
----
-
-## Audit Logging Rule
-
-**Every mutation procedure MUST call `logAudit()`** with:
-
-- `actorId` + `actorName` from `context.session.user`
-- `action` in dot-notation: `"module.resource.verb"` (e.g. `"work_item.create"`, `"rota.schedule.publish"`)
-- `module`, `resourceType`, `resourceId`
-- `beforeValue` + `afterValue` for updates (omit for creates/deletes)
-- `ipAddress` + `userAgent` from context
+Ask in `docs/plan-questions.md` with `@kareem [DECISION]` tag and block. Do NOT improvise scope beyond the master plan §5-§7. See `IMPLEMENTATION_PLAN.md` "Escalation" for the full list of decisions that require Kareem's sign-off.

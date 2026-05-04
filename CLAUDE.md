@@ -308,21 +308,25 @@ correlationId: context.requestId,
 - Otherwise the stored session auto-redirects `/login` → `/` and the login form never appears
 
 ### import type enum
-- The `import_type` DB enum values: `"staff" | "training" | "contracts" | "work" | "platform_accounts" | "leave" | "ppe" | "attendance" | "callouts"`
+- The `import_type` DB enum values (18 as of Phase 8):
+  `"staff" | "training" | "contracts" | "work" | "operations_work_update" | "roster" | "platform_accounts" | "leave" | "ppe" | "attendance" | "callouts" | "appraisals" | "calendar_events" | "promotions" | "exam_schedule" | "onboarding" | "policy" | "forms"`
 - Leave imports: 2026 dates only (schema validation enforces `^2026-\d{2}-\d{2}$`), existing staff only (never creates new users)
 - PPE imports: `staffEmail` + `ppeItemCode` (must match a code in `ppe_items`), camelCase column names
-- Attendance imports: `staffEmail`, `exceptionDate`, `exceptionType` (camelCase — NOT snake_case)
-- Callout imports: `staffEmail`, `date`, `hours` required; `startTime`/`endTime` optional HH:MM
+- **`attendance` and `callouts` import types remain in the enum despite Phase 0 dropping the live tables.** Attendance/callout imports now route through `tosd_records` (Phase 2) — verify routing before relying on these import types.
+- 30+ CSV import templates are SPEC'd in master plan §7 / Phase 12 but **not yet shipped** at `apps/web/public/import-templates/` — only the README exists.
 
 ### appraisals.reject — field is `rejectionReason`, NOT `reason`
 - The `reject` procedure input uses `rejectionReason` (not `reason`).
 - **CORRECT:** `mutate({ id, rejectionReason: "..." })`
 - The DB column is also `rejection_reason`.
 
-### NOC shift schedule vs DCS on-call rota — two separate systems
-- DCS uses **on-call rotation** → `rota.*` router, `/rota` URL prefix, `on_call_schedules` table
-- NOC uses **24/7 shift schedule** (Day/Swing/Night) → `roster.*` router, `/roster` URL prefix, `roster_schedules` table
-- Never mix these up. Sidebar has them as separate items: "DCS On-Call Roster" and "NOC Shift Schedule".
+### NOC shift schedule vs DCS on-call rota — Phase 3 unified, cutover pending
+- **Current state:** Phase 3 shipped a unified `scheduling.ts` schema/router. Old `rota.ts` (DCS) and `roster.ts` (NOC) + standalone `noc-shifts.ts` run in parallel during the 7-day shadow window per master plan §6.3.
+- **DCS weekly on-call:** `scheduling.dcsOnCall.*` (4 roles: lead / asn / enterprise / core) → `dcs_on_call_weeks` table. URL: `/scheduling/dcs-oncall`. Legacy `/rota/*` still mounted.
+- **NOC 24/7 shift schedule:** `scheduling.nocShifts.*` (D / S / N / sick / off / al / ml grid) → `noc_shifts` table. URL: `/scheduling/noc-shifts`. Legacy `/roster/*` still mounted.
+- **Quarterly maintenance:** `scheduling.maintenance.*` → `quarterly_maintenance_tasks` table.
+- **Cutover gate (per master plan §6.3 + §8 Phase 3 acceptance):** delete `rota.ts` + `roster.ts` + `noc-shifts.ts` schemas / routers / routes only after 7 consecutive days zero 5xx in `scheduling.*` AND zero open `scheduling-regression` bugs.
+- Until cutover: write new code against `scheduling.*` only. Sidebar may still show legacy entries — confirm against current `apps/web/src/components/layout/data/sidebar-data.ts`.
 
 ### contracts.getExpiringSoon input field name
 - The input field is `withinDays` (not `daysAhead`).
@@ -371,73 +375,116 @@ correlationId: context.requestId,
 
 ## Database Schema Files (packages/db/src/schema/)
 
+> Updated 2026-05-04 (post-Phase-8). 49 schema files. ⚠️ = legacy / cleanup pending.
+
 | File | Tables / Enums |
 |------|----------------|
 | `auth.ts` | user, session, account, verification (Better Auth — DO NOT MODIFY) |
-| `audit.ts` | audit_logs (append-only global audit trail) |
+| `audit.ts` | audit_logs (append-only) |
 | `notifications.ts` | notifications + channel/status enums |
 | `departments.ts` | departments |
-| `staff.ts` | staff_profiles (+ `teamLeadId` self-ref FK) + employment_type / staff_status enums |
-| `department-assignments.ts` | department_assignments (staffProfileId, departmentId, role enum[manager|pa|team_lead|supervisor]), department_assignment_history |
-| `rota.ts` | on_call_schedules, on_call_assignments, on_call_swaps, assignment_history + role/status enums |
-| `roster.ts` | roster_schedules, roster_assignments, roster_swap_requests, maintenance_assignments — NOC 24/7 shift model (day/swing/night) |
+| `staff.ts` | staff_profiles (`reportsTo` self-ref — `team_lead_id` dropped in migration 0010) + employment_type / staff_status enums |
+| `staff-promotions.ts` | staff_promotions |
+| `department-assignments.ts` | department_assignments + department_assignment_history (role enum: manager / pa / team_lead / supervisor) |
+| `rota.ts` ⚠️ | on_call_schedules, on_call_assignments, on_call_swaps, assignment_history — legacy DCS, superseded by `scheduling.ts` (Phase 3 cutover gate pending) |
+| `roster.ts` ⚠️ | roster_schedules, roster_assignments, roster_swap_requests, maintenance_assignments — legacy NOC, superseded by `scheduling.ts` + `noc-shifts.ts` |
+| `scheduling.ts` | dcs_on_call_weeks (4-role: lead / asn / enterprise / core), quarterly_maintenance_tasks, dcs_oncall_swaps + status enums (Phase 3) |
+| `noc-shifts.ts` | noc_shifts (D / S / N / sick / off / al / ml grid), shift_swaps + status enums (Phase 3) |
 | `escalation.ts` | escalation_policies, escalation_steps, on_call_overrides |
 | `incidents.ts` | services, incidents, incident_affected_services, incident_responders, incident_timeline, post_incident_reviews |
-| `work.ts` | work_initiatives, work_items (+ initiativeId/parentId/milestoneDate/estimatedHours/followUpDate), work_item_comments, work_item_weekly_updates, work_item_dependencies, work_item_templates + type/status/priority enums |
-| `cycles.ts` | cycles, cycle_work_items + cycleStatus/cyclePeriod enums |
+| `work.ts` | work_initiatives, work_items, work_item_comments, work_item_weekly_updates, work_item_dependencies, work_item_templates + type / status / priority enums |
+| `cycles.ts` | cycles, cycle_work_items + cycleStatus / cyclePeriod enums |
 | `automation.ts` | automation_rules, automation_rule_logs + automation_trigger_module enum |
-| `leave.ts` | leave_types, leave_balances, leave_requests + leave_request_status enum |
+| `leave.ts` | leave_types, leave_balances, leave_requests (+ override_reason / overridden_by / violations jsonb — Phase 2) + leave_request_status enum |
+| `leave-policies.ts` | leave_policies (Phase 0 migration 0014 added `blocked_months text[]` + `allow_rollover bool`) |
+| `tosd-records.ts` | tosd_records — Time Off / Sick Days register; 7 types: reported_sick / medical / absent / time_off / work_from_home / lateness / callout_legacy (Phase 2; preserves Phase 0-deleted callouts as `callout_legacy`) |
 | `procurement.ts` | purchase_requisitions, pr_line_items, pr_approvals + pr_status / pr_priority enums |
-| `temp-changes.ts` | temporary_changes + tempChangeHistory + tempChangeLinks + enums: tempChangeCategoryEnum, tempChangeRiskEnum, tempChangeOwnerTypeEnum |
+| `temp-changes.ts` | temporary_changes, temp_change_history, temp_change_links + tempChangeCategoryEnum / RiskEnum / OwnerTypeEnum |
 | `access.ts` | external_contacts, platform_accounts, access_groups, account_group_memberships, access_reviews, platform_integrations, sync_jobs, reconciliation_issues, service_owners + enums |
-| `contracts.ts` | contracts + contract_status enum |
-| `appraisals.ts` | appraisals (+ ratingMatrix jsonb, percentageScore, achievements jsonb, goals jsonb, staffFeedback, supervisorComments, submittedAt, approvedAt, rejectionReason) + appraisal_status enum |
+| `platforms.ts` | platforms — Layer 1 reference table (Phase 1 §5.2 3-layer access registry) |
+| `sync-adapters.ts` | sync_adapters — Layer 2 (schema-only in Phase 1; populated in Phase 15 stretch) |
+| `sync-adapter-runs.ts` | sync_adapter_runs — Layer 2b ledger |
+| `service-access-registry.ts` | service_access_registry — Layer 3 (one row per (staff, platform); per-field `_source` provenance) |
+| `contracts.ts` | contracts (+ renewal_letter_due_date, appraisal_1_due_date, appraisal_2_due_date, submitted_to_hr_at, renewal_outcome — Phase 6) + contract_status enum |
+| `career-progression.ts` | career_progression_plans (multi-year per-staff progression — Phase 6) |
+| `appraisals.ts` | appraisals (+ totalScore, maxScore, percentage, incrementPct, submittedAt, achievements jsonb, goals jsonb, ratingMatrix jsonb, staffFeedback, supervisorComments, approvedAt, rejectionReason — Phase 4) + appraisal_status enum (lowercase 7-value, Phase 0 collapse) |
+| `appraisal-ratings.ts` | appraisal_ratings, appraisal_responsibilities, appraisal_achievements, appraisal_goals, appraisal_signatures (Phase 4 sub-tables) |
 | `appraisal-cycles.ts` | appraisal_cycles (year, half, openedAt, closedAt, status) |
-| `appraisal-followups.ts` | appraisal_followups (three_month / six_month, pending/done/skipped) |
+| `appraisal-followups.ts` | appraisal_followups (three_month / six_month, pending / done / skipped) |
+| `noc-performance.ts` | noc_ticket_activity, noc_monthly_metrics, employee_of_the_month — write only via `eom-calculator.ts` (Phase 5) |
 | `hr-docs.ts` | promotion_recommendations, promotion_letters, performance_journal_entries, career_path_plans, career_path_years, staff_feedback |
-| `ppe.ts` | ppe_items (catalog), ppe_issuances (per-staff issuance records) + ppeIssuanceStatusEnum |
-| `attendance-exceptions.ts` | attendance_exceptions (exceptionDate, exceptionType: reported_sick/medical/absent/lateness/wfh/early_leave/other, hours, minutesLate) + enums |
-| `callouts.ts` | callouts (calloutAt, calloutType, reason, outcome, status) + calloutTypeEnum / calloutStatusEnum |
+| `ppe.ts` | ppe_items (17 canonical, has_size + has_asset_tag flags), ppe_issuances (matrix; status: issued / not_issued / n_a / stolen / lost / damaged / returned; unique on staff+item+date) — Phase 8 |
+| `lateness-records.ts` | lateness_records (quarterly grid; total_time_late, days_late, days_missing_from_attendance, days_on_schedule; unique on staff+year+month) — Phase 8 |
+| `attendance-logs.ts` | attendance_logs |
+| `timesheet-documents.ts` | timesheet_documents (PDF index only; office: castellani / liliendaal; not parsed) — Phase 8 |
 | `timesheets.ts` | timesheets, timesheet_entries + timesheetStatusEnum |
-| `compliance.ts` | training_records, ppe_records, policy_acknowledgements + compliance_item_status enum |
+| `training.ts` | training_records (legacy facade; Phase 7 work lives in `training-phase7.ts`) |
+| `training-phase7.ts` | training_plans, certification_catalog, exam_vouchers, training_events, training_event_participants, in_house_training_log, training_syllabi, assessment_questions, onboarding_task_templates (Phase 7) |
+| `exam-schedule.ts` | exam_schedule (Phase 0 migration 0012; Phase 7 added window_start / window_end / exam_voucher_id) |
+| `onboarding-tasks.ts` | onboarding_tasks (Phase 7 added template_id FK to onboarding_task_templates) |
+| `certification-budgets.ts` | certification_budgets |
+| `compliance.ts` | training_records, ppe_records, policy_acknowledgements + compliance_item_status enum (legacy facade — superseded by `training-phase7.ts` + `ppe.ts`) |
+| `company-policies.ts` | company_policies |
+| `company-forms.ts` | company_forms |
+| `calendar-events.ts` | calendar_events (event_type enum widened to 12 values in Phase 0 migration 0015: birthday / public_holiday / training / exam / contract_renewal / appraisal_due / appraisal_followup / ppe_review / routine_maintenance / server_room_cleaning / custom / ...) |
+| `operational-overlays.ts` ⚠️ | Tables renamed `overlay_*` → `routine_maintenance_*` in Phase 0 migration 0013; FILE name + variable names still say "overlay" (cosmetic — see `docs/audit/STATE-AUDIT-2026-05-04.md` §4.6) |
 | `imports.ts` | import_jobs + import_job_status / import_type enums |
+
+**⛔ Deleted in Phase 0 migration 0009 — DO NOT recreate:**
+- `attendance-exceptions.ts` (table dropped)
+- `callouts.ts` (table dropped; historical rows preserved in `tosd_records` with `type='callout_legacy'`)
 
 ---
 
 ## API Routers (packages/api/src/routers/)
 
+> Updated 2026-05-04 (post-Phase-8). 41 routers. ⚠️ = legacy / cleanup pending.
+
 | File | Key Procedures |
 |------|----------------|
-| `audit.ts` | `audit.list`, `audit.getByResource` |
-| `notifications.ts` | `notifications.list`, `markRead`, `markAllRead`, `dismiss` |
-| `rota.ts` | getCurrent, getUpcoming, list, create, assign, removeAssignment, publish, getEligibleStaff, getAssignmentCounts, getEffectiveOnCall, swap.{request,review,list}, history |
-| `roster.ts` | schedules.{list,get,create,publish,archive}, assignments.{bulkSet,update}, swaps.{request,review,cancel}, getCurrentShifts, maintenance.{list,create,update} |
+| `audit.ts` | list, getByResource (gated `audit:read`) |
+| `notifications.ts` | list, markRead, markAllRead, dismiss |
+| `rota.ts` ⚠️ | DCS on-call legacy — superseded by `scheduling.ts`; cutover gate pending |
+| `roster.ts` ⚠️ | NOC roster legacy — superseded by `scheduling.ts` + `noc-shifts.ts` |
+| `scheduling.ts` | nocShifts.{list,bulkSet,update}, dcsOnCall.{list,get,upsertWeek}, maintenance.{list,upsert}, swaps.{noc,dcs}.{request,review} (Phase 3) |
+| `noc-shifts.ts` | NOC monthly grid + shift swap helpers (Phase 3) |
 | `escalation.ts` | policies.{list,get,create,update,delete}, steps.{add,update,delete}, overrides.{list,create,update,delete} |
 | `work.ts` | list, get, create, update, assign, addComment, addWeeklyUpdate, getOverdue, getWeeklyReport, stats, initiatives.{list,get,create,update}, dependencies.{listForItem,add,remove}, templates.{list,create,generate} |
 | `cycles.ts` | list, get, create, update, addWorkItem, removeWorkItem, stats |
-| `workload.ts` | get (per-engineer load aggregation → loadScore/loadLevel) |
+| `workload.ts` | get (per-engineer load → loadScore / loadLevel) |
 | `incidents.ts` | list, get, create, update, addTimelineEntry, addResponder, removeResponder, linkService, unlinkService, createPIR, getActive, stats |
 | `services.ts` | list, get, create, update |
-| `leave.ts` | types.{list,create,update}, balances.{getByStaff,adjust}, requests.{list,create,approve,reject,cancel}, getTeamCalendar |
+| `leave.ts` | types.{list,create,update}, balances.{getByStaff,adjust}, requests.{list,create,approve,reject,cancel}, validateRequest, tosd.{list,create,update,delete}, getTeamCalendar (Phase 2) |
+| `leave-policies.ts` | leave_policy CRUD + evaluator helpers |
 | `procurement.ts` | list, get, create, update, submit, approve, reject, markOrdered, markReceived, getMyRequests, getPendingApprovals, stats |
 | `temp-changes.ts` | list, get, create, update, markRemoved, getOverdue, getPublicIPs, getExpiringSoon, stats, statsExtended, getHistory, addLink |
-| `analytics.ts` | overview (cross-module analytics filterable by year) |
-| `access.ts` | accounts.{list,get,getByStaff,...,create,update,disable,markReviewed}, externalContacts.{list,get,create,update}, groups.{...}, reviews.{...}, integrations.{...}, syncJobs.list, reconciliation.{list,resolve}, serviceOwners.{list,assign,remove,getByService} |
+| `analytics.ts` | overview (cross-module, year-filterable) |
+| `access.ts` | accounts.*, externalContacts.*, groups.*, reviews.*, integrations.*, syncJobs.list, reconciliation.*, serviceOwners.* |
+| `access-registry.ts` | listByStaff, listByPlatform, create, update, bulkImport (Phase 1 Layer-3) |
+| `platforms.ts` | list, create, update, disable (Phase 1 Layer-1 reference) |
 | `staff.ts` | list, get, create, update, deactivate, getDepartments, setTeamLead, canAccessPrivate, getMyDirectReports, search |
-| `contracts.ts` | list, get, create, update, getExpiringSoon |
-| `appraisals.ts` | list, get, create, update, getOverdue, getByStaff, setRatings, submit, approve, reject, listFollowups |
+| `contracts.ts` | list, get, create, update, getExpiringSoon, setLifecycleDates, submitToHR, setOutcome, getTimeline (Phase 6) |
+| `career-progression.ts` | list, upsert, delete (Phase 6) |
+| `appraisals.ts` | list, get, create, update, getOverdue, getByStaff, setRatings (auto-score), setResponsibilities, setAchievements (min 3), setGoals (min 3), submit, approve, reject, sign, getDetail, listFollowups (Phase 4) |
 | `appraisal-cycles.ts` | list, get, create, close |
+| `noc-performance.ts` | metrics.{list,upsert}, tickets.{list,create}, eom.{get,compute} (Phase 5; computeEOM derives 7 recognition categories) |
 | `department-assignments.ts` | list, create, update, delete |
-| `ppe.ts` | items.{list,create,update}, issuances.{list,upsert,markReturned,markDamaged,markLost} |
-| `attendance-exceptions.ts` | list, create, update, delete |
-| `callouts.ts` | list, create, update, delete |
+| `ppe.ts` | items.{list,create,update}, issuances.{list,upsert,matrix,markReturned,markDamaged,markLost} (Phase 8) |
+| `lateness.ts` | list, quarterlyGrid, upsert, delete, stats (Phase 8) |
+| `attendance-time.ts` | attendance time tracking helpers |
 | `timesheets.ts` | list, create, approve, reject |
+| `timesheet-documents.ts` | list, create, update, delete (Phase 8 — PDF index) |
+| `training.ts` | (legacy compliance training; Phase 7 work in `training-phase7.ts`) |
+| `training-phase7.ts` | trainingPlans.{list,upsert}, certCatalog.{list,create,update}, examVouchers.{list,create,assign,updateStatus,sendExpiryReminders}, trainingEvents.{list,get,create,update,addParticipant,removeParticipant}, inHouseLog.{list,create,update,delete}, syllabi.list, assessmentQuestions.list, onboarding.{...,createFromTemplates} (Phase 7) |
 | `hr-docs.ts` | promotionRecommendations.{list,get,create,update}, promotionLetters.{list,get,create,update}, performanceJournal.{list,create}, careerPath.{get,upsertYear,setPlanNotes}, feedback.{submit,list,updateStatus} |
-| `compliance.ts` | training.{list,create,update,delete}, ppe.{list,create,update,delete}, policyAck.{list,acknowledge}, getExpiringItems |
+| `compliance.ts` | training.{list,create,update,delete}, ppe.{list,create,update,delete}, policyAck.{list,acknowledge}, getExpiringItems (legacy facade) |
+| `policy.ts` | policies.{list,create,update,delete}, forms.{list,create,update,delete} |
 | `dashboard.ts` | main, opsReadiness, recentActivity |
-| `import.ts` | execute (types: staff/training/contracts/work/leave/ppe/attendance/callouts), getHistory |
+| `import.ts` | execute, getHistory — types: staff / training / contracts / work / operations_work_update / roster / platform_accounts / leave / ppe / attendance / callouts / appraisals / calendar_events / promotions / exam_schedule / onboarding / policy / forms |
 | `automation.ts` | list, get, create, update, toggle, delete, getLogs, stats |
-| `overlays.ts` | (operational overlays — maintenance windows etc.) |
+| `overlays.ts` | operational overlays (maintenance windows etc.) |
+
+**⛔ Deleted in Phase 0 — DO NOT recreate:** `attendance-exceptions.ts`, `callouts.ts` routers.
 
 **Shared API utilities:**
 - `packages/api/src/lib/audit.ts` — `logAudit(params)` — call from EVERY mutation procedure
