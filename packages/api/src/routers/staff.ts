@@ -290,7 +290,11 @@ export const staffRouter = {
   updateSelf: protectedProcedure
     .input(
       z.object({
+        // Master plan §6.5 — staff can self-edit these contact fields
         phoneNumber: z.string().optional(),
+        cugPhoneNumber: z.string().optional(),
+        cugSimNumber: z.string().optional(),
+        mifiAssetTag: z.string().optional(),
         emergencyContacts: z.array(
           z.object({
             name: z.string().min(1),
@@ -313,10 +317,14 @@ export const staffRouter = {
         .update(staffProfiles)
         .set({
           phoneNumber: input.phoneNumber ?? before.phoneNumber,
+          cugPhoneNumber: input.cugPhoneNumber ?? before.cugPhoneNumber,
+          cugSimNumber: input.cugSimNumber ?? before.cugSimNumber,
+          mifiAssetTag: input.mifiAssetTag ?? before.mifiAssetTag,
           emergencyContacts: input.emergencyContacts ?? before.emergencyContacts,
         })
         .where(eq(staffProfiles.id, caller.id))
         .returning();
+      if (!updated) throw new ORPCError("INTERNAL_SERVER_ERROR");
 
       await logAudit({
         actorId: context.session.user.id,

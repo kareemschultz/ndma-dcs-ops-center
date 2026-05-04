@@ -10,6 +10,59 @@
 
 ---
 
+## 2026-05-04 — Phase 9 — [WIP] Self-service editor + policy admin partial
+
+- **Agent:** Claude Code (claude-opus-4-7, 1M context)
+- **Date:** 2026-05-04
+- **Branch:** `phase/9-self-service` (claimed; Phase 9 status changed to 🔵 In Progress)
+- **Type:** Phase work — partial / WIP
+
+### What shipped this session
+
+**Server (`packages/api/src/routers/staff.ts`):**
+- Extended `staff.updateSelf` mutation input + handler to accept `cugPhoneNumber`, `cugSimNumber`, `mifiAssetTag` in addition to existing `phoneNumber` + `emergencyContacts`. Master plan §6.5 requires all 5 fields be self-editable. Audit log unchanged (action `staff.self_update` already covered). Added a defensive `if (!updated) throw INTERNAL_SERVER_ERROR` per the type-safety pattern established in PR #32.
+
+**UI (`apps/web/src/routes/_authenticated/profile.tsx`):**
+- Added 3 useState hooks + 3 form inputs (3-column grid) for CUG phone / CUG SIM / MiFi asset tag, below the existing phone-number input
+- Updated `selfServiceSchema` (zod) to validate the 3 new fields
+- Updated optimistic update onMutate to include them
+- Updated `handleUpdateSelfContacts` to parse + send all 5 fields
+
+**Phase coordination:**
+- New `docs/superpowers/plans/phase-9-self-service.md` — full audit of pre-existing surface, master plan §8 acceptance criteria with [x]/[ ] markers per criterion, detailed remaining-work list (sections A-E)
+- IMPLEMENTATION_PLAN status table updated: Phase 9 → 🔵 In Progress
+- CURRENT_PHASE.md updated to reflect active Phase 9 work + reference to checklist file
+
+### Audit findings (Phase 9 was already partially scaffolded)
+
+- **`profile.tsx` is 647 lines** but only renders ~5 of the 16 sections specified in handoff §11. Existing sections: identity, name editor, password, contact details (now expanded), recent leave, recent open work items.
+- **`policy/index.tsx` is 390 lines** with 2 tabs (NDMA Policies + Internal Forms). Master plan §8 mentions "My Profile" tab — currently absent; `/profile` is the de-facto self-service entry point. Decision pending.
+- **`scope.ts` helpers** (`canAccessStaffPrivate`, `getDirectReports`, etc.) already exist — Team Lead / Manager / PA scoping is enforced server-side; UI scope verification via e2e is the remaining gap.
+
+### What's NOT shipped (Phase 9 acceptance criteria still open)
+
+- 11 missing /profile sections (shift, leave balance, lateness, appraisals, perf journal, commendations, training, PPE, access registry, onboarding, career progression). Section A of phase-9 checklist.
+- RBAC scope verification + Playwright tests (Section B + E of checklist)
+- "Policies > My Profile" tab decision (Section C)
+- RBAC matrix test cases for `staff.updateSelf` (Section D)
+
+See `docs/superpowers/plans/phase-9-self-service.md` for the full follow-up checklist.
+
+### Tests
+- ⚠️ `bun run check-types` not run locally (no node_modules); CI will validate
+- ⚠️ Profile page form changes need manual smoke test once dev server is up
+
+### Outstanding (still needs Kareem's hands)
+- ⛔ Production migration backlog now at 0008-0030 (23 migrations)
+- 🟢 `performance_journal_entries` decision — RESOLVED today (Option B, migration 0030 ships under name `noc_performance_journal`)
+- 🟡 Phase 3 cutover gate — still defer to Phase 15 hardening
+- 🟡 Phase 9 completion — needs ~11 more /profile sections + RBAC e2e tests + tab decision
+
+### Next phase / next session
+Continue Phase 9 — pick up from `docs/superpowers/plans/phase-9-self-service.md` Section A (profile page expansion). Each section is an independent useQuery + Card; can be split across multiple sessions.
+
+---
+
 ## 2026-05-04 — Phase 5 follow-up: noc_performance_journal (Option B) — 🟢 Done
 
 - **Agent:** Claude Code (claude-opus-4-7, 1M context)
