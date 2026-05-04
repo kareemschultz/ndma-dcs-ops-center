@@ -10,6 +10,61 @@
 
 ---
 
+## 2026-05-04 — Pre-Phase-9 documentation hygiene pass — 🟢 Done
+
+- **Agent:** Claude Code (claude-opus-4-7, 1M context)
+- **Date:** 2026-05-04
+- **Branch:** `claude/confident-feistel-c3fe4a` (worktree); not a phase branch
+- **Type:** Maintenance / hygiene (no schema, router, or UI changes)
+
+### What this session shipped
+
+**State-of-project audit (`docs/audit/STATE-AUDIT-2026-05-04.md`):**
+- Verified Phases 0-8 by `git log <SHA> --stat` per Hard Invariant #1 — all gate SHAs match content
+- Catalogued doc drift: AGENTS.md / GEMINI.md / README.md / CLAUDE.md schema-router tables all listed pre-Phase-1 reality
+- Mapped source-of-truth coverage: schemas/routers/UI exist for Phases 1-8 but XLSX-derived rows NOT YET seeded (Phase 14 owns that)
+- Confirmed two real spec gaps: `appraisal_tracker_view` (Phase 4 §5.3) and `commendations` table (Phase 5 §5.3) absent in DB
+
+**Documentation hygiene:**
+- Refreshed `CLAUDE.md` schema table (22 → 49 entries) and router table (18 → 41 entries) with ⚠️ legacy markers and ⛔ deletion markers
+- Updated `import type enum` gotcha (9 → 18 values) and "NOC vs DCS scheduling" gotcha (Phase 3 unification + cutover gate state)
+- Slimmed `AGENTS.md` from 314 → ~95 lines as a pointer to CLAUDE.md (canonical)
+- Corrected `README.md` counts (5→7 roles, 13→22+ resources, 21→49 schemas, 18→41 routers) and refreshed the schema overview table
+- Renamed CHANGELOG `[Unreleased]` to `[Pre-master-plan history] — 2026-04-12 to 2026-04-17`
+- Added new `[Maintenance]` CHANGELOG entry for this session
+
+**Phase 1-6 retroactive backfill:**
+- Created `docs/superpowers/plans/phase-{1..6}-{slug}.md` skeletons (only phase-0/7/8 existed prior; master plan §11.1 requires one per phase)
+- Each marks shipped acceptance criteria [x], deferred items [ ], and references gate SHAs from AGENT_LOG history
+- Phase-3 file flags the legacy-cutover gate as "NOT YET MET"
+- Phase-4 file flags missing `appraisal_tracker_view` as decision needed
+- Phase-5 file flags missing `commendations` table as decision needed
+
+**Cleanup:**
+- Deleted `GEMINI.md` (master plan §4.1 disposition; AGENTS.md serves non-Claude agents now)
+- Untracked `e2e-report/index.html` (generated Playwright output; gitignored going forward)
+
+### Tests
+- ✅ No code changes — typecheck/build/test not re-run
+- ⚠️ `bat` pre-commit hook ran (commit succeeded — bat appears installed locally)
+
+### Outstanding (handed off to Kareem)
+- ⛔ **Production migration backlog** (open since 2026-04-23 in `docs/plan-questions.md`): apply migrations 0008-0028 (21 migrations) to prod via `DATABASE_URL=$PROD_DATABASE_URL bun run db:migrate` after pre-checks per phase-0-stabilise.md §8
+
+### Outstanding (decisions needed before Phase 4 / 5 follow-ups)
+- `appraisal_tracker_view` — add as raw-SQL migration vs replace with materialized router query?
+- `commendations` table — fold into `performance_journal_entries` vs create separate table?
+
+### Next phase
+Phase 9 (Self-service + policies + forms) — branch `phase/9-self-service` from main at Phase 8 gate `2b4fbc6`. See master plan §5.12 + §6.5 + §8 Phase 9 acceptance criteria.
+
+### Files changed (this session)
+- 5 modified: `.gitignore`, `AGENTS.md`, `CHANGELOG.md`, `CLAUDE.md`, `README.md`, `AGENT_LOG.md` (this entry)
+- 8 new: `docs/audit/STATE-AUDIT-2026-05-04.md` + `docs/superpowers/plans/phase-{1..6}-*.md` (6 files)
+- 2 deleted: `GEMINI.md`, `e2e-report/index.html` (untracked)
+
+---
+
 ## Phase 8 — PPE matrix, lateness quarterly grid, timesheet documents — 🟢 Done
 
 - **Agent:** Claude Code (claude-sonnet-4-6)

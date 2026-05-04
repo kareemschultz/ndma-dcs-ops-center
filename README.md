@@ -223,7 +223,7 @@ Every action in the system is captured in an append-only audit log — who did w
 - Global append-only audit log for every mutation
 - IP address + user agent + request correlation ID captured for forensics
 - JSON before/after diff for every state change; actor role recorded
-- 5-role RBAC over 13 resources: staff, work, leave, rota, compliance, contract, appraisal, report, audit, settings, procurement, notification, access
+- 7-role RBAC over 22+ resources (admin / hrAdminOps / manager / teamLead / personalAssistant / staff / viewer × staff, work, leave, rota, roster, compliance, contract, appraisal, report, audit, settings, procurement, notification, access, appraisal_cycle, promotion_letter, performance_journal, career_path, ppe, callout, timesheet, shift, feedback, leave_policy, attendance, department_assignment)
 - Emergency local admin fallback (always enabled, even with AD/LDAP active)
 
 </td>
@@ -278,11 +278,11 @@ ndma-dcs-ops-center/
 ├── packages/
 │   ├── api/                    # oRPC procedures + context (shared by server)
 │   │   └── src/
-│   │       ├── routers/        # 18 domain routers + index
+│   │       ├── routers/        # 41 domain routers + index
 │   │       └── lib/            # logAudit(), createNotification(), fireAutomationRules(), sync/
 │   ├── auth/                   # Better Auth config (shared by server + web)
-│   ├── db/                     # Drizzle schema + migrations
-│   │   └── src/schema/         # 21 schema files, one per domain
+│   ├── db/                     # Drizzle schema + migrations (28 forward, ~8 with .down.sql)
+│   │   └── src/schema/         # 49 schema files
 │   ├── env/                    # Type-safe env validation
 │   ├── ui/                     # Shared shadcn/ui components
 │   └── config/                 # Shared TypeScript config
@@ -366,12 +366,14 @@ bun run dev         # Starts all apps via Turborepo
 | Role | Access |
 |------|--------|
 | **Admin** | Full system access — all modules, settings, user management |
+| **HR/Admin Ops** | Staff CRUD, all leave / rota / compliance / appraisals, procurement management |
 | **Manager** | Staff management, leave approvals, rota management, appraisals, PR approvals |
-| **HR/Admin Ops** | Staff CRUD, all leave/rota/compliance, procurement management |
-| **Staff** | Own profile, submit leave requests and PRs, view rota |
-| **Read Only** | View-only access across all modules |
+| **Team Lead** | Self + direct-report visibility; appraisal initiation; team scheduling |
+| **Personal Assistant** | DCS + NOC operational visibility (Ataybia / Sachin pattern) |
+| **Staff** | Own profile, submit leave requests and PRs, view own rota |
+| **Viewer** | Read-only across most modules |
 
-All role checks are enforced server-side via `requireRole(resource, action)` middleware on every mutation — client role claims are never trusted. Read-only procedures use `protectedProcedure` (session check only).
+All role checks are enforced server-side via `requireRole(resource, action)` middleware on every mutation — client role claims are never trusted. Read-only procedures use `protectedProcedure` (session check only). The RBAC matrix test at `packages/api/tests/rbac-matrix.test.ts` is a blocking CI gate.
 
 The sidebar also filters navigation items client-side based on the user's role (e.g. the `staff` role does not see Audit Log, Analytics, Appraisals, Import, or Settings). This is a UX convenience only — the server enforces the real boundary.
 
@@ -399,27 +401,41 @@ graph TB
 
 ## Database Schema Overview
 
+> Updated 2026-05-04 (post-Phase-8). 49 schema files. Authoritative schema/router tables live in `CLAUDE.md`.
+
 | Module | Tables |
 |--------|--------|
 | Auth | `user`, `session`, `account`, `verification` (Better Auth managed) |
 | Audit | `audit_logs` (append-only, actor role + request correlation ID) |
 | Notifications | `notifications` |
-| Org | `departments`, `staff_profiles` |
-| On-Call | `on_call_schedules`, `on_call_assignments`, `on_call_swaps`, `assignment_history` |
+| Org | `departments`, `staff_profiles` (`reports_to` self-ref), `staff_promotions`, `department_assignments`, `department_assignment_history` |
+| On-Call (legacy ⚠️) | `on_call_schedules`, `on_call_assignments`, `on_call_swaps`, `assignment_history` — superseded by Scheduling below; cutover gate pending |
+| Roster (legacy ⚠️) | `roster_schedules`, `roster_assignments`, `roster_swap_requests`, `maintenance_assignments` — superseded by Scheduling + NOC Shifts |
+| Scheduling (Phase 3) | `dcs_on_call_weeks` (4-role: lead/asn/enterprise/core), `quarterly_maintenance_tasks`, `dcs_oncall_swaps` |
+| NOC Shifts (Phase 3) | `noc_shifts` (D/S/N/sick/off/al/ml grid), `shift_swaps` |
 | Escalation | `escalation_policies`, `escalation_steps`, `on_call_overrides` |
-| Incidents | `services` (+ runbookUrl/docsUrl), `incidents` (+ linkedWorkItemId), `incident_affected_services`, `incident_responders`, `incident_timeline`, `post_incident_reviews` |
-| Work | `work_initiatives`, `work_items`, `work_item_comments`, `work_item_weekly_updates`, `work_item_dependencies`, `work_item_templates` |
+| Incidents | `services`, `incidents`, `incident_affected_services`, `incident_responders`, `incident_timeline`, `post_incident_reviews` |
+| Work | `work_initiatives`, `work_items`, `work_item_comments`, `work_item_weekly_updates`, `work_item_dependencies`, `work_item_templates` (Phase 11 will add `year` / `period` / `week_start_date`) |
 | Cycles | `cycles`, `cycle_work_items` |
-| Leave | `leave_types`, `leave_balances`, `leave_requests` |
+| Leave (Phase 2) | `leave_types`, `leave_balances`, `leave_requests` (+ `override_reason` / `overridden_by` / `violations` jsonb), `leave_policies` (+ `blocked_months[]` + `allow_rollover`), `tosd_records` (Time Off / Sick Days; 7 types incl. `callout_legacy`) |
 | Procurement | `purchase_requisitions`, `pr_line_items`, `pr_approvals` |
-| Temp Changes | `temporary_changes` (+ 14 new fields: category, riskLevel, network, owner, agency), `temp_change_history`, `temp_change_links` |
-| Access | `external_contacts`, `platform_accounts`, `access_groups`, `account_group_memberships`, `access_reviews`, `platform_integrations`, `sync_jobs`, `reconciliation_issues`, `service_owners` |
-| Contracts | `contracts` |
-| Appraisals | `appraisals` |
-| Compliance | `training_records`, `ppe_records`, `policy_acknowledgements` |
-| Import | `import_jobs` (supports staff, training, contracts, work, leave — 2026-only for leave) |
+| Temp Changes | `temporary_changes` (+ category, riskLevel, network, owner, agency), `temp_change_history`, `temp_change_links` |
+| Access (legacy) | `external_contacts`, `platform_accounts`, `access_groups`, `account_group_memberships`, `access_reviews`, `platform_integrations`, `sync_jobs`, `reconciliation_issues`, `service_owners` |
+| Access Registry (Phase 1, 3-layer) | `platforms` (Layer 1), `sync_adapters` + `sync_adapter_runs` (Layer 2 / 2b), `service_access_registry` (Layer 3 with per-field `_source` provenance) |
+| Contracts (Phase 6) | `contracts` (+ renewal_letter_due, appraisal_1_due, appraisal_2_due, submitted_to_hr_at, renewal_outcome), `career_progression_plans` |
+| Appraisals (Phase 4) | `appraisals` (+ totalScore, percentage, incrementPct), `appraisal_ratings`, `appraisal_responsibilities`, `appraisal_achievements`, `appraisal_goals`, `appraisal_signatures`, `appraisal_cycles`, `appraisal_followups` |
+| NOC Performance (Phase 5) | `noc_ticket_activity`, `noc_monthly_metrics`, `employee_of_the_month` (computed) |
+| HR Docs | `promotion_recommendations`, `promotion_letters`, `performance_journal_entries`, `career_path_plans`, `career_path_years`, `staff_feedback` |
+| PPE (Phase 8) | `ppe_items` (17 canonical), `ppe_issuances` (matrix; 7 status values incl. `not_issued` / `n_a` / `stolen`) |
+| Attendance / Lateness / Timesheets (Phase 8) | `attendance_logs`, `lateness_records` (quarterly grid), `timesheets`, `timesheet_entries`, `timesheet_documents` (PDF index) |
+| Training (Phase 7) | `training_plans`, `certification_catalog`, `exam_vouchers`, `training_events`, `training_event_participants`, `in_house_training_log`, `training_syllabi`, `assessment_questions`, `onboarding_task_templates`, `onboarding_tasks`, `exam_schedule`, `certification_budgets`, `training_records` |
+| Compliance (legacy facade) | `training_records`, `ppe_records`, `policy_acknowledgements` (read-through to Phase 7 / 8 tables) |
+| Calendar / Policies / Forms | `calendar_events` (12-value event_type enum), `company_policies`, `company_forms` |
+| Routine Maintenance | `routine_maintenance_types`, `routine_maintenance_schedules`, `routine_maintenance_assignments`, `routine_maintenance_tasks` (file still named `operational-overlays.ts` — Phase 0 migration 0013 renamed only the tables) |
+| Import | `import_jobs` (18-value `import_type` enum) |
 | Automation | `automation_rules`, `automation_rule_logs` |
-| Ops Overlays | `operational_overlays` (priority tasks with assignees for the dashboard widget) |
+
+**⛔ Deleted in Phase 0 migration 0009:** `attendance_exceptions`, `callouts` (historical rows preserved in `tosd_records.type='callout_legacy'`)
 
 ---
 

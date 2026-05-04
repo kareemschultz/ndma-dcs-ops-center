@@ -4,6 +4,32 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
+## [Maintenance — Documentation hygiene] — 2026-05-04
+
+### Added
+- **`docs/audit/STATE-AUDIT-2026-05-04.md`** — pre-Phase-9 state-of-project audit covering doc drift, source-of-truth coverage status, and outstanding cleanup items
+- **`docs/superpowers/plans/phase-{1..6}-{slug}.md`** — retroactive backfill of phase checklist files (master plan §11.1 requires one per phase; only phase-0/7/8 existed prior). Each flags deferred items + open spec gaps:
+  - phase-3: cutover gate "NOT YET MET" for legacy `rota.ts` / `roster.ts` / standalone `noc-shifts.ts` schemas
+  - phase-4: `appraisal_tracker_view` (DB VIEW per master plan §5.3) confirmed absent — decision needed
+  - phase-5: `commendations` table (master plan §5.3) confirmed absent — verification + decision needed
+
+### Changed
+- **`CLAUDE.md`** schema table refreshed to 49 files (was 22 listed; many missing or stale post-Phase 1-8). Router table refreshed to 41 routers (was 18 listed). `import_type` enum gotcha updated 9 → 18 values. "NOC vs DCS scheduling" gotcha rewritten to reflect Phase 3 unification + pending cutover gate. ⚠️ markers added to legacy schemas / routers (`rota.ts`, `roster.ts`, `operational-overlays.ts`, etc.). ⛔ markers added for Phase 0-deleted files (do not recreate).
+- **`AGENTS.md`** slimmed from 314 → ~95 lines as a pointer file. CLAUDE.md is canonical for non-Claude agents (Codex / Copilot). 2026-04-25 course-correction rules + reading order preserved.
+- **`README.md`** RBAC role count 5 → 7, resource count 13 → 22+, schema count 21 → 49, router count 18 → 41. Database schema overview table refreshed to reflect Phase 1-8 reality (3-layer access registry, scheduling unification, appraisal sub-tables, NOC performance, contracts lifecycle, PPE/lateness/timesheets/TOSD).
+- **`CHANGELOG.md`** stale `[Unreleased]` heading promoted to `[Pre-master-plan history] — 2026-04-12 to 2026-04-17` with context note explaining the 2026-04-25 anti-pattern callout.
+- **`.gitignore`** added `e2e-report/` (consistent with `playwright-report/` already present)
+
+### Removed
+- **`GEMINI.md`** deleted (master plan §4.1 cleanup disposition; AGENTS.md is the pointer for non-Claude agents). Eliminates stale-doc duplication risk.
+- **`e2e-report/index.html`** untracked from git index (generated Playwright report; now gitignored).
+
+### Notes
+- Production migration backlog (0008-0028, 21 migrations) remains open per `docs/plan-questions.md` `[KNOWN DEFECT]` since 2026-04-23. Requires Kareem to apply manually with PROD `DATABASE_URL`.
+- This is a documentation-only maintenance pass. No schema, router, or UI changes.
+
+---
+
 ## [Phase 8 — PPE, Lateness, Timesheets, TOSD] — shipped 2026-04-27 squash `2b4fbc6`
 
 ### Added
@@ -196,11 +222,13 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
-## [Unreleased]
+## [Pre-master-plan history] — 2026-04-12 to 2026-04-17
+
+> The work below shipped via the Phase 0 / Phase 1 commits above (3916721 / c8fdd3e / fea4835 / 2972287). The `[Unreleased]` heading was aspirational at the time it was written; the 2026-04-25 course correction (see CLAUDE.md "Lessons learned") flagged this anti-pattern. Kept as historical reference. The 7-phase strategic plan referenced here was superseded by `docs/superpowers/plans/2026-04-23-master-remediation-plan.md` (15 phases).
 
 ### Security hardening + Phase 0 + Phase 1 start (2026-04-17)
 
-**Reference:** `IMPLEMENTATION_PLAN.md` (root) and `/home/karetech/.claude/plans/paude-for-a-second-clever-salamander.md` (strategic plan, 7 phases).
+**Reference:** `IMPLEMENTATION_PLAN.md` (root) and `/home/karetech/.claude/plans/paude-for-a-second-clever-salamander.md` (strategic plan, 7 phases — superseded).
 
 #### Security / RBAC
 - **Audit router** — `audit.list`, `audit.getByResource` gated to `requireRole("audit", "read")` (was `protectedProcedure` — any authenticated user could read the full audit trail).

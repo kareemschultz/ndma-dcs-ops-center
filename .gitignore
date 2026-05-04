@@ -33,6 +33,7 @@ npm-debug.log*
 # Test artifacts
 e2e/.auth/
 playwright-report/
+e2e-report/
 test-results/
 
 # Local data files (xlsx, csv — not committed to git)
