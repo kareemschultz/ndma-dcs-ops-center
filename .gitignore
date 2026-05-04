@@ -50,5 +50,7 @@ source-of-truth/
 /files.zip
 /1.zip
 
-# Claude local settings
+# Claude local settings + ephemeral artifacts (lock files, worktree state, etc.)
 .claude/settings.local.json
+.claude/*.lock
+.claude/worktrees/
