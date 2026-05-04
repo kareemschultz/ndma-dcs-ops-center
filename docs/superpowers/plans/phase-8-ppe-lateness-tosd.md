@@ -1,8 +1,9 @@
 # Phase 8 — PPE, Lateness, Timesheets, TOSD
 
 **Branch:** `phase/8-ppe-lateness-tosd`
-**Base commit:** `a4c1a53` (Phase 7 gate)
-**Status:** 🔵 In Progress
+**Base commit:** `2ced91b` (Phase 7 gate; rebased from `a4c1a53` during 2026-05-04 PR #29 merge)
+**Gate commit on main:** `fb46d00` (rebased from squash `2b4fbc6`)
+**Status:** 🟢 Done — shipped 2026-04-27
 
 ## Acceptance Criteria (from master plan §8)
 

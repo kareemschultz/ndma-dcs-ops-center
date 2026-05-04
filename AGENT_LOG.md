@@ -56,7 +56,7 @@
 - `commendations` table — fold into `performance_journal_entries` vs create separate table?
 
 ### Next phase
-Phase 9 (Self-service + policies + forms) — branch `phase/9-self-service` from main at Phase 8 gate `2b4fbc6`. See master plan §5.12 + §6.5 + §8 Phase 9 acceptance criteria.
+Phase 9 (Self-service + policies + forms) — branch `phase/9-self-service` from main at Phase 8 gate `fb46d00` (rebased from `2b4fbc6` during 2026-05-04 PR #29 merge). See master plan §5.12 + §6.5 + §8 Phase 9 acceptance criteria.
 
 ### Files changed (this session)
 - 5 modified: `.gitignore`, `AGENTS.md`, `CHANGELOG.md`, `CLAUDE.md`, `README.md`, `AGENT_LOG.md` (this entry)
