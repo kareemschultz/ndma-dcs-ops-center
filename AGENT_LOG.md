@@ -10,6 +10,55 @@
 
 ---
 
+## 2026-05-04 — Phase 4-5 spec follow-up: commendations + appraisal_tracker_view — 🟢 Done
+
+- **Agent:** Claude Code (claude-opus-4-7, 1M context)
+- **Date:** 2026-05-04
+- **Branch:** `feat/appraisal-view-commendations`
+- **Type:** Spec-compliance follow-up (closes 2 of 2 spec gaps surfaced by 2026-05-04 state audit)
+
+### Decisions made (informed by source-of-truth XLSX inspection)
+
+Source-of-truth files inspected via `DEEP_DIVE_ANALYSIS.md`:
+- `DCS/appraisal-tracker/APPRAISAL TRACKER DCS.xlsx` — 3 cols (Name | Percentage | Period), 63 rows
+- `NOC/appraisals/AppraisalTracker_20241210_v01.xlsx` — IDENTICAL shape, 80 rows
+- `DCS/appraisals/Appraisal Template 2025.xlsx` — 187 rows / 16 formulas
+- `NOC/appraisals/AppraisalTemplate_20250513_v01.xlsx` — STRUCTURALLY IDENTICAL to DCS template
+- `DCS/appraisals/PerformanceEvaluationReport_20250226_v01.xlsx` — also identical to template (just unfilled vs partly pre-filled)
+- `NOC/appraisals/EmployeeOfTheMonth_20240923_v01.xlsx` — 19 monthly sheets; metric rows 2-10 map exactly to existing `noc_monthly_metrics` schema (mt / itt_incident / itt_problem / days_day_shift / days_swing_shift / days_night_shift / noccc / nct / ma)
+- `NOC/appraisals/StaffPerformanceJournal_20230731_v01.xlsx` — per-staff sheets, matrix of 4 categories × 12 months × counts + narratives
+- `NOC/appraisals/StaffCommendationJournal_20231216_v01.xlsx` — 2 sheets (2025, 2026), rows = staff, cols = months, cells = recognition narrative
+
+**Conclusion 1 — `appraisal_tracker_view`:** Single DB VIEW (raw SQL via migration) serves both DCS and NOC trackers (identical shape). Master plan §5.3 spec verbatim. Phase 14 gate assertion `gateAssertions["appraisalTrackerView.rowCount"] >= 130` requires a queryable VIEW.
+
+**Conclusion 2 — `commendations`:** Separate table per master plan §5.3. Distinct from negative-tracking entities (positive recognition narrative per staff/year/month). Single narrative per (staff, year, month) — unique constraint enforced.
+
+**Conclusion 3 — `performance_journal_entries` naming gap:** Master plan §5.3 spec wants this for the StaffPerformanceJournal mistake-matrix (categories: tickets_itop / alarms / slack_whatsapp / task_incomplete). Existing `performance_journal_entries` in `hr-docs.ts` is a DIFFERENT entity (appraisal-period feedback log with `entryDate` / `entryType` / `body`). NOT touched in this session — opened as a Phase 5 follow-up question in `docs/plan-questions.md`.
+
+### What shipped
+
+- Migration 0029 + .down.sql
+- `packages/db/src/schema/commendations.ts` (new)
+- `packages/db/src/schema/appraisal-tracker-view.ts` (new — Drizzle `pgView().existing()`)
+- Updated `packages/db/src/schema/index.ts` to export both
+- `packages/api/src/routers/commendations.ts` (new — exports `commendationsRouter` + `appraisalTrackerRouter`)
+- Wired both routers into `appRouter` in `packages/api/src/routers/index.ts`
+- RBAC matrix test cases appended (Phase 4-5 follow-up describe block)
+
+### Tests
+- ⚠️ `bun run check-types` not run locally (no node_modules in worktree); CI will validate
+- ⚠️ RBAC matrix test additions need DB to run; CI will execute
+
+### Outstanding
+- ⛔ Production migration 0029 apply — pending Kareem (along with the rest of the open 0008-0028 backlog). Add 0029 to that batch.
+- 🟡 `performance_journal_entries` naming gap — separate Phase 5 follow-up question opened in `docs/plan-questions.md`
+- 🟡 UI surface for commendations + appraisal tracker page — defer to a Phase 5 / Phase 9 UI session
+
+### Next phase
+Phase 9 (Self-service + policies + forms) — branch `phase/9-self-service` from main at the next gate (post-this-PR commit, TBD by squash-merge SHA). Master plan §5.12 + §6.5 + §8 Phase 9 acceptance criteria.
+
+---
+
 ## 2026-05-04 — Pre-Phase-9 documentation hygiene pass — 🟢 Done
 
 - **Agent:** Claude Code (claude-opus-4-7, 1M context)

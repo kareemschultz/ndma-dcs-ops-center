@@ -5,6 +5,10 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { db, platforms, serviceAccessRegistry, staffProfiles, user } from "@ndma-dcs-staff-portal/db";
 import { accessRegistryRouter } from "../src/routers/access-registry";
 import { platformsRouter } from "../src/routers/platforms";
+import {
+  appraisalTrackerRouter,
+  commendationsRouter,
+} from "../src/routers/commendations";
 
 type Actor = {
   id: string;
@@ -446,5 +450,86 @@ describe("Phase 8 RBAC matrix", () => {
         status: "not_issued",
       }, { context: makeContext(fixtures.staff) }),
     );
+  });
+});
+
+describe("Phase 4-5 follow-up RBAC matrix (commendations + appraisal_tracker_view)", () => {
+  // Fixtures already seeded by Phase 1 describe block above — reuse them.
+  // Resource: performance_journal — admin/hrAdminOps have full CRUD; staff has none.
+
+  test("commendations.list is performance_journal:read — staff cannot list", async () => {
+    await expectForbidden(
+      call(
+        commendationsRouter.list,
+        { year: 2025 },
+        { context: makeContext(fixtures.staff) },
+      ),
+    );
+  });
+
+  test("commendations.list is accessible to admin", async () => {
+    await expect(
+      call(
+        commendationsRouter.list,
+        { year: 2025 },
+        { context: makeContext(fixtures.admin) },
+      ),
+    ).resolves.toBeDefined();
+  });
+
+  test("commendations.get is performance_journal:read — staff cannot get", async () => {
+    await expectForbidden(
+      call(
+        commendationsRouter.get,
+        { id: "nonexistent" },
+        { context: makeContext(fixtures.staff) },
+      ),
+    );
+  });
+
+  test("commendations.create is performance_journal:create — staff cannot create", async () => {
+    await expectForbidden(
+      call(
+        commendationsRouter.create,
+        {
+          staffProfileId: fixtures.staffProfileId,
+          year: 2025,
+          month: 1,
+          narrative: "Test commendation",
+        },
+        { context: makeContext(fixtures.staff) },
+      ),
+    );
+  });
+
+  test("commendations.update is performance_journal:update — staff cannot update", async () => {
+    await expectForbidden(
+      call(
+        commendationsRouter.update,
+        { id: "nonexistent", narrative: "x" },
+        { context: makeContext(fixtures.staff) },
+      ),
+    );
+  });
+
+  test("commendations.delete is performance_journal:delete — staff cannot delete", async () => {
+    await expectForbidden(
+      call(
+        commendationsRouter.delete,
+        { id: "nonexistent" },
+        { context: makeContext(fixtures.staff) },
+      ),
+    );
+  });
+
+  test("appraisalTracker.list is protected procedure — any authenticated session ok", async () => {
+    // protectedProcedure (session-only); reads from VIEW so all roles can query
+    await expect(
+      call(
+        appraisalTrackerRouter.list,
+        {},
+        { context: makeContext(fixtures.staff) },
+      ),
+    ).resolves.toBeDefined();
   });
 });

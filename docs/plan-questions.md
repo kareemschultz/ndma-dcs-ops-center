@@ -115,3 +115,39 @@ Must be done before Phase 1 goes to production.
 
 **Opened:** 2026-04-23
 **Status:** OPEN
+**Update 2026-05-04:** Migration index now at 0029. The full backlog to apply to prod is **migrations 0008-0029 (22 migrations)** in a single `bun run db:migrate` run.
+
+---
+
+## [OPEN] — `performance_journal_entries` naming alignment with master plan §5.3 — @kareem [DECISION]
+
+**Opened:** 2026-05-04 by Claude Code (Phase 4-5 spec follow-up session)
+**Phase blocked:** Phase 5 follow-up + Phase 14 seed step 10 (cannot ingest mistake-matrix XLSX without target table)
+
+**Context:**
+The 2026-05-04 source-of-truth inspection confirmed two distinct entities with the same name:
+
+1. **Existing** `performance_journal_entries` in `packages/db/src/schema/hr-docs.ts` — appraisal-period feedback log:
+   - Columns: `staffProfileId`, `appraisalId`, `linkedEntryId`, `authorId`, `entryType` (note/incident/commendation/etc.), `body`, `visibleToStaff`, `entryDate`
+   - Purpose: supervisor/HR jots dated notes about a staff member during an appraisal cycle
+
+2. **Master plan §5.3 spec** for `performance_journal_entries` — XLSX matrix tracker:
+   - Columns: `staff_id`, `year`, `month`, `category enum('tickets_itop','alarms','slack_whatsapp','task_incomplete')`, `count`, `narrative`
+   - Source: `NOC/appraisals/StaffPerformanceJournal_20230731_v01.xlsx` (12 per-staff sheets × 4 years × 12 months × 4 categories = ~2,304 rows)
+   - Purpose: NOC-specific monthly mistake counter
+
+**Question:** how should the naming + schema reconcile?
+
+**Options:**
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| A | Rename existing `performance_journal_entries` → `appraisal_journal_entries` in a follow-up migration; add new `performance_journal_entries` matching master plan §5.3 spec | Aligns with master plan exactly. Clear semantics. | Migration touches existing data + router/UI references. Risk of regression in already-shipped HR docs flow. |
+| B | Keep existing as-is; create new table under a different name (e.g., `noc_performance_journal` or `noc_mistake_log`); update master plan §5.3 reference to the new name | Non-destructive to existing HR docs. Lowest risk. | Diverges from master plan literal text — requires plan update. |
+| C | Reshape existing `performance_journal_entries` (drop entryDate / entryType / body / visibleToStaff; add year / month / category enum / count / narrative) | Single table, exact spec match. | Most destructive. Breaks shipped HR docs router + tests. Requires backfill of existing rows. |
+
+**Recommendation:** Option B (lowest risk; cleanest separation between DCS appraisal feedback and NOC mistake tracking; small master plan §5.3 text update only).
+
+**Action required:** Kareem decides A / B / C, and the chosen option ships in a Phase 5 follow-up PR before Phase 14 seed step 10 can run.
+
+**Resolution:** _pending_

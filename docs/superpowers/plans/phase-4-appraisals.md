@@ -22,10 +22,10 @@
 - [x] `/appraisals/staff/$staffProfileId` per-staff history
 - [x] `/appraisals/inbox` for review queue
 
-### Spec'd in master plan §5.3 but NOT YET shipped
-- [ ] **`appraisal_tracker_view` (DB VIEW)** — confirmed absent in schema search 2026-05-04. Master plan §5.3 specifies a SQL VIEW joining `appraisals` + `staff` for the tracker page. Either add as raw-SQL migration, or replace with a materialized query in the appraisals router. **Decision needed.**
+### Spec'd in master plan §5.3 (resolved 2026-05-04 + still pending)
+- [x] **`appraisal_tracker_view` (DB VIEW)** — shipped 2026-05-04 via migration 0029. Mirrors `APPRAISAL TRACKER DCS.xlsx` (63 rows) + `AppraisalTracker_20241210_v01.xlsx` NOC (80 rows) — identical 3-column shape (Name | Percentage | Period). Single VIEW serves both. Phase 14 acceptance gate `gateAssertions["appraisalTrackerView.rowCount"] >= 130` requires this view. Drizzle declaration in `packages/db/src/schema/appraisal-tracker-view.ts`. Router: `appraisalTracker.list`.
 - [ ] Signature block save digital SVG / wet-sign placeholder render — verify implementation
-- [ ] `appraisal_feedback` tab CRUD (FeedbackFromStaff sheet from `APPRAISAL TRACKER DCS.xlsx`)
+- [ ] `appraisal_feedback` tab CRUD (FeedbackFromStaff sheet from `APPRAISAL TRACKER DCS.xlsx`) — DCS tracker XLSX has 6 rows in this sheet; NOC tracker has none. UI for this tab still pending.
 
 ### Deferred to Phase 14 (historical seed)
 - [ ] ~130 historical appraisals from `DCS/appraisals/{2021..2026}/` + `NOC/appraisals/Appraisals {2022..2026}/`

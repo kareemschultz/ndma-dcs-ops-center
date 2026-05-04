@@ -56,3 +56,6 @@ export * from "./career-progression";
 export * from "./training-phase7";
 // Phase 8 — PPE matrix, lateness quarterly grid, timesheet documents
 export * from "./timesheet-documents";
+// Phase 4-5 spec follow-up (migration 0029) — commendations table + appraisal_tracker_view
+export * from "./commendations";
+export * from "./appraisal-tracker-view";

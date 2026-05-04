@@ -4,6 +4,25 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
+## [Phase 4-5 spec follow-up — `commendations` + `appraisal_tracker_view`] — 2026-05-04
+
+### Added
+- **Migration 0029** (`0029_appraisal_view_commendations.sql`):
+  - `commendations` table — positive recognition narratives per (staff, year, month) with unique constraint on (staff_profile_id, year, month) and a CHECK on month range. Master plan §5.3. Sourced from `NOC/appraisals/StaffCommendationJournal_20231216_v01.xlsx` (~250 historical entries to be loaded via Phase 14 seed step 11).
+  - `appraisal_tracker_view` — read-only DB VIEW joining `appraisals` + `staff_profiles` + `user`, filtered to status='completed'. Mirrors the `APPRAISAL TRACKER DCS.xlsx` (63 rows) + `AppraisalTracker_20241210_v01.xlsx` (NOC, 80 rows) shape (Name | Percentage | Period). Required by Phase 14 acceptance gate `gateAssertions["appraisalTrackerView.rowCount"] >= 130`.
+- **Schema files** — `packages/db/src/schema/commendations.ts`, `packages/db/src/schema/appraisal-tracker-view.ts` (Drizzle `pgView().existing()` declaration over the VIEW).
+- **`commendations` router** — `list / get / create / update / delete` (RBAC: `performance_journal` resource, full CRUD action set; mutations audit-logged with `action='commendation.{verb}'`).
+- **`appraisalTracker` router** — `list` (protectedProcedure; reads from VIEW; filters by year and staffProfileId).
+- **RBAC matrix tests** — appended Phase 4-5 follow-up describe block to `packages/api/tests/rbac-matrix.test.ts` covering commendations CRUD denial-for-staff + appraisalTracker.list.
+
+### Decision context
+DCS and NOC use the IDENTICAL appraisal template (`Appraisal Template 2025.xlsx` ≡ `AppraisalTemplate_20250513_v01.xlsx` — same 187-row form, same 16 formulas, same merged cell layout). Their tracker XLSX files also share the same 3-column shape. A single VIEW therefore serves both DCS + NOC trackers without splitting.
+
+### Known gap surfaced (Phase 5 follow-up — see `docs/plan-questions.md`)
+Master plan §5.3 specifies a `performance_journal_entries` table for the NOC mistake-matrix tracker (`StaffPerformanceJournal_20230731_v01.xlsx`) with shape `(staff_id, year, month, category enum['tickets_itop','alarms','slack_whatsapp','task_incomplete'], count, narrative)`. The existing `performance_journal_entries` table in `hr-docs.ts` is a DIFFERENT entity (appraisal-period feedback log keyed by `entryDate` + `entryType` + `body`). Naming alignment requires a separate Phase 5 follow-up decision (rename existing? add new under a different name? reshape existing?). This PR does not touch the existing table.
+
+---
+
 ## [Maintenance — Documentation hygiene] — 2026-05-04
 
 ### Added
