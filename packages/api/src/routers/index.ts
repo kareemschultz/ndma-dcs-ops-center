@@ -57,6 +57,11 @@ import {
 // Phase 8 — PPE matrix, lateness quarterly grid, timesheet documents
 import { latenessRouter } from "./lateness";
 import { timesheetDocumentsRouter } from "./timesheet-documents";
+// Phase 4-5 spec follow-up (migration 0029) — commendations + appraisal_tracker_view
+import {
+  appraisalTrackerRouter,
+  commendationsRouter,
+} from "./commendations";
 
 const healthCheck = publicProcedure.handler(() => "OK");
 const privateData = protectedProcedure.handler(({ context }) => ({
@@ -118,6 +123,9 @@ export type AppRouter = {
   // Phase 8 — PPE matrix, lateness quarterly grid, timesheet documents
   lateness: typeof latenessRouter;
   timesheetDocuments: typeof timesheetDocumentsRouter;
+  // Phase 4-5 spec follow-up (migration 0029)
+  commendations: typeof commendationsRouter;
+  appraisalTracker: typeof appraisalTrackerRouter;
 };
 
 export const appRouter: AppRouter = {
@@ -174,6 +182,9 @@ export const appRouter: AppRouter = {
   // Phase 8 — PPE matrix, lateness quarterly grid, timesheet documents
   lateness: latenessRouter,
   timesheetDocuments: timesheetDocumentsRouter,
+  // Phase 4-5 spec follow-up (migration 0029)
+  commendations: commendationsRouter,
+  appraisalTracker: appraisalTrackerRouter,
 };
 
 export type AppRouterClient = RouterClient<AppRouter>;

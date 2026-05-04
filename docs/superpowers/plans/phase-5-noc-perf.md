@@ -16,8 +16,9 @@
 - [x] `nocPerformance.eom.{get,compute}` — EoM router with `computeEOM` algorithm (7 recognition categories)
 - [x] `/noc-performance` tabbed page (Monthly Metrics / EOM Awards / Ticket Activity)
 
-### Spec'd in master plan §5.3 but NOT YET shipped
-- [ ] **`commendations` table** — confirmed absent in schema search 2026-05-04. Master plan §5.3 specifies a `commendations` table for the StaffCommendationJournal data. May be folded into `performance_journal_entries` (`hr-docs.ts`) — **verification + decision needed**.
+### Spec'd in master plan §5.3 (resolved 2026-05-04 + open Phase 5 follow-up)
+- [x] **`commendations` table** — shipped 2026-05-04 via migration 0029. Master plan §5.3 spec verbatim. Source: `NOC/appraisals/StaffCommendationJournal_20231216_v01.xlsx` (2 sheets: 2025, 2026; per-staff per-month positive recognition narrative). Schema: `packages/db/src/schema/commendations.ts`. Router: `commendations.{list,get,create,update,delete}` (RBAC: `performance_journal` resource).
+- [ ] **`performance_journal_entries` naming alignment** (Phase 5 follow-up — BLOCKS Phase 14 seed step 10) — master plan §5.3 specifies a separate matrix-tracker `performance_journal_entries` for `StaffPerformanceJournal_20230731_v01.xlsx` (count + narrative per staff × year × month × category in `'tickets_itop' | 'alarms' | 'slack_whatsapp' | 'task_incomplete'`). The existing `performance_journal_entries` in `hr-docs.ts` is a DIFFERENT entity (appraisal-period feedback log keyed by `entryDate` / `entryType` / `body`). Decision needed: rename existing, add new under different name, or reshape existing — see `docs/plan-questions.md`.
 
 ### Deferred to Phase 14 (historical seed) — **CRITICAL acceptance gate**
 - [ ] `noc_monthly_metrics` populated for 19 historical months (Aug2024 → Mar2026) from `EmployeeOfTheMonth_20240923_v01.xlsx` (~209 rows)
