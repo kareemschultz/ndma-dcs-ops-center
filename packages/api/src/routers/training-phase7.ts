@@ -126,6 +126,7 @@ export const certCatalogRouter = {
       if (!actor) throw new ORPCError("UNAUTHORIZED");
 
       const [row] = await db.insert(certificationCatalog).values(input).returning();
+      if (!row) throw new ORPCError("INTERNAL_SERVER_ERROR");
 
       await logAudit({
         actorId: actor.id,
@@ -235,6 +236,7 @@ export const examVouchersRouter = {
       if (!actor) throw new ORPCError("UNAUTHORIZED");
 
       const [row] = await db.insert(examVouchers).values(input).returning();
+      if (!row) throw new ORPCError("INTERNAL_SERVER_ERROR");
 
       await logAudit({
         actorId: actor.id,
@@ -487,6 +489,7 @@ export const trainingEventsRouter = {
           totalCost: String(total),
         })
         .returning();
+      if (!row) throw new ORPCError("INTERNAL_SERVER_ERROR");
 
       await logAudit({
         actorId: actor.id,
@@ -596,6 +599,7 @@ export const trainingEventsRouter = {
           set: { gender: input.gender, status: input.status },
         })
         .returning();
+      if (!row) throw new ORPCError("INTERNAL_SERVER_ERROR");
 
       await logAudit({
         actorId: actor.id,
@@ -688,6 +692,7 @@ export const inHouseLogRouter = {
       if (!actor) throw new ORPCError("UNAUTHORIZED");
 
       const [row] = await db.insert(inHouseTrainingLog).values(input).returning();
+      if (!row) throw new ORPCError("INTERNAL_SERVER_ERROR");
 
       await logAudit({
         actorId: actor.id,
