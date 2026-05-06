@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
-import { Plus, Trash2, User, KeyRound, Calendar, Briefcase, Phone, HeartHandshake, AlertCircle } from "lucide-react";
+import { Plus, Trash2, User, KeyRound, Calendar, Briefcase, Phone, HeartHandshake, AlertCircle, Shield, BookOpen, ClipboardList, Star, Medal, Activity, Wifi, TrendingUp, CheckSquare, BarChart3 } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
@@ -273,6 +273,123 @@ function ProfilePage() {
       setContactSaving(false);
     }
   }
+
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+  const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+  const nextMonthYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+
+  // Leave balances
+  const { data: leaveBalances, isLoading: balancesLoading } = useQuery({
+    ...orpc.leave.balances.getByStaff.queryOptions({
+      input: { staffProfileId: staffProfileId ?? "" },
+    }),
+    enabled: !!staffProfileId,
+  });
+
+  // TOSD records (current year)
+  const { data: tosdList, isLoading: tosdLoading } = useQuery({
+    ...orpc.leave.tosd.list.queryOptions({
+      input: { staffId: staffProfileId, year: currentYear },
+    }),
+    enabled: !!staffProfileId,
+  });
+
+  // Lateness records (current year)
+  const { data: latenessData, isLoading: latenessLoading } = useQuery({
+    ...orpc.lateness.list.queryOptions({
+      input: { staffId: staffProfileId, year: currentYear },
+    }),
+    enabled: !!staffProfileId,
+  });
+
+  // My appraisals
+  const { data: myAppraisals, isLoading: appraisalsLoading } = useQuery({
+    ...orpc.appraisals.getByStaff.queryOptions({
+      input: { staffProfileId: staffProfileId ?? "" },
+    }),
+    enabled: !!staffProfileId,
+  });
+
+  // NOC performance journal
+  const { data: perfJournal, isLoading: perfJournalLoading } = useQuery({
+    ...orpc.nocPerformanceJournal.list.queryOptions({
+      input: { staffProfileId },
+    }),
+    enabled: !!staffProfileId,
+  });
+
+  // Commendations
+  const { data: myCommendations, isLoading: commendationsLoading } = useQuery({
+    ...orpc.commendations.list.queryOptions({
+      input: { staffProfileId },
+    }),
+    enabled: !!staffProfileId,
+  });
+
+  // In-house training log
+  const { data: inHouseLog, isLoading: inHouseLoading } = useQuery({
+    ...orpc.inHouseLog.list.queryOptions({
+      input: { staffId: staffProfileId },
+    }),
+    enabled: !!staffProfileId,
+  });
+
+  // Exam vouchers assigned to me
+  const { data: myVouchers, isLoading: vouchersLoading } = useQuery({
+    ...orpc.examVouchers.list.queryOptions({
+      input: { assignedStaffId: staffProfileId },
+    }),
+    enabled: !!staffProfileId,
+  });
+
+  // PPE issuances
+  const { data: myPpe, isLoading: ppeLoading } = useQuery({
+    ...orpc.ppe.issuances.list.queryOptions({
+      input: { staffProfileId },
+    }),
+    enabled: !!staffProfileId,
+  });
+
+  // Access registry
+  const { data: myAccess, isLoading: accessLoading } = useQuery({
+    ...orpc.accessRegistry.listByStaff.queryOptions({
+      input: { staffId: staffProfileId ?? "" },
+    }),
+    enabled: !!staffProfileId,
+  });
+
+  // Career progression plans
+  const { data: careerPlans, isLoading: careerLoading } = useQuery({
+    ...orpc.careerProgression.list.queryOptions({
+      input: { staffId: staffProfileId },
+    }),
+    enabled: !!staffProfileId,
+  });
+
+  // Onboarding tasks
+  const { data: onboardingTaskList, isLoading: onboardingLoading } = useQuery({
+    ...orpc.onboarding.tasksList.queryOptions({
+      input: { staffId: staffProfileId ?? "" },
+    }),
+    enabled: !!staffProfileId,
+  });
+
+  // NOC shifts (current + next month)
+  const { data: shiftsThisMonth, isLoading: shiftsLoading } = useQuery({
+    ...orpc.scheduling.nocShifts.list.queryOptions({
+      input: { month: currentMonth, year: currentYear },
+    }),
+    enabled: !!staffProfileId,
+    select: (data) => data.filter((s) => s.staffId === staffProfileId),
+  });
+  const { data: shiftsNextMonth } = useQuery({
+    ...orpc.scheduling.nocShifts.list.queryOptions({
+      input: { month: nextMonth, year: nextMonthYear },
+    }),
+    enabled: !!staffProfileId,
+    select: (data) => data.filter((s) => s.staffId === staffProfileId),
+  });
 
   const userRole = (user as Record<string, unknown> | undefined)?.role as string | undefined;
 
@@ -669,6 +786,527 @@ function ProfilePage() {
                           }`}
                         >
                           {labelCase(item.status)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+          {/* ── My Leave Balances ─────────────────────────────────────────── */}
+          {staffProfileId && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Calendar className="size-4 text-teal-500" />
+                  My Leave Balances
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {balancesLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full rounded-xl" />
+                    ))}
+                  </div>
+                ) : !leaveBalances?.length ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">No leave balances on record.</p>
+                ) : (
+                  <div className="divide-y rounded-xl border">
+                    {leaveBalances.map((bal) => (
+                      <div key={bal.id} className="flex items-center justify-between px-3 py-2.5 gap-3">
+                        <span className="text-sm font-medium">{(bal as unknown as { leaveType?: { name?: string } }).leaveType?.name ?? "Leave"}</span>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span>Entitlement: <span className="font-semibold text-foreground">{bal.entitlement}</span></span>
+                          <span>Used: <span className="font-semibold text-foreground">{bal.used ?? 0}</span></span>
+                          <span className="text-green-600 dark:text-green-400 font-semibold">
+                            Balance: {(bal.entitlement ?? 0) + (bal.adjustment ?? 0) + (bal.carriedOver ?? 0) - (bal.used ?? 0)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── My TOSD Records ───────────────────────────────────────────── */}
+          {staffProfileId && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ClipboardList className="size-4 text-orange-500" />
+                  My TOSD Records ({currentYear})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {tosdLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full rounded-xl" />
+                    ))}
+                  </div>
+                ) : !tosdList?.length ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">No TOSD records for {currentYear}.</p>
+                ) : (
+                  <div className="divide-y rounded-xl border">
+                    {tosdList.slice(0, 10).map((rec) => (
+                      <div key={rec.id} className="flex items-center justify-between px-3 py-2.5 gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium capitalize">{rec.type.replace(/_/g, " ")}</p>
+                          <p className="text-xs text-muted-foreground">{rec.date}</p>
+                        </div>
+                        {rec.hours != null && (
+                          <span className="text-xs text-muted-foreground shrink-0">{rec.hours}h</span>
+                        )}
+                      </div>
+                    ))}
+                    {(tosdList.length ?? 0) > 10 && (
+                      <div className="px-3 py-2 text-center text-xs text-muted-foreground">
+                        +{tosdList.length - 10} more records
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── My Lateness History ───────────────────────────────────────── */}
+          {staffProfileId && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Activity className="size-4 text-red-500" />
+                  My Lateness History ({currentYear})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {latenessLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full rounded-xl" />
+                    ))}
+                  </div>
+                ) : !latenessData?.length ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">No lateness records for {currentYear}.</p>
+                ) : (
+                  <div className="divide-y rounded-xl border">
+                    {latenessData.map((rec) => (
+                      <div key={rec.id} className="flex items-center justify-between px-3 py-2.5 gap-3">
+                        <span className="text-sm font-medium">{rec.month}, Q{rec.quarter}</span>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          {rec.daysLate != null && <span>Days late: <span className="font-semibold text-foreground">{rec.daysLate}</span></span>}
+                          {rec.totalTimeLate != null && <span>Total time: <span className="font-semibold text-foreground">{rec.totalTimeLate}</span></span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── My Appraisals ─────────────────────────────────────────────── */}
+          {staffProfileId && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BarChart3 className="size-4 text-blue-500" />
+                  My Appraisals
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {appraisalsLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full rounded-xl" />
+                    ))}
+                  </div>
+                ) : !myAppraisals?.length ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">No appraisals on record.</p>
+                ) : (
+                  <div className="divide-y rounded-xl border">
+                    {myAppraisals.map((apr) => (
+                      <div key={apr.id} className="flex items-center justify-between px-3 py-2.5 gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium capitalize">{apr.period?.replace(/_/g, " ") ?? "Appraisal"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {apr.periodStart ? format(parseISO(String(apr.periodStart)), "MMM yyyy") : ""}
+                            {apr.periodEnd ? ` – ${format(parseISO(String(apr.periodEnd)), "MMM yyyy")}` : ""}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {apr.percentageScore != null && (
+                            <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">{apr.percentageScore.toFixed(1)}%</span>
+                          )}
+                          <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium ${
+                            apr.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" :
+                            apr.status === "approved" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" :
+                            "bg-muted text-muted-foreground"
+                          }`}>
+                            {labelCase(apr.status ?? "")}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── My Commendations ──────────────────────────────────────────── */}
+          {staffProfileId && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Medal className="size-4 text-yellow-500" />
+                  My Commendations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {commendationsLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full rounded-xl" />
+                    ))}
+                  </div>
+                ) : !myCommendations?.length ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">No commendations on record.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {myCommendations.slice(0, 6).map((com) => (
+                      <div key={com.id} className="rounded-xl border p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-semibold text-yellow-600 dark:text-yellow-400">
+                            {new Date(0, com.month - 1).toLocaleString("en", { month: "long" })} {com.year}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{com.narrative}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── My Performance Journal ────────────────────────────────────── */}
+          {staffProfileId && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Star className="size-4 text-purple-500" />
+                  My Performance Journal (NOC)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {perfJournalLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full rounded-xl" />
+                    ))}
+                  </div>
+                ) : !perfJournal?.length ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">No performance journal entries.</p>
+                ) : (
+                  <div className="divide-y rounded-xl border">
+                    {perfJournal.slice(0, 8).map((entry) => (
+                      <div key={entry.id} className="flex items-center justify-between px-3 py-2.5 gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium capitalize">{entry.category.replace(/_/g, " ")}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(0, entry.month - 1).toLocaleString("en", { month: "short" })} {entry.year}</p>
+                        </div>
+                        <span className="text-xs font-semibold text-muted-foreground shrink-0">Count: {entry.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── My Training ───────────────────────────────────────────────── */}
+          {staffProfileId && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BookOpen className="size-4 text-indigo-500" />
+                  My Training
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* In-house training log */}
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">In-House Training Log</p>
+                  {inHouseLoading ? (
+                    <Skeleton className="h-16 w-full rounded-xl" />
+                  ) : !inHouseLog?.length ? (
+                    <p className="text-sm text-muted-foreground">No in-house training records.</p>
+                  ) : (
+                    <div className="divide-y rounded-xl border">
+                      {inHouseLog.slice(0, 5).map((log) => (
+                        <div key={log.id} className="flex items-center justify-between px-3 py-2 gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm truncate">{log.trainingName}</p>
+                            <p className="text-xs text-muted-foreground">{log.date}</p>
+                          </div>
+                          <span className={`text-xs shrink-0 ${log.assessmentCompleted ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                            {log.assessmentCompleted ? "✓ Passed" : "No assessment"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Exam vouchers */}
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Exam Vouchers</p>
+                  {vouchersLoading ? (
+                    <Skeleton className="h-12 w-full rounded-xl" />
+                  ) : !myVouchers?.length ? (
+                    <p className="text-sm text-muted-foreground">No exam vouchers assigned.</p>
+                  ) : (
+                    <div className="divide-y rounded-xl border">
+                      {myVouchers.map((v) => (
+                        <div key={v.id} className="flex items-center justify-between px-3 py-2 gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm truncate">{v.productName}</p>
+                            <p className="text-xs text-muted-foreground">Expires: {v.mustBeUsedBy}</p>
+                          </div>
+                          <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium shrink-0 ${
+                            v.status === "complete_pass" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" :
+                            v.status === "expired" || v.status === "complete_fail" ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" :
+                            "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                          }`}>
+                            {labelCase(v.status)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── My PPE ────────────────────────────────────────────────────── */}
+          {staffProfileId && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Shield className="size-4 text-green-500" />
+                  My PPE
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {ppeLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full rounded-xl" />
+                    ))}
+                  </div>
+                ) : !myPpe?.length ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">No PPE records found.</p>
+                ) : (
+                  <div className="divide-y rounded-xl border">
+                    {myPpe.map((iso) => (
+                      <div key={iso.id} className="flex items-center justify-between px-3 py-2.5 gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{iso.ppeItem?.name ?? "PPE Item"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Issued: {iso.issuedDate}
+                            {iso.size ? ` · Size: ${iso.size}` : ""}
+                            {iso.assetTag ? ` · Tag: ${iso.assetTag}` : ""}
+                          </p>
+                        </div>
+                        <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium shrink-0 ${
+                          iso.status === "issued" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" :
+                          iso.status === "returned" ? "bg-muted text-muted-foreground" :
+                          "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                        }`}>
+                          {labelCase(iso.status ?? "")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── My Access Registry ────────────────────────────────────────── */}
+          {staffProfileId && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Wifi className="size-4 text-cyan-500" />
+                  My System Access
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {accessLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full rounded-xl" />
+                    ))}
+                  </div>
+                ) : !myAccess?.length ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">No access registry entries found.</p>
+                ) : (
+                  <div className="divide-y rounded-xl border">
+                    {myAccess.map((entry) => (
+                      <div key={entry.id} className="flex items-center justify-between px-3 py-2.5 gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{entry.platform?.name ?? "Platform"}</p>
+                          {entry.accountUsername && (
+                            <p className="text-xs text-muted-foreground">{entry.accountUsername}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {entry.privilegeLevel && (
+                            <span className="text-xs text-muted-foreground">{entry.privilegeLevel}</span>
+                          )}
+                          <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium ${
+                            entry.accountActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                          }`}>
+                            {entry.accountActive ? "Active" : "Inactive"}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── My Onboarding ─────────────────────────────────────────────── */}
+          {staffProfileId && !!onboardingTaskList?.length && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CheckSquare className="size-4 text-teal-500" />
+                  My Onboarding Progress
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {onboardingLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full rounded-xl" />
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <div className="mb-3 flex items-center gap-2 text-sm">
+                      <span className="text-green-600 dark:text-green-400 font-semibold">
+                        {onboardingTaskList.filter((t) => t.isCompleted).length}
+                      </span>
+                      <span className="text-muted-foreground">of</span>
+                      <span className="font-semibold">{onboardingTaskList.length}</span>
+                      <span className="text-muted-foreground">tasks completed</span>
+                    </div>
+                    <div className="divide-y rounded-xl border">
+                      {onboardingTaskList.map((task) => (
+                        <div key={task.id} className="flex items-center gap-3 px-3 py-2.5">
+                          <span className={`shrink-0 size-4 rounded-full border-2 flex items-center justify-center text-xs ${
+                            task.isCompleted ? "bg-green-500 border-green-500 text-white" : "border-muted-foreground"
+                          }`}>
+                            {task.isCompleted ? "✓" : ""}
+                          </span>
+                          <div className="min-w-0">
+                            <p className={`text-sm ${task.isCompleted ? "line-through text-muted-foreground" : "font-medium"}`}>
+                              {task.taskName}
+                            </p>
+                            {task.category && (
+                              <p className="text-xs text-muted-foreground">{task.category}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── My Career Progression ─────────────────────────────────────── */}
+          {staffProfileId && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="size-4 text-violet-500" />
+                  My Career Progression
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {careerLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 2 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full rounded-xl" />
+                    ))}
+                  </div>
+                ) : !careerPlans?.length ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">No career progression plan on record.</p>
+                ) : (
+                  <div className="divide-y rounded-xl border">
+                    {careerPlans.map((plan) => (
+                      <div key={plan.id} className="flex items-center justify-between px-3 py-2.5 gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{plan.plannedRole ?? "Role not set"}</p>
+                          <p className="text-xs text-muted-foreground">Target: {plan.targetYear}</p>
+                        </div>
+                        <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium shrink-0 ${
+                          plan.status === "achieved" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" :
+                          plan.status === "pending" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" :
+                          "bg-muted text-muted-foreground"
+                        }`}>
+                          {labelCase(plan.status ?? "")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── My NOC Shifts ─────────────────────────────────────────────── */}
+          {staffProfileId && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Phone className="size-4 text-sky-500" />
+                  My NOC Shifts
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {shiftsLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <Skeleton key={i} className="h-8 w-full rounded-xl" />
+                    ))}
+                  </div>
+                ) : !shiftsThisMonth?.length && !shiftsNextMonth?.length ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">No shift schedule entries found.</p>
+                ) : (
+                  <div className="divide-y rounded-xl border">
+                    {[...(shiftsThisMonth ?? []), ...(shiftsNextMonth ?? [])].map((shift) => (
+                      <div key={shift.id} className="flex items-center justify-between px-3 py-2.5 gap-3">
+                        <span className="text-sm">{format(parseISO(shift.shiftDate), "EEE dd MMM yyyy")}</span>
+                        <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium shrink-0 ${
+                          shift.shiftType === "12hr Day" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" :
+                          shift.shiftType === "12hr Night" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" :
+                          shift.shiftType === "Annual Leave" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" :
+                          shift.shiftType === "Sick Leave" ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" :
+                          "bg-muted text-muted-foreground"
+                        }`}>
+                          {shift.shiftType}
                         </span>
                       </div>
                     ))}

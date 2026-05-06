@@ -24,6 +24,7 @@ import {
 import { protectedProcedure, requireRole } from "../index";
 import { logAudit } from "../lib/audit";
 import { createNotification } from "../lib/notify";
+import { getCallerStaffProfile } from "../lib/scope";
 
 // ─── Training Plans ───────────────────────────────────────────────────────────
 
@@ -884,5 +885,22 @@ export const onboardingRouter = {
       });
 
       return { created: rows.length, tasks: rows };
+    }),
+
+  /** List onboarding tasks for a staff member. Staff can only see their own. */
+  tasksList: protectedProcedure
+    .input(z.object({ staffId: z.string().min(1) }))
+    .handler(async ({ input, context }) => {
+      // Staff can only see their own onboarding tasks
+      const caller = await getCallerStaffProfile(context);
+      const role = context.userRole ?? "";
+      const isPrivileged = ["admin", "hrAdminOps", "manager"].includes(role);
+      if (!isPrivileged && caller?.id !== input.staffId) {
+        throw new ORPCError("FORBIDDEN");
+      }
+      return db.query.onboardingTasks.findMany({
+        where: eq(onboardingTasks.staffId, input.staffId),
+        orderBy: [asc(onboardingTasks.id)],
+      });
     }),
 };
