@@ -1,0 +1,7 @@
+rosterType,staffEmail,staffId,department,year,period,shiftDate,shiftType,startTime,endTime,notes
+noc_shifts,alice.mensah@ndma.gov.gh,,NOC,2026,2026-05,2026-05-01,12hr Day,07:00,19:00,
+noc_shifts,carol.persaud@ndma.gov.gh,,NOC,2026,2026-05,2026-05-01,12hr Night,19:00,07:00,
+noc_shifts,alice.mensah@ndma.gov.gh,,NOC,2026,2026-05,2026-05-02,Off,,,
+noc_shifts,bob.asante@ndma.gov.gh,,NOC,2026,2026-05,2026-05-02,Annual Leave,,,Approved AL
+dcs_on_call,sachin.rampersaud@ndma.gov.gh,,DCS,2026,2026-05,2026-05-05,lead_engineer,08:00,16:00,Week of 05 May 2026
+dcs_on_call,ataybia.mclean@ndma.gov.gh,,DCS,2026,2026-05,2026-05-05,asn_support,08:00,16:00,Week of 05 May 2026

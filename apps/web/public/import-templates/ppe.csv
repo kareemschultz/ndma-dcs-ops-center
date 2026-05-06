@@ -1,0 +1,10 @@
+staffEmail,ppeItemCode,issuedDate,status,serialNumber,size,notes
+alice.mensah@ndma.gov.gh,laptop,2024-01-15,issued,SN-LT-0101,,Lenovo ThinkPad issued at onboarding
+alice.mensah@ndma.gov.gh,bag,2024-01-15,issued,,,Laptop carry bag
+alice.mensah@ndma.gov.gh,ndma_shirts,2024-01-15,issued,,M,Two shirts issued
+bob.asante@ndma.gov.gh,laptop,2023-06-01,issued,SN-LT-0089,,Dell Latitude issued
+bob.asante@ndma.gov.gh,mifi,2023-06-01,issued,SN-MF-0034,,LTE MiFi device
+bob.asante@ndma.gov.gh,safety_boots,2024-02-01,issued,,44,Steel-toe boots for data centre
+carol.persaud@ndma.gov.gh,overalls,2023-09-01,issued,,L,Two pairs of overalls
+carol.persaud@ndma.gov.gh,long_boots,2023-09-01,issued,,40,
+carol.persaud@ndma.gov.gh,usb_ethernet,2024-03-10,issued,,,USB to Ethernet dongle

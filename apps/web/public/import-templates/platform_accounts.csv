@@ -1,0 +1,7 @@
+staffEmail,platformName,accountUsername,accountType,accountActive,privilegeLevel,notes
+alice.mensah@ndma.gov.gh,Active Directory,alice.mensah,domain_account,true,standard,Standard domain account provisioned on start date
+alice.mensah@ndma.gov.gh,iTop,alice.mensah@ndma.gov.gh,application,true,operator,iTop operator access — can log and resolve incidents
+bob.asante@ndma.gov.gh,Active Directory,bob.asante,domain_account,true,admin,Domain admin for network infrastructure management
+bob.asante@ndma.gov.gh,UISP,bob.asante,application,true,admin,UISP site admin for NOC monitoring
+carol.persaud@ndma.gov.gh,Active Directory,carol.persaud,domain_account,true,standard,Standard domain account
+carol.persaud@ndma.gov.gh,iTop,carol.persaud@ndma.gov.gh,application,true,operator,iTop read-only access

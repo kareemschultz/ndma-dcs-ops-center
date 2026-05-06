@@ -1,0 +1,4 @@
+recordKind,projectTitle,taskTitle,subTask,description,status,priority,assignedTo,departmentCode,dueDate,period,estimatedHours,externalSource,externalLink,removalDate,followUpDate,notes,year
+work_item,Network Infrastructure Upgrade,Replace Core Switch SW-01,,Replace aging SW-01 core switch with new Huawei S5735,in_progress,high,bob.asante@ndma.gov.gh,DCS,2026-06-30,,40,iTop,https://itop.ndma.gov.gh/pages/UI.php?operation=details&class=Incident&id=1045,,2026-06-15,Procurement approved,2026
+work_item,Data Centre Ops Stabilization,Monthly Backup Verification,,Verify all backup jobs completed and restore test passed,todo,medium,alice.mensah@ndma.gov.gh,DCS,2026-05-31,May 2026,4,Teams,,,, ,Schedule at end of month,2026
+routine,Routine Maintenance,Weekly Server Health Check,Compute Rack A,Check compute rack A server uptime and temperature logs,backlog,low,carol.persaud@ndma.gov.gh,NOC,,Monthly,2,,,,,Recurring monthly task,2026

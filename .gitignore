@@ -42,6 +42,9 @@ DCS\ OPS/
 *.csv
 AccountManagement*.xlsx
 
+# Exception: static import template files are public assets
+!apps/web/public/import-templates/*.csv
+
 # Source-of-truth archive — read-only reference, never commit (229MB)
 source-of-truth/
 /ndma-source-of-truth-*.zip

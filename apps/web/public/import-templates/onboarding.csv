@@ -1,0 +1,8 @@
+staffEmail,taskName,category,isCompleted,completedAt,dueDate
+new.hire@ndma.gov.gh,Collect NDMA ID badge,HR & Admin,true,2026-04-24T09:30:00,2026-04-24
+new.hire@ndma.gov.gh,Create Active Directory account,IT,true,2026-04-23T14:00:00,2026-04-24
+new.hire@ndma.gov.gh,Issue laptop and peripherals,IT,true,2026-04-24T10:00:00,2026-04-25
+new.hire@ndma.gov.gh,Complete security awareness briefing,Compliance,false,,2026-05-01
+new.hire@ndma.gov.gh,Sign Acceptable Use Policy,Compliance,false,,2026-04-30
+new.hire@ndma.gov.gh,Add to iTop as operator,IT,false,,2026-05-02
+new.hire@ndma.gov.gh,Complete NDMA staff orientation,HR & Admin,false,,2026-05-07

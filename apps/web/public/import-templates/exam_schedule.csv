@@ -1,0 +1,7 @@
+staffEmail,examName,scheduledDate,status
+alice.mensah@ndma.gov.gh,CCNA,2026-05-18,scheduled
+bob.asante@ndma.gov.gh,HCIA-Datacom,2026-06-11,scheduled
+carol.persaud@ndma.gov.gh,CompTIA Network+,2025-10-14,passed
+carol.persaud@ndma.gov.gh,CompTIA Security+,2026-03-20,scheduled
+alice.mensah@ndma.gov.gh,CCNP Enterprise,2025-07-22,failed
+alice.mensah@ndma.gov.gh,CCNP Enterprise,2025-11-18,passed

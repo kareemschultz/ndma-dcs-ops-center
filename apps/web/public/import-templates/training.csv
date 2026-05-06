@@ -1,0 +1,4 @@
+staffEmail,courseTitle,vendor,courseType,status,startDate,completionDate,targetDate,expiryDate,materialType,materialTitle,referenceLink,notes,year,period
+alice.mensah@ndma.gov.gh,CCNA Routing and Switching,Cisco,Certification,Completed,2024-09-02,2024-11-15,2025-11-15,2027-11-15,Book,Cisco Official Guide,https://www.cisco.com/c/en/us/training-events/training-certifications/certifications/associate/ccna.html,Passed exam on first attempt,2024,H2 2024
+bob.asante@ndma.gov.gh,HCIA-Datacom,Huawei,Certification,In Progress,2025-01-06,,2025-06-30,,Checklist,Huawei Study Checklist,https://e.huawei.com/en/talent/#/cert/product-details?certifiedProductId=252,Midpoint review scheduled,2025,H1 2025
+carol.persaud@ndma.gov.gh,Fire Safety Awareness,Safety Pro Ltd,Syllabus,Completed,2024-02-01,2024-02-05,2025-02-05,2026-02-05,,,, Annual mandatory course,2024,H1 2024

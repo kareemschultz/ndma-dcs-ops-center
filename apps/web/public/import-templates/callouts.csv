@@ -1,0 +1,5 @@
+staffEmail,date,incidentTitle,hoursWorked,notes
+bob.asante@ndma.gov.gh,2025-12-28,Emergency network outage — core router failure,4.5,Called out at 22:00; restored by 02:30
+alice.mensah@ndma.gov.gh,2025-11-15,Server room cooling alarm,3,After-hours callout for cooling unit fault
+carol.persaud@ndma.gov.gh,2026-01-19,UPS battery failure in Rack C,2,Weekend emergency callout
+bob.asante@ndma.gov.gh,2026-02-08,Internet uplink degradation,5,Overnight shift to restore dual-link capacity

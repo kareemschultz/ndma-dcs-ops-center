@@ -1,0 +1,4 @@
+staffEmail,contractType,startDate,endDate,renewalStatus,appraisalPeriod,documentUrl,notes
+alice.mensah@ndma.gov.gh,permanent,2022-01-03,2024-12-31,due_soon,Oct 2024 - Apr 2025,https://sharepoint.ndma.gov.gh/contracts/alice-mensah-2022.pdf,Renewal letter drafted Mar 2025
+bob.asante@ndma.gov.gh,fixed_term,2024-01-02,2024-12-31,renewed,Oct 2024 - Apr 2025,https://sharepoint.ndma.gov.gh/contracts/bob-asante-2024.pdf,Renewed for one additional year
+carol.persaud@ndma.gov.gh,fixed_term,2025-01-06,2025-12-31,not_due,Apr 2025 - Oct 2025,https://sharepoint.ndma.gov.gh/contracts/carol-persaud-2025.pdf,New contract issued Jan 2025
