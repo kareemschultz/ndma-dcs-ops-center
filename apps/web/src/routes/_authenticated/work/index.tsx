@@ -794,6 +794,27 @@ function LoadingSkeleton({ view }: { view: ViewMode }) {
 
 // ── Main page ──────────────────────────────────────────────────────────────
 
+// ── Year / period constants ────────────────────────────────────────────────
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = [
+  { value: 0, label: "All Years" },
+  { value: CURRENT_YEAR, label: String(CURRENT_YEAR) },
+  { value: CURRENT_YEAR - 1, label: String(CURRENT_YEAR - 1) },
+];
+
+// Quarters for the current year and last year
+function buildPeriodOptions(year: number): { value: string; label: string }[] {
+  if (!year) return [];
+  return [
+    { value: "", label: "All Periods" },
+    { value: `${year}-Q1`, label: `${year} Q1 (Jan–Mar)` },
+    { value: `${year}-Q2`, label: `${year} Q2 (Apr–Jun)` },
+    { value: `${year}-Q3`, label: `${year} Q3 (Jul–Sep)` },
+    { value: `${year}-Q4`, label: `${year} Q4 (Oct–Dec)` },
+  ];
+}
+
 function WorkPage() {
   const [view, setView] = useState<ViewMode>("list");
   const [status, setStatus] = useState<WorkStatus | "">("");
@@ -801,6 +822,8 @@ function WorkPage() {
   const [priority, setPriority] = useState<WorkPriority | "">("");
   const [departmentId, setDepartmentId] = useState("");
   const [overdueOnly, setOverdueOnly] = useState(false);
+  const [yearFilter, setYearFilter] = useState<number>(0);
+  const [periodFilter, setPeriodFilter] = useState<string>("");
   const { team } = useTeamFilter();
 
   const { data: departments } = useQuery(
@@ -823,6 +846,8 @@ function WorkPage() {
         priority: priority || undefined,
         departmentId: departmentId || teamDepartmentId || undefined,
         overdueOnly: overdueOnly || undefined,
+        year: yearFilter || undefined,
+        period: periodFilter || undefined,
         limit: 200,
         offset: 0,
       },
@@ -842,7 +867,7 @@ function WorkPage() {
         .sort((a, b) => b.count - a.count)
     : [];
 
-  const hasFilter = !!(status || type || priority || departmentId || overdueOnly);
+  const hasFilter = !!(status || type || priority || departmentId || overdueOnly || yearFilter || periodFilter);
 
   return (
     <>
@@ -1044,6 +1069,37 @@ function WorkPage() {
             </select>
           )}
 
+          <select
+            value={yearFilter}
+            onChange={(e) => {
+              const y = Number(e.target.value);
+              setYearFilter(y);
+              // Reset period when year changes
+              setPeriodFilter("");
+            }}
+            className="rounded-xl border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            {YEAR_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+
+          {yearFilter > 0 && (
+            <select
+              value={periodFilter}
+              onChange={(e) => setPeriodFilter(e.target.value)}
+              className="rounded-xl border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              {buildPeriodOptions(yearFilter).map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          )}
+
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
               type="checkbox"
@@ -1063,6 +1119,8 @@ function WorkPage() {
                 setPriority("");
                 setDepartmentId("");
                 setOverdueOnly(false);
+                setYearFilter(0);
+                setPeriodFilter("");
               }}
               className="text-xs text-muted-foreground underline"
             >

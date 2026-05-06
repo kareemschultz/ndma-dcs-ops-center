@@ -82,6 +82,9 @@ const ListWorkItemsInput = z.object({
   assignedToId: z.string().optional(),
   departmentId: z.string().optional(),
   overdueOnly: z.boolean().optional(),
+  year: z.number().int().optional(),
+  period: z.string().optional(),
+  weekStartDate: z.string().optional(),
   limit: z.number().min(1).max(200).default(50),
   offset: z.number().min(0).default(0),
 });
@@ -124,6 +127,9 @@ export const workRouter = {
           )!,
         );
       }
+      if (input.year) conditions.push(eq(workItems.year, input.year));
+      if (input.period) conditions.push(eq(workItems.period, input.period));
+      if (input.weekStartDate) conditions.push(eq(workItems.weekStartDate, input.weekStartDate));
 
       return db.query.workItems.findMany({
         where: conditions.length > 0 ? and(...conditions) : undefined,
