@@ -1,14 +1,11 @@
 # Current Phase
 
-**Active phase:** Phase 9 — Self-service + policies + forms (🔵 In Progress)
-**Status:** WIP — server `staff.updateSelf` covers all 5 self-editable fields; UI form has CUG/MiFi inputs; remaining work is /profile page section expansion + RBAC scope verification + Policies "My Profile" tab decision
-**Last completed:** 2026-05-04 spec follow-ups (migration 0029 commendations + appraisal_tracker_view; migration 0030 noc_performance_journal Option B)
-**Branch:** `phase/9-self-service` (active WIP)
-**Master plan reference:** `docs/superpowers/plans/2026-04-23-master-remediation-plan.md`
-**Phase 9 checklist:** `docs/superpowers/plans/phase-9-self-service.md` (read this for current state + remaining work)
-**Pre-Phase-9 audit:** `docs/audit/STATE-AUDIT-2026-05-04.md`
+**Active phase:** None — Phases 9-13 complete as of 2026-05-06
+**Status:** 🟢 Idle — next phases are 14 (historical seed) and 15 (hardening)
+**Main HEAD:** `ff46c25`
+**Migration index:** 31 (latest: `0031_work_year_period.sql`)
 
-## What is on main (Phases 0-8)
+## What is on main (Phases 0-13)
 
 | Phase | PR | Commit | What shipped |
 |---|---|---|---|
@@ -19,19 +16,32 @@
 | 4 | #25 | 82c109b | Appraisal sub-tables (ratings/responsibilities/achievements/goals/signatures) + scoring |
 | 5 | #26 | 7916454 | NOC performance — ticket activity, monthly metrics, EOM awards + computeEOM |
 | 6 | #27 | 66fa5c9 | Contracts lifecycle — lifecycle dates, outcome recording, career_progression_plans |
-| 7 | #29 (orig) | 2ced91b | Training — plans, cert catalog, exam vouchers, events, in-house log, syllabi, onboarding templates |
+| 7 | #29 | 2ced91b | Training — plans, cert catalog, exam vouchers, events, in-house log, syllabi, onboarding templates |
 | 8 | rebased | fb46d00 | PPE matrix (17 items), lateness quarterly grid (Q1-Q4), timesheet documents index |
+| 9 | #34+#39 | b84779a | Self-service profile — 11 sections, CUG/MiFi fields, onboarding.tasksList, RBAC fix |
+| 10 | #36 | 39bbdb9 | Notifications — verified all triggers already wired; documented |
+| 11 | #38 | a4a79e7 | Work refactor — year/period/weekStartDate columns + filter pills + migration 0031 |
+| 12 | #37 | fa19785 | Import module — 18 CSV templates at /public/import-templates/ |
+| 13 | #35 | ff46c25 | Docs cleanup — deleted 4 stale docs, updated 3 MDX files |
 
-## Next phase: Phase 9 — Self-service + policies + forms
+## Next phases
 
-Per master plan section 5.13, Phase 9 adds:
-- Self-service leave requests portal
-- Company policies management
-- Employee-facing forms
+### Phase 14 — Final historical seed (⬜ Queued)
+- 35-step seed script ingesting 200 XLSX + 29 DOCX from source-of-truth/
+- Critical gates: EOM 19/19, appraisalTrackerView.rowCount >= 130
+- Needs PROD DATABASE_URL + dry-run pass first
+- See master plan §10 for seed step order
 
-## Notes for any agent picking up
+### Phase 15 — Hardening (⬜ Queued)
+- e2e Playwright coverage (4 RBAC scope cases + smoke tests)
+- Performance audit (Core Web Vitals, slow queries)
+- RBAC matrix 100% (all procedures covered in rbac-matrix.test.ts)
+- axe-core accessibility audit
+- Production readiness
 
-- Migration index is at **30** (0029 = commendations + appraisal_tracker_view; 0030 = noc_performance_journal mistake-matrix) — next migration is 0031
-- Phase 8 branch: phase/8-ppe-lateness-tosd (squash-merged to main via merge --squash)
-- 2026-05-04 spec follow-ups all resolved: commendations table + appraisal_tracker_view (migration 0029) + noc_performance_journal (migration 0030, Option B) — closes all 3 gaps surfaced by `docs/audit/STATE-AUDIT-2026-05-04.md`
-- Phase 14 seed step 10 + 11 now have target tables ready
+## Known pending issues
+
+- **drizzle-kit generate blocked** — `appraisal_tracker_view` duplicate-name warning causes exit 1. Workaround: hand-author migrations. Should investigate pgView().existing() config.
+- **3 import types lack execute handlers**: platform_accounts, attendance, callouts
+- **Production migrations 0008-0031** not yet applied (requires PROD DATABASE_URL)
+- **Phase 3 cutover gate**: legacy rota.ts/roster.ts/noc-shifts.ts still mounted; delete after 7-day zero-5xx window

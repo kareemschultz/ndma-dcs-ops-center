@@ -4,22 +4,66 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
-## [Phase 9 — Self-service WIP] — 2026-05-04 (🔵 In Progress)
+## [Phase 13 — Obsolete docs cleanup] — 2026-05-06
 
-### Added
-- Profile self-service editor (`/profile`) now exposes 3 additional editable fields per master plan §6.5: **CUG phone number**, **CUG SIM number**, **MiFi asset tag** (existing fields: phone number, emergency contacts).
-- `staff.updateSelf` router mutation accepts the 3 new fields; writes through to `staff_profiles` columns added in Phase 1 migration 0016. Audit log emits `staff.self_update` action with `actorRole` + `correlationId`.
-- New phase checklist `docs/superpowers/plans/phase-9-self-service.md` with full audit of pre-existing surface, master plan §8 acceptance criteria status, and detailed remaining-work breakdown (Sections A-E).
+### Removed
+- `AUDIT_REPORT.md`, `REMEDIATION_BACKLOG.md`, `CLAUDE_FIX_TASKS.md`, `PRODUCTION_READINESS_CHECKLIST.md` — all pre-master-plan audit artifacts superseded by `IMPLEMENTATION_PLAN.md` + phase plan docs.
 
 ### Changed
-- IMPLEMENTATION_PLAN.md phase status table: Phase 9 marked 🔵 In Progress on `phase/9-self-service` branch.
-- CURRENT_PHASE.md updated to reflect active Phase 9 WIP work.
+- `apps/docs/content/docs/appraisals.mdx` — corrected status enum from 4 stale values to 7-value post-Phase-0-collapse set.
+- `apps/docs/content/docs/compliance.mdx` — added pointer to dedicated PPE + Training modules.
+- `apps/docs/content/docs/import.mdx` — expanded import types table from 2 to all 18 registered types.
 
-### Not yet shipped (Phase 9 acceptance criteria — see phase-9-self-service.md)
-- 11 of the 16 "My Everything" sections from handoff §11 (shift / leave balance / lateness / appraisals / performance journal / commendations / training / PPE / access registry / onboarding / career progression). Each is a useQuery+Card pattern against existing routers.
-- RBAC scope verification (Team Lead direct-reports / Sachin+Ataybia full DCS+NOC) + Playwright e2e tests
-- Decision on "Policies > My Profile" third tab (master plan §8 mentions it; currently `/profile` is the canonical entry)
-- RBAC matrix test rows for `staff.updateSelf` + policy mutations
+### Added
+- `docs/cleanup-log.md` — append-only Phase 13 audit trail.
+- `docs/superpowers/plans/phase-13-cleanup.md` — phase plan doc.
+
+---
+
+## [Phase 12 — Import module] — 2026-05-06
+
+### Added
+- 18 downloadable CSV templates at `apps/web/public/import-templates/{type}.csv` for all supported import types with exact server-side column names and NDMA DCS sample rows.
+- `.gitignore` exception to preserve public static CSV assets (global `*.csv` ignore carve-out).
+- `docs/superpowers/plans/phase-12-import.md` with gap analysis (3 import types lack execute handlers: `platform_accounts`, `attendance`, `callouts`).
+
+---
+
+## [Phase 11 — Work register refactor] — 2026-05-06
+
+### Added
+- `year` (integer), `period` (text), `weekStartDate` (text) columns on `work_items` table.
+- Migration `0031_work_year_period.sql` (hand-authored — `drizzle-kit generate` blocked by `appraisal_tracker_view` duplicate-name warning).
+- `work.list` accepts `year`, `period`, `weekStartDate` as optional filters.
+- Year + quarterly period filter pills in the work register UI (`/work`).
+- `docs/superpowers/plans/phase-11-work-refactor.md`.
+
+---
+
+## [Phase 10 — Notifications & calendar] — 2026-05-06
+
+### Verified (no code changes needed)
+- `leave.requests.approve/reject` → `createNotification` to requester: already wired.
+- `work.create/assign/assignees.add` → `createNotification` to assignee: already wired.
+- `appraisals.submit/approve/reject` → `notifyRelatedPeople()` helper: already wired.
+
+### Added
+- `docs/superpowers/plans/phase-10-notifications.md` — catalogs all wired triggers; lists remaining work (cron reminders, calendar events, push notifications).
+
+---
+
+## [Phase 9 — Self-service + policies + forms] — 2026-05-04 → 2026-05-06
+
+### Added (complete — 2026-05-06)
+- **11 new self-service sections** in `/profile`: leave balances, TOSD records, lateness history, appraisals, commendations, NOC performance journal, training (in-house log + exam vouchers), PPE, system access registry, onboarding progress, career progression, NOC shifts.
+- `onboarding.tasksList` procedure — per-staff onboarding task list with self-view RBAC enforcement.
+- RBAC fix: `performance_journal: ["read"]` added to `staffRole` and `teamLeadRole`.
+- `/profile` is now the full "My Everything" page per master plan §6.5 handoff §11.
+
+### Added (WIP — 2026-05-04)
+- Profile self-service editor (`/profile`) exposes 3 additional editable fields per master plan §6.5: **CUG phone number**, **CUG SIM number**, **MiFi asset tag**.
+- `staff.updateSelf` accepts all 5 self-editable fields with audit log.
+- `docs/superpowers/plans/phase-9-self-service.md` — phase checklist.
 
 ---
 

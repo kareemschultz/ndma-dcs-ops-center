@@ -735,3 +735,62 @@ Also: channel-adapter pattern for notifications (Phase 10 AC), master plan secti
 - Phase 8 branches from a4c1a53
 - Phase 8: PPE, lateness, timesheets, TOSD (existing PPE schema in place, lateness_records in place, timesheets in place -- mostly router/UI gaps)
 - Migration index is at 27 -- next migration is 0028
+
+---
+
+## 2026-05-06 — Phases 9 (complete) + 10 + 11 + 12 + 13
+
+### Agent
+Claude Code (opus-4.5, orchestrated parallel execution with 5 sub-agents in isolated worktrees)
+
+### Branch / gate commits
+- Phase 9: `b84779a` (profile sections complete)
+- Phase 10: `39bbdb9` (notifications documented)
+- Phase 11: `a4a79e7` (work year/period refactor)
+- Phase 12: `fa19785` (CSV templates)
+- Phase 13: `ff46c25` (docs cleanup)
+
+### Main state at end
+`ff46c25` — Phases 9-13 all on main
+
+### What was done
+
+**Phase 9 — Self-service profile (complete)**
+- Added 11 new Card sections to `/profile`: leave balances, TOSD, lateness, appraisals, commendations, NOC perf journal, training + exam vouchers, PPE, access registry, onboarding, career progression, NOC shifts
+- Added `onboarding.tasksList` procedure (training-phase7.ts) with self-view RBAC
+- Fixed RBAC gap: `performance_journal: ["read"]` added to staffRole + teamLeadRole (auth/index.ts)
+- Profile page is now the full "My Everything" page per master plan §6.5 handoff §11
+
+**Phase 10 — Notifications (verified, no changes needed)**
+- All three target routers (leave/work/appraisals) already had notification triggers wired
+- Documented in `docs/superpowers/plans/phase-10-notifications.md`
+
+**Phase 11 — Work register refactor**
+- Added year/period/weekStartDate columns to work_items schema
+- Migration 0031 (hand-authored — drizzle-kit generate blocked by appraisal_tracker_view warning)
+- Year + quarterly period filter pills in work register UI
+- work.list accepts year/period/weekStartDate filters
+
+**Phase 12 — Import module**
+- 18 CSV templates in `apps/web/public/import-templates/`
+- gitignore carve-out for public static CSVs
+- Gap found: platform_accounts/attendance/callouts lack execute handlers
+
+**Phase 13 — Docs cleanup**
+- Deleted 4 stale root-level audit docs
+- Updated 3 Fumadocs MDX files (appraisals enum, compliance pointer, import types)
+- Created docs/cleanup-log.md + phase-13-cleanup.md
+
+### Tests
+- typecheck: passed on all 5 agents before merge
+- No migrations applied to dev DB (manual step required: `bun run db:migrate` for 0031)
+
+### Known issues / follow-up
+- drizzle-kit generate blocked by appraisal_tracker_view — investigate `pgView().existing()` config
+- 3 import types lack execute handlers (platform_accounts, attendance, callouts)
+- Phase 14 (historical seed) and Phase 15 (hardening) remain
+
+### Next-phase handoff
+- Phase 14: historical seed — 35 steps ingesting 200 XLSX + 29 DOCX
+- Phase 15: hardening — e2e coverage, perf audit, RBAC matrix 100%, axe-core a11y
+- Production migrations 0008-0031 still need to be applied (requires PROD DATABASE_URL)
