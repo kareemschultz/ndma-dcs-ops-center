@@ -1,0 +1,9 @@
+staffEmail,date,type,hours,notes
+alice.mensah@ndma.gov.gh,2026-04-01,present,8,
+alice.mensah@ndma.gov.gh,2026-04-02,present,8,
+alice.mensah@ndma.gov.gh,2026-04-03,work_from_home,8,Approved WFH
+alice.mensah@ndma.gov.gh,2026-04-06,lateness,7.5,Arrived 30 min late
+bob.asante@ndma.gov.gh,2026-04-01,present,8,
+bob.asante@ndma.gov.gh,2026-04-02,absent,,Unapproved absence
+carol.persaud@ndma.gov.gh,2026-04-01,present,8,
+carol.persaud@ndma.gov.gh,2026-04-03,sick,0,Reported sick — certificate required

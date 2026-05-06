@@ -1,0 +1,6 @@
+staffEmail,reviewerEmail,year,period,periodStart,periodEnd,evaluationType,status,totalScore,scheduledDate,completedDate,category,criteria,score,comment,noteType,content
+alice.mensah@ndma.gov.gh,sachin.rampersaud@ndma.gov.gh,2025,Oct 2024 - Apr 2025,2024-10-01,2025-04-30,Standard,completed,87,2025-04-15,2025-04-22,Technical Skills,Network Administration,4,Demonstrates strong skills in network configuration and troubleshooting,,
+alice.mensah@ndma.gov.gh,sachin.rampersaud@ndma.gov.gh,2025,Oct 2024 - Apr 2025,2024-10-01,2025-04-30,Standard,completed,87,2025-04-15,2025-04-22,Teamwork,Communication,4,Works well with DCS and NOC teams,,
+alice.mensah@ndma.gov.gh,sachin.rampersaud@ndma.gov.gh,2025,Oct 2024 - Apr 2025,2024-10-01,2025-04-30,Standard,completed,87,2025-04-15,2025-04-22,,,,,summary,"Strong performance this cycle — recommend for team lead consideration"
+bob.asante@ndma.gov.gh,ataybia.mclean@ndma.gov.gh,2025,Oct 2024 - Apr 2025,2024-10-01,2025-04-30,Standard,approved,91,2025-04-10,2025-04-18,Leadership,Team Coordination,5,Led the NOC shift team effectively through two major incidents,,
+bob.asante@ndma.gov.gh,ataybia.mclean@ndma.gov.gh,2025,Oct 2024 - Apr 2025,2024-10-01,2025-04-30,Standard,approved,91,2025-04-10,2025-04-18,Technical Skills,Monitoring Tools,5,Proficient with UISP and iTop,,

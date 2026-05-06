@@ -1,0 +1,6 @@
+staffEmail,leaveTypeCode,startDate,endDate,totalDays,reason
+alice.mensah@ndma.gov.gh,AL,2026-01-05,2026-01-09,5,Annual leave — year-end carry over
+bob.asante@ndma.gov.gh,SL,2026-02-10,2026-02-12,3,
+carol.persaud@ndma.gov.gh,AL,2026-03-16,2026-03-20,5,Approved annual leave
+alice.mensah@ndma.gov.gh,ML,2026-04-20,2026-04-24,5,Medical leave with certificate submitted
+bob.asante@ndma.gov.gh,AL,2026-06-01,2026-06-05,5,Annual leave — pre-approved
