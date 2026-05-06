@@ -104,6 +104,10 @@ export const workItems = pgTable(
     parentId: text("parent_id"), // self-reference — bare text, constraint added by db:push
     // Milestone marker date
     milestoneDate: date("milestone_date"),
+    // Time-period classification (Phase 11)
+    year: integer("year"),
+    period: text("period"), // e.g. "2026-Q2", "2026-W18"
+    weekStartDate: text("week_start_date"), // ISO date e.g. "2026-04-28" (Monday of the work week)
     // Audit
     createdById: text("created_by_id").references(() => user.id, {
       onDelete: "set null",
@@ -120,6 +124,8 @@ export const workItems = pgTable(
     index("work_items_departmentId_idx").on(table.departmentId),
     index("work_items_dueDate_idx").on(table.dueDate),
     index("work_items_type_idx").on(table.type),
+    index("work_items_year_idx").on(table.year),
+    index("work_items_period_idx").on(table.period),
   ],
 );
 
