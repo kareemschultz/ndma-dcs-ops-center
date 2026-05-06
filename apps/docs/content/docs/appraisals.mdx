@@ -16,7 +16,7 @@ Each appraisal contains:
 - **Type** — probation, annual, mid-year, or end-of-contract
 - **Score** — numeric performance score (if applicable)
 - **Notes** — free-text assessment
-- **Status** — scheduled → in_progress → completed → cancelled
+- **Status** — `draft` → `self_review` → `manager_review` → `hr_review` → `approved` → `completed` / `rejected`
 
 ## Creating an appraisal
 
@@ -30,14 +30,17 @@ Each appraisal contains:
 
 | Status | Meaning |
 |--------|---------|
-| `scheduled` | Upcoming review, not yet started |
-| `in_progress` | Review is being conducted |
-| `completed` | Review finished and recorded |
-| `cancelled` | Review was cancelled (e.g., staff left before review) |
+| `draft` | Created, not yet submitted for self-review |
+| `self_review` | Staff member completing their self-assessment |
+| `manager_review` | Supervisor reviewing and scoring |
+| `hr_review` | HR Admin / Ops reviewing before finalisation |
+| `approved` | HR has approved — awaiting signatures |
+| `completed` | Fully signed off and filed |
+| `rejected` | Returned for revision — `rejectionReason` field explains why |
 
 ## Overdue appraisals
 
-An appraisal is considered overdue if its review period end date has passed and its status is still `scheduled` or `in_progress`. The **Overdue** view (via the appraisals list filter) highlights these.
+An appraisal is considered overdue if its review period end date has passed and its status is still `draft`, `self_review`, or `manager_review`. The **Overdue** view (via the appraisals list filter) highlights these.
 
 ## Access
 

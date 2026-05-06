@@ -9,10 +9,28 @@ The Import module lets admins and HR Ops bulk-load data from CSV or Excel-format
 
 ## Supported import types
 
-| Type | What it creates | Who can run it |
-|------|-----------------|----------------|
+| Type | What it creates / updates | Who can run it |
+|------|--------------------------|----------------|
 | `staff` | Staff profiles + user accounts | `admin`, `hrAdminOps` |
-| `leave` | Leave requests for existing staff | `admin`, `hrAdminOps` |
+| `leave` | Leave requests for existing staff (2026 dates only) | `admin`, `hrAdminOps` |
+| `training` | Training records | `admin`, `hrAdminOps` |
+| `contracts` | Contract records | `admin`, `hrAdminOps` |
+| `work` | Work items | `admin`, `hrAdminOps` |
+| `operations_work_update` | Bulk work item status updates | `admin`, `hrAdminOps` |
+| `roster` | On-call roster assignments | `admin`, `hrAdminOps` |
+| `platform_accounts` | Platform account records | `admin`, `hrAdminOps` |
+| `ppe` | PPE issuance records | `admin`, `hrAdminOps` |
+| `attendance` | Attendance logs (routes to TOSD records) | `admin`, `hrAdminOps` |
+| `callouts` | Callout records (routes to TOSD records) | `admin`, `hrAdminOps` |
+| `appraisals` | Appraisal records | `admin`, `hrAdminOps` |
+| `calendar_events` | Calendar events | `admin`, `hrAdminOps` |
+| `promotions` | Promotion records | `admin`, `hrAdminOps` |
+| `exam_schedule` | Exam schedule entries | `admin`, `hrAdminOps` |
+| `onboarding` | Onboarding task sets | `admin`, `hrAdminOps` |
+| `policy` | Policy acknowledgement records | `admin`, `hrAdminOps` |
+| `forms` | Company form records | `admin`, `hrAdminOps` |
+
+> **Note:** CSV import templates for all types above are planned (Phase 12) but not yet available for download. Contact your system administrator for the correct column format for each type.
 
 ## Running an import
 
@@ -45,7 +63,7 @@ email,startDate,endDate,leaveType,notes
 kareem.schultz@ndma.gov.gh,2026-04-07,2026-04-12,annual,Pre-approved conference
 ```
 
-- `startDate` / `endDate` must be in `YYYY-MM-DD` format
+- `startDate` / `endDate` must be in `YYYY-MM-DD` format and must be 2026 dates (schema validation enforces this)
 - `leaveType` must match an existing leave type slug configured in Settings → Leave Types (e.g., `annual`, `sick`, `maternity`)
 - Staff must already exist — the import never creates new user accounts
 
