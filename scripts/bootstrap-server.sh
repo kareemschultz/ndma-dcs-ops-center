@@ -97,7 +97,7 @@ fi
 
 echo ""
 echo "--- Running database migrations ---"
-docker compose exec -T app sh -c 'cd packages/db && bunx drizzle-kit migrate'
+docker compose exec -T app sh -c 'cd packages/db && bun src/migrate.ts'
 
 echo ""
 echo "--- Cleaning up temp files ---"

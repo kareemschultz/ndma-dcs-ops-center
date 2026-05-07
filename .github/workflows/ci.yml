@@ -130,9 +130,10 @@ jobs:
             docker compose pull app docs
             docker compose up -d --no-build app docs
 
-            # Run DB migrations using file-based migrate (not push) to avoid drizzle-kit
-            # duplicate-view-name warning from appraisal_tracker_view (.existing() view).
-            docker compose exec -T app sh -c 'cd packages/db && bunx drizzle-kit migrate'
+            # Run DB migrations via programmatic drizzle-orm migrate() — bypasses
+            # drizzle-kit CLI entirely, avoiding the appraisal_tracker_view
+            # duplicate-view-name warning that causes drizzle-kit to exit 1.
+            docker compose exec -T app sh -c 'cd packages/db && bun src/migrate.ts'
 
             # Cleanup dangling images
             docker image prune -f
