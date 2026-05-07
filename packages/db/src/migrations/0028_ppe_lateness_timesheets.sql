@@ -45,12 +45,25 @@ ALTER TABLE "ppe_issuances"
 ALTER TABLE "ppe_issuances"
   DROP CONSTRAINT IF EXISTS "ppe_issuances_staff_item_unique";
 
-ALTER TABLE "ppe_issuances"
-  ADD CONSTRAINT "ppe_issuances_staff_item_date_unique"
-  UNIQUE ("staff_profile_id", "ppe_item_id", "issued_date");
+-- Idempotent: only add if not already present (partial-run safety)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'ppe_issuances_staff_item_date_unique'
+      AND conrelid = 'ppe_issuances'::regclass
+  ) THEN
+    ALTER TABLE "ppe_issuances"
+      ADD CONSTRAINT "ppe_issuances_staff_item_date_unique"
+      UNIQUE ("staff_profile_id", "ppe_item_id", "issued_date");
+  END IF;
+END
+$$;
 
 -- ─── Seed 17 canonical PPE items ─────────────────────────────────────────────
 
+-- id column is text PRIMARY KEY with no DB-level default ($defaultFn is ORM-only)
+-- so we must supply gen_random_uuid() explicitly in the seed INSERT.
 INSERT INTO "ppe_items" ("id", "code", "name", "category", "has_size", "has_asset_tag", "is_active")
 VALUES
   (gen_random_uuid(), 'LONG_BOOTS',       'Long Boots',          'footwear',    true,  false, true),
