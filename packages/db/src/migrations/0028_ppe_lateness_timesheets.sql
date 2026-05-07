@@ -101,7 +101,14 @@ $$;
 
 -- ─── Timesheet Documents: new index table ────────────────────────────────────
 
-CREATE TYPE IF NOT EXISTS "timesheet_office" AS ENUM ('castellani', 'liliendaal');
+-- PostgreSQL does not support CREATE TYPE IF NOT EXISTS — use DO block for idempotency
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'timesheet_office') THEN
+    CREATE TYPE "timesheet_office" AS ENUM ('castellani', 'liliendaal');
+  END IF;
+END
+$$;
 
 CREATE TABLE IF NOT EXISTS "timesheet_documents" (
   "id"           serial PRIMARY KEY,
