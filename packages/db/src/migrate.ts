@@ -7,9 +7,6 @@
  *
  * Usage (from /app/packages/db inside the container):
  *   bun src/migrate.ts
- *
- * Or from repo root:
- *   cd packages/db && bun src/migrate.ts
  */
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -21,16 +18,37 @@ if (!databaseUrl) {
   process.exit(1);
 }
 
+// Log the database being used (without password)
+try {
+  const url = new URL(databaseUrl);
+  console.log(
+    `[migrate] connecting to: ${url.hostname}:${url.port}${url.pathname}`,
+  );
+} catch {
+  console.log("[migrate] connecting (URL parse failed)");
+}
+
 const db = drizzle(databaseUrl);
 
 const migrationsFolder = resolve(import.meta.dirname, "./migrations");
-console.log(`[migrate] reading from: ${migrationsFolder}`);
+console.log(`[migrate] migrations folder: ${migrationsFolder}`);
 
 try {
   await migrate(db, { migrationsFolder });
   console.log("[migrate] all migrations applied successfully.");
   process.exit(0);
-} catch (err) {
-  console.error("[migrate] FAILED:", err);
+} catch (err: unknown) {
+  const e = err as { message?: string; query?: string; position?: string };
+  console.error("[migrate] FAILED");
+  if (e.message) console.error("  message:", e.message);
+  if (e.query) {
+    // Print first 500 chars of the failing query
+    const q = String(e.query);
+    console.error(
+      "  query (first 500 chars):",
+      q.length > 500 ? q.slice(0, 500) + "..." : q,
+    );
+  }
+  if (e.position) console.error("  position:", e.position);
   process.exit(1);
 }
