@@ -51,25 +51,25 @@ ALTER TABLE "ppe_issuances"
 
 -- ─── Seed 17 canonical PPE items ─────────────────────────────────────────────
 
-INSERT INTO "ppe_items" ("code", "name", "category", "has_size", "has_asset_tag", "is_active")
+INSERT INTO "ppe_items" ("id", "code", "name", "category", "has_size", "has_asset_tag", "is_active")
 VALUES
-  ('LONG_BOOTS',       'Long Boots',          'footwear',    true,  false, true),
-  ('OVERALLS',         'Overalls',            'apparel',     false, false, true),
-  ('MOUSEPAD',         'Mousepad',            'accessories', false, false, true),
-  ('SAFETY_BOOTS',     'Safety Boots',        'footwear',    true,  false, true),
-  ('BAG',              'Bag',                 'accessories', false, false, true),
-  ('SCREWDRIVER',      'Screwdriver',         'accessories', false, false, true),
-  ('DB9_RJ45',         'DB9-RJ45 Adapter',    'accessories', false, false, true),
-  ('DB9_USB',          'DB9-USB Adapter',     'accessories', false, false, true),
-  ('MONITOR',          'Monitor',             'electronics', false, true,  true),
-  ('HDMI_MONITOR',     'HDMI to Monitor',     'accessories', false, false, true),
-  ('LAPTOP',           'Laptop',              'electronics', false, true,  true),
-  ('MIFI',             'MiFi',                'electronics', false, true,  true),
-  ('CUG_PHONE',        'CUG Phone',           'electronics', false, true,  true),
-  ('CUG_SIM',          'CUG Sim',             'electronics', false, false, true),
-  ('NDMA_SHIRTS',      'NDMA Shirts',         'apparel',     false, false, true),
-  ('USB_ETHERNET',     'USB To Ethernet',     'accessories', false, false, true),
-  ('UMBRELLA',         'Umbrella',            'accessories', false, false, true)
+  (gen_random_uuid(), 'LONG_BOOTS',       'Long Boots',          'footwear',    true,  false, true),
+  (gen_random_uuid(), 'OVERALLS',         'Overalls',            'apparel',     false, false, true),
+  (gen_random_uuid(), 'MOUSEPAD',         'Mousepad',            'accessories', false, false, true),
+  (gen_random_uuid(), 'SAFETY_BOOTS',     'Safety Boots',        'footwear',    true,  false, true),
+  (gen_random_uuid(), 'BAG',              'Bag',                 'accessories', false, false, true),
+  (gen_random_uuid(), 'SCREWDRIVER',      'Screwdriver',         'accessories', false, false, true),
+  (gen_random_uuid(), 'DB9_RJ45',         'DB9-RJ45 Adapter',    'accessories', false, false, true),
+  (gen_random_uuid(), 'DB9_USB',          'DB9-USB Adapter',     'accessories', false, false, true),
+  (gen_random_uuid(), 'MONITOR',          'Monitor',             'electronics', false, true,  true),
+  (gen_random_uuid(), 'HDMI_MONITOR',     'HDMI to Monitor',     'accessories', false, false, true),
+  (gen_random_uuid(), 'LAPTOP',           'Laptop',              'electronics', false, true,  true),
+  (gen_random_uuid(), 'MIFI',             'MiFi',                'electronics', false, true,  true),
+  (gen_random_uuid(), 'CUG_PHONE',        'CUG Phone',           'electronics', false, true,  true),
+  (gen_random_uuid(), 'CUG_SIM',          'CUG Sim',             'electronics', false, false, true),
+  (gen_random_uuid(), 'NDMA_SHIRTS',      'NDMA Shirts',         'apparel',     false, false, true),
+  (gen_random_uuid(), 'USB_ETHERNET',     'USB To Ethernet',     'accessories', false, false, true),
+  (gen_random_uuid(), 'UMBRELLA',         'Umbrella',            'accessories', false, false, true)
 ON CONFLICT ("code") DO UPDATE SET
   "name"          = EXCLUDED."name",
   "category"      = EXCLUDED."category",
