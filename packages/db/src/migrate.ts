@@ -38,17 +38,31 @@ try {
   console.log("[migrate] all migrations applied successfully.");
   process.exit(0);
 } catch (err: unknown) {
-  const e = err as { message?: string; query?: string; position?: string };
   console.error("[migrate] FAILED");
-  if (e.message) console.error("  message:", e.message);
-  if (e.query) {
-    // Print first 500 chars of the failing query
-    const q = String(e.query);
-    console.error(
-      "  query (first 500 chars):",
-      q.length > 500 ? q.slice(0, 500) + "..." : q,
-    );
+  // Drill into cause chain for the real PostgreSQL error
+  let cur: unknown = err;
+  let depth = 0;
+  while (cur && depth < 5) {
+    const e = cur as {
+      message?: string;
+      query?: string;
+      position?: string;
+      code?: string;
+      severity?: string;
+      cause?: unknown;
+    };
+    const label = depth === 0 ? "error" : `cause[${depth}]`;
+    if (e.message) console.error(`  ${label}.message:`, e.message.slice(0, 300));
+    if (e.code) console.error(`  ${label}.code:`, e.code);
+    if (e.severity) console.error(`  ${label}.severity:`, e.severity);
+    if (e.position) console.error(`  ${label}.position:`, e.position);
+    if (e.query) {
+      const q = String(e.query);
+      console.error(`  ${label}.query[:200]:`, q.slice(0, 200));
+    }
+    cur = e.cause;
+    depth++;
+    if (!cur) break;
   }
-  if (e.position) console.error("  position:", e.position);
   process.exit(1);
 }
