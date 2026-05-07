@@ -1,16 +1,26 @@
 /**
  * Standalone migration runner — used in CI/production deploy.
  *
- * Uses drizzle-orm's programmatic migrate() which reads SQL files directly
- * and does NOT invoke drizzle-kit CLI. This avoids the drizzle-kit
- * duplicate-view-name warning caused by appraisal_tracker_view.existing().
+ * Does NOT use drizzle-orm migrate() because that wraps each migration file
+ * in a PostgreSQL transaction, which causes "ALTER TYPE ADD VALUE cannot run
+ * inside a transaction block" for migrations that add enum values.
+ *
+ * This runner:
+ *   1. Creates the __drizzle_migrations tracking table if missing
+ *   2. Reads the journal to get ordered migration tags
+ *   3. For each migration not yet applied, splits by statement-breakpoint
+ *      and executes each statement individually (no transaction wrapper)
+ *   4. Records the migration hash in __drizzle_migrations after success
  *
  * Usage (from /app/packages/db inside the container):
  *   bun src/migrate.ts
  */
-import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { createHash } from "crypto";
+import { readFileSync, readdirSync } from "fs";
 import { resolve } from "path";
+import pg from "pg";
+
+const { Client } = pg;
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -18,7 +28,6 @@ if (!databaseUrl) {
   process.exit(1);
 }
 
-// Log the database being used (without password)
 try {
   const url = new URL(databaseUrl);
   console.log(
@@ -28,41 +37,99 @@ try {
   console.log("[migrate] connecting (URL parse failed)");
 }
 
-const db = drizzle(databaseUrl);
-
 const migrationsFolder = resolve(import.meta.dirname, "./migrations");
 console.log(`[migrate] migrations folder: ${migrationsFolder}`);
 
+const client = new Client({ connectionString: databaseUrl });
+await client.connect();
+
 try {
-  await migrate(db, { migrationsFolder });
-  console.log("[migrate] all migrations applied successfully.");
+  // Ensure migration tracking table exists
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (
+      id        serial PRIMARY KEY,
+      hash      text    NOT NULL,
+      created_at bigint
+    )
+  `);
+
+  // Read already-applied hashes
+  const { rows: applied } = await client.query<{ hash: string }>(
+    'SELECT hash FROM "__drizzle_migrations" ORDER BY created_at ASC',
+  );
+  const appliedHashes = new Set(applied.map((r) => r.hash));
+
+  // Load journal to get canonical ordering
+  const journalPath = resolve(migrationsFolder, "meta/_journal.json");
+  const journal = JSON.parse(readFileSync(journalPath, "utf8")) as {
+    entries: Array<{ tag: string; when: number }>;
+  };
+
+  let appliedCount = 0;
+  let skippedCount = 0;
+
+  for (const entry of journal.entries) {
+    const sqlFile = resolve(migrationsFolder, `${entry.tag}.sql`);
+
+    let sql: string;
+    try {
+      sql = readFileSync(sqlFile, "utf8");
+    } catch {
+      console.warn(`[migrate] WARNING: SQL file not found for tag ${entry.tag} — skipping`);
+      skippedCount++;
+      continue;
+    }
+
+    // Compute hash the same way drizzle-orm does: sha256 of the file contents
+    const hash = createHash("sha256").update(sql).digest("hex");
+
+    if (appliedHashes.has(hash)) {
+      console.log(`[migrate] skip  (already applied): ${entry.tag}`);
+      skippedCount++;
+      continue;
+    }
+
+    console.log(`[migrate] apply: ${entry.tag}`);
+
+    // Split on statement-breakpoint markers and execute each individually.
+    // No transaction wrapper — this allows ALTER TYPE ADD VALUE to succeed.
+    const statements = sql
+      .split("--> statement-breakpoint")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0 && !s.startsWith("--\n") && s !== "--");
+
+    for (const stmt of statements) {
+      if (!stmt.trim()) continue;
+      try {
+        await client.query(stmt);
+      } catch (err: unknown) {
+        const e = err as { message?: string; code?: string };
+        console.error(`[migrate] FAILED on statement in ${entry.tag}:`);
+        console.error(`  message: ${e.message}`);
+        console.error(`  code:    ${e.code}`);
+        console.error(`  stmt[:300]: ${stmt.slice(0, 300)}`);
+        await client.end();
+        process.exit(1);
+      }
+    }
+
+    // Record migration as applied
+    await client.query(
+      'INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES ($1, $2)',
+      [hash, entry.when],
+    );
+
+    appliedCount++;
+  }
+
+  console.log(
+    `[migrate] done — ${appliedCount} applied, ${skippedCount} skipped.`,
+  );
+  await client.end();
   process.exit(0);
 } catch (err: unknown) {
-  console.error("[migrate] FAILED");
-  // Drill into cause chain for the real PostgreSQL error
-  let cur: unknown = err;
-  let depth = 0;
-  while (cur && depth < 5) {
-    const e = cur as {
-      message?: string;
-      query?: string;
-      position?: string;
-      code?: string;
-      severity?: string;
-      cause?: unknown;
-    };
-    const label = depth === 0 ? "error" : `cause[${depth}]`;
-    if (e.message) console.error(`  ${label}.message:`, e.message.slice(0, 300));
-    if (e.code) console.error(`  ${label}.code:`, e.code);
-    if (e.severity) console.error(`  ${label}.severity:`, e.severity);
-    if (e.position) console.error(`  ${label}.position:`, e.position);
-    if (e.query) {
-      const q = String(e.query);
-      console.error(`  ${label}.query[:200]:`, q.slice(0, 200));
-    }
-    cur = e.cause;
-    depth++;
-    if (!cur) break;
-  }
+  const e = err as { message?: string };
+  console.error("[migrate] UNEXPECTED ERROR:", e.message);
+  await client.end();
   process.exit(1);
 }
