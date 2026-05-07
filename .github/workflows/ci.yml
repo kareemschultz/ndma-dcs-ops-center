@@ -113,6 +113,20 @@ jobs:
       contents: read
       packages: read
     steps:
+      - uses: actions/checkout@v4
+
+      # Copy the latest docker-compose.prod.yml to the server so the running
+      # compose config always matches the repo (fixes stale DATABASE_URL etc.)
+      - name: Sync docker-compose.yml to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "docker-compose.prod.yml"
+          target: "/tmp/ndma-deploy/"
+          strip_components: 0
+
       - name: Deploy to production server
         uses: appleboy/ssh-action@v1
         with:
@@ -121,7 +135,13 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -e
-            cd /opt/docker/client-portals/ndma-dcs
+            DEPLOY_DIR=/opt/docker/client-portals/ndma-dcs
+
+            # Update compose file from repo (ensures DATABASE_URL etc. stay current)
+            cp /tmp/ndma-deploy/docker-compose.prod.yml "$DEPLOY_DIR/docker-compose.yml"
+            rm -rf /tmp/ndma-deploy
+
+            cd "$DEPLOY_DIR"
 
             # Authenticate with GHCR using stored PAT (GHCR_TOKEN)
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u kareemschultz --password-stdin

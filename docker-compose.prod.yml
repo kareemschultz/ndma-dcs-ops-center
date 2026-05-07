@@ -29,7 +29,11 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-dcs_ops}
+      # DB name is hardcoded to dcs_ops — do not use ${POSTGRES_DB} here because
+      # if that variable is unset on the host the URL would default to the
+      # 'postgres' maintenance database and migrations would fail with
+      # "permission denied for database postgres".
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/dcs_ops
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET must be set}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
