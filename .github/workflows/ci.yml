@@ -130,8 +130,9 @@ jobs:
             docker compose pull app docs
             docker compose up -d --no-build app docs
 
-            # Run DB migrations non-interactively (pipe yes to answer any truncation prompts)
-            docker compose exec -T app sh -c 'cd packages/db && echo yes | bunx drizzle-kit push'
+            # Run DB migrations using file-based migrate (not push) to avoid drizzle-kit
+            # duplicate-view-name warning from appraisal_tracker_view (.existing() view).
+            docker compose exec -T app sh -c 'cd packages/db && bunx drizzle-kit migrate'
 
             # Cleanup dangling images
             docker image prune -f
