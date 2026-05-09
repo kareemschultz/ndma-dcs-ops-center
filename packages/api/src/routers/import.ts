@@ -15,6 +15,7 @@ import {
   leaveTypes,
   nocShifts,
   onboardingTasks,
+  platformAccounts,
   ppeIssuances,
   ppeItems,
   onCallAssignments,
@@ -22,6 +23,7 @@ import {
   staffProfiles,
   staffPromotions,
   staffTrainingRecords,
+  tosdRecords,
   trainingCourses,
   trainingMaterials,
   trainingRecords,
@@ -1249,6 +1251,175 @@ async function processFormRow(
   return { success: true };
 }
 
+// ── platform_accounts + attendance + callouts row schemas ─────────────────
+
+// Maps friendly platform names from the CSV template to our DB enum
+function normalizePlatformName(name: string): "vpn" | "fortigate" | "uportal" | "biometric" | "ad" | "ipam" | "phpipam" | "radius" | "zabbix" | "esight" | "ivs_neteco" | "nce_fan_atp" | "neteco" | "lte_grafana" | "gen_grafana" | "plum" | "kibana" | "other" {
+  const n = name.toLowerCase().replace(/\s+/g, "_");
+  if (n.includes("active_directory") || n.includes("active directory") || n === "ad") return "ad";
+  if (n.includes("fortigate") || n.includes("forti")) return "fortigate";
+  if (n.includes("uportal") || n.includes("u-portal")) return "uportal";
+  if (n.includes("biometric")) return "biometric";
+  if (n.includes("vpn")) return "vpn";
+  if (n.includes("phpipam")) return "phpipam";
+  if (n.includes("ipam")) return "ipam";
+  if (n.includes("radius")) return "radius";
+  if (n.includes("zabbix")) return "zabbix";
+  if (n.includes("esight")) return "esight";
+  if (n.includes("ivs_neteco") || n.includes("ivs neteco")) return "ivs_neteco";
+  if (n.includes("nce_fan") || n.includes("nce fan")) return "nce_fan_atp";
+  if (n.includes("neteco")) return "neteco";
+  if (n.includes("lte_grafana") || n.includes("lte grafana")) return "lte_grafana";
+  if (n.includes("gen_grafana") || n.includes("gen grafana") || n.includes("grafana")) return "gen_grafana";
+  if (n.includes("plum")) return "plum";
+  if (n.includes("kibana")) return "kibana";
+  return "other";
+}
+
+// Maps attendance CSV type values to our tosd_records type enum
+function normalizeAttendanceType(raw: string): "reported_sick" | "medical" | "absent" | "time_off" | "work_from_home" | "lateness" | null {
+  const v = raw.toLowerCase().trim();
+  if (v === "sick" || v === "reported_sick") return "reported_sick";
+  if (v === "medical") return "medical";
+  if (v === "absent" || v === "unapproved_absence") return "absent";
+  if (v === "time_off") return "time_off";
+  if (v === "work_from_home" || v === "wfh") return "work_from_home";
+  if (v === "lateness" || v === "late") return "lateness";
+  return null; // "present" and unknown types are skipped
+}
+
+async function processPlatformAccountRow(
+  rawRow: Record<string, string>,
+  rowIdx: number,
+  actorUserId: string,
+): Promise<ImportRowResult> {
+  const staffEmail = rawRow.staffEmail || rawRow.staff_email;
+  const platformRaw = rawRow.platformName || rawRow.platform_name || rawRow.platform || "";
+  const accountIdentifier = rawRow.accountUsername || rawRow.account_username || rawRow.accountIdentifier || rawRow.username;
+
+  if (!accountIdentifier?.trim()) {
+    return { success: false, error: { row: rowIdx, field: "accountUsername", message: "accountUsername is required" } };
+  }
+  if (!platformRaw?.trim()) {
+    return { success: false, error: { row: rowIdx, field: "platformName", message: "platformName is required" } };
+  }
+
+  const staffProfileId = staffEmail ? await findStaffByEmail(staffEmail) : null;
+  const platform = normalizePlatformName(platformRaw);
+  const isActive = (rawRow.accountActive || rawRow.account_active || "true").toLowerCase();
+  const status: "active" | "suspended" | "disabled" = isActive === "false" ? "disabled" : "active";
+  const privilegeLevel = rawRow.privilegeLevel || rawRow.privilege_level || null;
+  const notes = rawRow.notes || null;
+
+  await db
+    .insert(platformAccounts)
+    .values({
+      staffProfileId: staffProfileId ?? null,
+      platform,
+      accountIdentifier: accountIdentifier.trim(),
+      displayName: rawRow.displayName || rawRow.display_name || rawRow.name || null,
+      email: rawRow.email || null,
+      privilegeLevel: privilegeLevel || null,
+      authSource: "local",
+      vpnEnabled: platform === "vpn",
+      status,
+      notes,
+      createdByUserId: actorUserId,
+    })
+    .onConflictDoUpdate({
+      target: [platformAccounts.platform, platformAccounts.accountIdentifier],
+      set: {
+        staffProfileId: staffProfileId ?? null,
+        privilegeLevel: privilegeLevel || null,
+        status,
+        notes,
+        updatedByUserId: actorUserId,
+      },
+    });
+
+  return { success: true };
+}
+
+async function processAttendanceRow(
+  rawRow: Record<string, string>,
+  rowIdx: number,
+): Promise<ImportRowResult> {
+  const staffEmail = rawRow.staffEmail || rawRow.staff_email;
+  const dateVal = rawRow.date;
+  const typeRaw = rawRow.type || "";
+
+  if (!staffEmail) {
+    return { success: false, error: { row: rowIdx, field: "staffEmail", message: "staffEmail is required" } };
+  }
+  if (!dateVal || !/^\d{4}-\d{2}-\d{2}$/.test(dateVal)) {
+    return { success: false, error: { row: rowIdx, field: "date", message: "date must be YYYY-MM-DD" } };
+  }
+
+  const tosdType = normalizeAttendanceType(typeRaw);
+  if (!tosdType) {
+    // "present" and other non-event types are silently skipped (not errors)
+    return { success: true };
+  }
+
+  const staffId = await findStaffByEmail(staffEmail);
+  if (!staffId) {
+    return { success: false, error: { row: rowIdx, field: "staffEmail", message: `Staff not found: ${staffEmail}` } };
+  }
+
+  const hours = rawRow.hours?.trim() || null;
+  const notes = rawRow.notes?.trim() || null;
+
+  await db
+    .insert(tosdRecords)
+    .values({
+      staffId,
+      date: dateVal,
+      type: tosdType,
+      reasonText: notes,
+      hours: hours,
+    })
+    .onConflictDoNothing();
+
+  return { success: true };
+}
+
+async function processCalloutRow(
+  rawRow: Record<string, string>,
+  rowIdx: number,
+): Promise<ImportRowResult> {
+  const staffEmail = rawRow.staffEmail || rawRow.staff_email;
+  const dateVal = rawRow.date;
+
+  if (!staffEmail) {
+    return { success: false, error: { row: rowIdx, field: "staffEmail", message: "staffEmail is required" } };
+  }
+  if (!dateVal || !/^\d{4}-\d{2}-\d{2}$/.test(dateVal)) {
+    return { success: false, error: { row: rowIdx, field: "date", message: "date must be YYYY-MM-DD" } };
+  }
+
+  const staffId = await findStaffByEmail(staffEmail);
+  if (!staffId) {
+    return { success: false, error: { row: rowIdx, field: "staffEmail", message: `Staff not found: ${staffEmail}` } };
+  }
+
+  const incidentTitle = rawRow.incidentTitle || rawRow.incident_title || rawRow.reason || null;
+  const hoursWorked = rawRow.hoursWorked || rawRow.hours_worked || rawRow.hours || null;
+  const notes = rawRow.notes || null;
+
+  await db
+    .insert(tosdRecords)
+    .values({
+      staffId,
+      date: dateVal,
+      type: "callout_legacy",
+      reasonText: [incidentTitle, notes].filter(Boolean).join(" — ") || null,
+      hours: hoursWorked,
+    })
+    .onConflictDoNothing();
+
+  return { success: true };
+}
+
 // ── Router ────────────────────────────────────────────────────────────────
 
 export const importRouter = {
@@ -1264,8 +1435,11 @@ export const importRouter = {
           "work",
           "operations_work_update",
           "roster",
+          "platform_accounts",
           "leave",
           "ppe",
+          "attendance",
+          "callouts",
           "appraisals",
           "calendar_events",
           "promotions",
@@ -1356,6 +1530,15 @@ export const importRouter = {
               break;
             case "forms":
               result = await processFormRow(row, i + 1);
+              break;
+            case "platform_accounts":
+              result = await processPlatformAccountRow(row, i + 1, context.session.user.id);
+              break;
+            case "attendance":
+              result = await processAttendanceRow(row, i + 1);
+              break;
+            case "callouts":
+              result = await processCalloutRow(row, i + 1);
               break;
             default:
               result = { success: false, error: { row: i + 1, message: "Unknown import type" } };
@@ -1455,6 +1638,8 @@ export const importRouter = {
           "platform_accounts",
           "leave",
           "ppe",
+          "attendance",
+          "callouts",
           "appraisals",
           "calendar_events",
           "promotions",

@@ -40,6 +40,7 @@
     "db:studio": "turbo -F @ndma-dcs-staff-portal/db db:studio",
     "db:generate": "turbo -F @ndma-dcs-staff-portal/db db:generate",
     "db:migrate": "turbo -F @ndma-dcs-staff-portal/db db:migrate",
+    "db:seed:historical": "bun packages/db/src/seed-historical.ts",
     "db:start": "turbo -F @ndma-dcs-staff-portal/db db:start",
     "db:watch": "turbo -F @ndma-dcs-staff-portal/db db:watch",
     "db:stop": "turbo -F @ndma-dcs-staff-portal/db db:stop",

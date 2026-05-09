@@ -4,6 +4,23 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
+## [Phase 15 — Hardening + Phase 14 Seed Script] — 2026-05-08
+
+### Added
+- `packages/db/src/seed-historical.ts` — Phase 14 historical seed script; 13 of 35 steps implemented; ingests NDMA source-of-truth XLSX files via ExcelJS; supports `--dry-run`, `--steps`, `--from` flags; outputs `docs/seed-report.md`.
+- `PRODUCTION_READINESS_CHECKLIST.md` — 10-section deployment readiness tracker covering migrations, env vars, build, RBAC, e2e, performance, accessibility, seed, deployment, Phase 3 cutover.
+- `"db:seed:historical"` npm script in root `package.json`.
+
+### Fixed
+- **Import router** (`packages/api/src/routers/import.ts`): Added 3 missing execute handlers for `platform_accounts`, `attendance`, `callouts` import types. Column mapping: attendance uses `staffEmail,date,type,hours,notes`; callouts uses `staffEmail,date,incidentTitle,hoursWorked,notes`; platform_accounts uses `staffEmail,platformName,accountUsername,accountType,accountActive,privilegeLevel,notes`.
+- **Bundle splitting** (`apps/web/vite.config.ts`): Function-form `manualChunks` splits recharts (379 kB), forms (264 kB), tanstack-query (41 kB), tanstack-router (93 kB), react (499 kB), lucide, date-fns into separate chunks. Avoids browser loading the full 2+ MB monolithic bundle.
+
+### Changed
+- **RBAC matrix** (`packages/api/tests/rbac-matrix.test.ts`): Added Phase 15 test block — 6 new tests covering `platform_accounts`, `attendance`, `callouts` import RBAC (staff/teamLead/manager → FORBIDDEN; admin → allowed).
+- **Smoke tests** (`e2e/smoke.spec.ts`): Expanded from 24 to 40+ routes; all Phase 3-13 pages now covered (scheduling, TOSD, NOC performance, training, PPE, lateness, timesheets, import, policy, etc.).
+
+---
+
 ## [Phase 13 — Obsolete docs cleanup] — 2026-05-06
 
 ### Removed

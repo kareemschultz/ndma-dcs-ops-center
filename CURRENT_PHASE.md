@@ -1,8 +1,9 @@
 # Current Phase
 
-**Active phase:** None — Phases 9-13 complete as of 2026-05-06
-**Status:** 🟢 Idle — next phases are 14 (historical seed) and 15 (hardening)
-**Main HEAD:** `ff46c25`
+**Active phase:** Phase 14 + 15 (co-shipped)
+**Status:** 🔵 In Progress — seed script written; hardening fixes applied
+**Branch:** `claude/eloquent-cohen-59d39d` (PR pending)
+**Main HEAD:** `d2b1b67`
 **Migration index:** 31 (latest: `0031_work_year_period.sql`)
 
 ## What is on main (Phases 0-13)
@@ -24,24 +25,43 @@
 | 12 | #37 | fa19785 | Import module — 18 CSV templates at /public/import-templates/ |
 | 13 | #35 | ff46c25 | Docs cleanup — deleted 4 stale docs, updated 3 MDX files |
 
-## Next phases
+## Phase 14 — Final historical seed (🔵 In Progress)
 
-### Phase 14 — Final historical seed (⬜ Queued)
-- 35-step seed script ingesting 200 XLSX + 29 DOCX from source-of-truth/
-- Critical gates: EOM 19/19, appraisalTrackerView.rowCount >= 130
-- Needs PROD DATABASE_URL + dry-run pass first
-- See master plan §10 for seed step order
+Seed script written: `packages/db/src/seed-historical.ts`
 
-### Phase 15 — Hardening (⬜ Queued)
-- e2e Playwright coverage (4 RBAC scope cases + smoke tests)
-- Performance audit (Core Web Vitals, slow queries)
-- RBAC matrix 100% (all procedures covered in rbac-matrix.test.ts)
-- axe-core accessibility audit
-- Production readiness
+Steps implemented (13 of 35):
+- Step 1: departments (7 canonical)
+- Step 2: staff profile updates from AccountManagementMarch_20260312.xlsx
+- Step 3: service_access_registry (Layer 3) from same file
+- Step 5: contracts from ContractEndDates_DCS/NOC xlsx
+- Step 11: commendations from StaffCommendationJournal xlsx
+- Step 14: noc_monthly_metrics from EmployeeOfTheMonth xlsx
+- Step 17: noc_shifts from shift-schedule xlsx
+- Step 20: leave_requests (2026) from AnnualLeaveRosterNOC xlsx
+- Step 21: tosd_records from TimeOffSickDays xlsx
+- Step 22: lateness_records from LatenessReport xlsx
+- Step 23: ppe_items (17 canonical, hardcoded)
+- Step 24: ppe_issuances from PPE&IndividualTools xlsx
+- Step 34: onboarding_task_templates (8 hardcoded)
+
+Steps NOT yet implemented: 4, 6-10, 12-13, 15-16, 18-19, 25-33, 35
+
+**To run:** `bun run db:seed:historical` (add `--dry-run` first)
+**Gates:** staff.rowCount==281, serviceAccessRegistry.rowCount>=3000, appraisalTrackerView.rowCount>=130, employeeOfTheMonth.matchRate==19/19
+
+## Phase 15 — Hardening (🔵 In Progress)
+
+Fixes applied in this session:
+- **Import router**: Added 3 missing execute handlers (platform_accounts, attendance, callouts) with correct CSV column mappings
+- **Bundle splitting**: Vite manualChunks (function form) splits vendor-react, vendor-tanstack-router, vendor-tanstack-query, vendor-recharts, vendor-forms, vendor-dates, vendor-lucide
+- **RBAC matrix**: Added Phase 15 describe block covering platform_accounts/attendance/callouts import RBAC
+- **Smoke tests**: Expanded from 24 to 40+ pages (all Phase 3-13 pages now covered)
+- **PRODUCTION_READINESS_CHECKLIST.md**: Created comprehensive 10-section deployment checklist
 
 ## Known pending issues
 
-- **drizzle-kit generate blocked** — `appraisal_tracker_view` duplicate-name warning causes exit 1. Workaround: hand-author migrations. Should investigate pgView().existing() config.
-- **3 import types lack execute handlers**: platform_accounts, attendance, callouts
+- **drizzle-kit generate blocked** — `appraisal_tracker_view` duplicate-name warning causes exit 1. Workaround: hand-author migrations.
+- **Phase 14 remaining steps** (22 of 35) — need PROD data files + DATABASE_URL to validate
 - **Production migrations 0008-0031** not yet applied (requires PROD DATABASE_URL)
 - **Phase 3 cutover gate**: legacy rota.ts/roster.ts/noc-shifts.ts still mounted; delete after 7-day zero-5xx window
+- **vite bundle**: main app chunk still ~1GB — further code splitting (dynamic imports per route) is a follow-up
