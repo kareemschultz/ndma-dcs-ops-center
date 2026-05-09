@@ -580,3 +580,89 @@ describe("Phase 4-5 follow-up RBAC matrix (commendations + appraisal_tracker_vie
     );
   });
 });
+
+// ─── Phase 15 — Import router RBAC (platform_accounts, attendance, callouts) ──
+
+import { importRouter } from "../src/routers/import";
+
+describe("Phase 15 RBAC matrix — import router (platform_accounts, attendance, callouts)", () => {
+  const dummyPlatformAccountRow = {
+    platformName: "Active Directory",
+    accountUsername: "rbac-test-user",
+    accountActive: "true",
+    privilegeLevel: "standard",
+  };
+
+  const dummyAttendanceRow = {
+    staffEmail: "nonexistent@ndma.gov.gh",
+    date: "2026-01-01",
+    type: "absent",
+  };
+
+  const dummyCalloutRow = {
+    staffEmail: "nonexistent@ndma.gov.gh",
+    date: "2026-01-01",
+    incidentTitle: "Test callout",
+    hoursWorked: "4",
+  };
+
+  test("import.execute platform_accounts is staff:import — regular staff cannot execute", async () => {
+    await expectForbidden(
+      call(
+        importRouter.execute,
+        { importType: "platform_accounts", rows: [dummyPlatformAccountRow] },
+        { context: makeContext(fixtures.staff) },
+      ),
+    );
+  });
+
+  test("import.execute platform_accounts is staff:import — teamLead cannot execute", async () => {
+    await expectForbidden(
+      call(
+        importRouter.execute,
+        { importType: "platform_accounts", rows: [dummyPlatformAccountRow] },
+        { context: makeContext(fixtures.teamLead) },
+      ),
+    );
+  });
+
+  test("import.execute platform_accounts is staff:import — manager cannot execute", async () => {
+    await expectForbidden(
+      call(
+        importRouter.execute,
+        { importType: "platform_accounts", rows: [dummyPlatformAccountRow] },
+        { context: makeContext(fixtures.manager) },
+      ),
+    );
+  });
+
+  test("import.execute attendance is staff:import — regular staff cannot execute", async () => {
+    await expectForbidden(
+      call(
+        importRouter.execute,
+        { importType: "attendance", rows: [dummyAttendanceRow] },
+        { context: makeContext(fixtures.staff) },
+      ),
+    );
+  });
+
+  test("import.execute callouts is staff:import — regular staff cannot execute", async () => {
+    await expectForbidden(
+      call(
+        importRouter.execute,
+        { importType: "callouts", rows: [dummyCalloutRow] },
+        { context: makeContext(fixtures.staff) },
+      ),
+    );
+  });
+
+  test("import.execute is staff:import — admin can execute (no rows, returns completed)", async () => {
+    const result = await call(
+      importRouter.execute,
+      { importType: "attendance", rows: [] },
+      { context: makeContext(fixtures.admin) },
+    );
+    expect(result).toBeDefined();
+    expect((result as { status: string }).status).toBe("completed");
+  });
+});

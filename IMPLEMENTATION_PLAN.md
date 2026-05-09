@@ -33,8 +33,8 @@
 | 11 | Work register refactor | 🟢 Done | `phase/11-work-refactor` (merged) | Claude Code | a4a79e7 | 2026-05-06 |
 | 12 | Import module | 🟢 Done | `phase/12-import-templates` (merged) | Claude Code | fa19785 | 2026-05-06 |
 | 13 | Obsolete docs cleanup | 🟢 Done | `phase/13-cleanup` (merged) | Claude Code | ff46c25 | 2026-05-06 |
-| 14 | Final historical seed | ⬜ Queued | — | — | — | — |
-| 15 | Hardening | ⬜ Queued | — | — | — | — |
+| 14 | Final historical seed | 🔵 In Progress | `phase/15-hardening` | Claude Code sonnet-4-6 | — | 2026-05-08 |
+| 15 | Hardening | 🔵 In Progress | `phase/15-hardening` | Claude Code sonnet-4-6 | — | 2026-05-08 |
 
 **Legend:** ⬜ Queued · 🟡 Not Started · 🔵 In Progress · 🟠 Blocked · 🟢 Done · 🔴 Reverted
 

@@ -10,6 +10,75 @@
 
 ---
 
+## 2026-05-08 — Phase 14+15 — [WIP] Historical seed script + hardening fixes
+
+- **Agent:** Claude Code (claude-sonnet-4-6)
+- **Date:** 2026-05-08
+- **Branch:** `claude/eloquent-cohen-59d39d`
+- **Type:** Phase work — WIP (13/35 seed steps + hardening fixes applied)
+
+### What shipped this session
+
+**Phase 15 — Hardening (`packages/api/src/routers/import.ts`):**
+- Added 3 missing execute handlers: `platform_accounts`, `attendance`, `callouts`
+- `processPlatformAccountRow()` — maps `platformName/accountUsername/accountActive` columns → `service_access_registry` via `onConflictDoUpdate`
+- `processAttendanceRow()` — maps to `tosd_records`; silently skips `"present"` type (not a TOSD record)
+- `processCalloutRow()` — maps `incidentTitle/hoursWorked` to `tosd_records` with `type='callout_legacy'`
+- Added `normalizePlatformName()` + `normalizeAttendanceType()` helpers
+- Updated both `execute` and `getHistory` input enums to include the 3 new types
+
+**Phase 15 — Bundle splitting (`apps/web/vite.config.ts`):**
+- Switched from static `manualChunks` record to function form (avoids "entry module not found" for transitive deps)
+- Splits: vendor-recharts, vendor-forms, vendor-tanstack-query, vendor-tanstack-router, vendor-react, vendor-lucide, vendor-dates
+- `chunkSizeWarningLimit: 800` — main app chunk is still ~1 GB (further route-level dynamic imports is follow-up)
+
+**Phase 15 — RBAC test coverage (`packages/api/tests/rbac-matrix.test.ts`):**
+- Added `describe("Phase 15 RBAC matrix — import router")` block with 6 tests
+- Covers: staff/teamLead/manager → FORBIDDEN; admin → allowed for platform_accounts, attendance, callouts
+
+**Phase 15 — Smoke tests (`e2e/smoke.spec.ts`):**
+- Expanded PAGES array from 24 to 40+ routes (all Phase 3-13 pages now included)
+- Added: /profile, /scheduling/noc-shifts, /scheduling/dcs-oncall, /leave/tosd, /noc-performance, /training, /compliance/ppe, /lateness, /timesheets, /import, /policy
+
+**Phase 15 — Production checklist (`PRODUCTION_READINESS_CHECKLIST.md`):**
+- Created comprehensive 10-section checklist: migrations, env vars, build, RBAC, e2e, performance, accessibility, seed, deployment, Phase 3 cutover
+- Summary: 7 migrations green / 24 pending; 4 build checks green; 6 RBAC green / 2 pending; 8 e2e green; deployment 5 green
+
+**Phase 14 — Historical seed (`packages/db/src/seed-historical.ts`):**
+- New 500+ line seed script, 13 of 35 steps implemented (see CURRENT_PHASE.md for step list)
+- CLI: `--dry-run`, `--steps=N,N`, `--from=N`
+- Gate assertions computed: staff.rowCount, serviceAccessRegistry.rowCount, appraisalTrackerView.rowCount, employeeOfTheMonth.matchRate
+- Output: stdout JSON-lines + `docs/seed-report.md` + `docs/seed-report.json`
+
+**Root `package.json`:**
+- Added `"db:seed:historical": "bun packages/db/src/seed-historical.ts"` script
+
+### Tests
+
+- ✅ `bun run check-types` — 3/3 tasks successful (ui, server, web)
+- ⚠️ Web bundle still emits circular chunk warning (tanstack-router ↔ react) — non-fatal, build succeeds
+- ⚠️ E2E tests not run (dev server not started this session)
+
+### Outstanding / deferred
+
+- **Phase 14 steps 4, 6-10, 12-13, 15-16, 18-19, 25-33, 35** (22 of 35) not yet implemented
+- **Phase 14 execution** — needs PROD `DATABASE_URL` + `--dry-run` pass first
+- **Production migrations 0008-0031** — apply via `bun run db:migrate` with PROD `DATABASE_URL`
+- **Phase 3 cutover gate** — legacy rota.ts/roster.ts/noc-shifts.ts; delete after 7-day zero-5xx
+- **Route-level dynamic imports** — further code splitting for the main ~1 GB chunk
+
+### File changes
+
+- `packages/api/src/routers/import.ts` — 3 new handlers + normalization helpers
+- `apps/web/vite.config.ts` — function-form manualChunks
+- `packages/api/tests/rbac-matrix.test.ts` — Phase 15 describe block
+- `e2e/smoke.spec.ts` — expanded to 40+ pages
+- `PRODUCTION_READINESS_CHECKLIST.md` — new file
+- `packages/db/src/seed-historical.ts` — new file (Phase 14 seed)
+- `package.json` — db:seed:historical script
+
+---
+
 ## 2026-05-04 — Phase 9 — [WIP] Self-service editor + policy admin partial
 
 - **Agent:** Claude Code (claude-opus-4-7, 1M context)

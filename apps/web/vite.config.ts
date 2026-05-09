@@ -15,4 +15,36 @@ export default defineConfig({
   server: {
     port: 3001,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("recharts") || id.includes("d3-") || id.includes("victory-vendor")) {
+              return "vendor-recharts";
+            }
+            if (id.includes("react-hook-form") || id.includes("@hookform")) {
+              return "vendor-forms";
+            }
+            if (id.includes("@tanstack/react-query") || id.includes("@tanstack/query")) {
+              return "vendor-tanstack-query";
+            }
+            if (id.includes("@tanstack/react-router") || id.includes("@tanstack/router")) {
+              return "vendor-tanstack-router";
+            }
+            if (id.includes("react-dom") || id.includes("react/") || id.includes("/react.")) {
+              return "vendor-react";
+            }
+            if (id.includes("lucide-react")) {
+              return "vendor-lucide";
+            }
+            if (id.includes("date-fns")) {
+              return "vendor-dates";
+            }
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 800,
+  },
 });
