@@ -60,6 +60,24 @@ services:
       retries: 3
       start_period: 10s
 
+  # ── Watchtower — auto-pull new GHCR images every 5 minutes ──────────────────
+  # Watches only the app and docs containers. Migrations run automatically on
+  # app startup (runMigrations() in apps/server/src/index.ts).
+  watchtower:
+    image: containrrr/watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Mount host docker credentials so Watchtower can pull from GHCR
+      - /home/eadmin/.docker:/root/.docker:ro
+    environment:
+      WATCHTOWER_POLL_INTERVAL: "300"
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_INCLUDE_STOPPED: "false"
+      WATCHTOWER_NO_STARTUP_MESSAGE: "false"
+    # Limit to only these two services — do not touch postgres or watchtower itself
+    command: ndma-dcs-app-1 ndma-dcs-docs-1
+
 volumes:
   postgres_data:
     driver: local

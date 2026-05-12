@@ -104,56 +104,7 @@ jobs:
           cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/docs:cache
           cache-to: type=registry,ref=ghcr.io/${{ github.repository }}/docs:cache,mode=max
 
-  deploy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [docker]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    permissions:
-      contents: read
-      packages: read
-    steps:
-      - uses: actions/checkout@v4
-
-      # Copy the latest docker-compose.prod.yml to the server so the running
-      # compose config always matches the repo (fixes stale DATABASE_URL etc.)
-      - name: Sync docker-compose.yml to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: "docker-compose.prod.yml"
-          target: "/tmp/ndma-deploy/"
-          strip_components: 0
-
-      - name: Deploy to production server
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            set -e
-            DEPLOY_DIR=/opt/docker/client-portals/ndma-dcs
-
-            # Update compose file from repo (ensures DATABASE_URL etc. stay current)
-            cp /tmp/ndma-deploy/docker-compose.prod.yml "$DEPLOY_DIR/docker-compose.yml"
-            rm -rf /tmp/ndma-deploy
-
-            cd "$DEPLOY_DIR"
-
-            # Authenticate with GHCR using stored PAT (GHCR_TOKEN)
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u kareemschultz --password-stdin
-
-            # Pull new images and restart services
-            docker compose pull app docs
-            docker compose up -d --no-build app docs
-
-            # Run DB migrations via programmatic drizzle-orm migrate() — bypasses
-            # drizzle-kit CLI entirely, avoiding the appraisal_tracker_view
-            # duplicate-view-name warning that causes drizzle-kit to exit 1.
-            docker compose exec -T app sh -c 'cd packages/db && bun src/migrate.ts'
-
-            # Cleanup dangling images
-            docker image prune -f
+  # deploy job removed — server is on a private internal network (10.6.104.13)
+  # that GitHub Actions cloud runners cannot reach. Watchtower on the server
+  # polls GHCR every 5 minutes and auto-pulls new images. DB migrations run
+  # automatically on app startup via runMigrations() in apps/server/src/index.ts.
