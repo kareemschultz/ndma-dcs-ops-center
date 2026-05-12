@@ -10,6 +10,52 @@
 
 ---
 
+## 2026-05-12 — Phase 16 — [WIP] IA revamp (Claude Design handoff)
+
+- **Agent:** Claude Code (claude-sonnet-4-6)
+- **Date:** 2026-05-12
+- **Branch:** `claude/inspiring-morse-bdf638` (PR #41 — open)
+- **Type:** Phase work — WIP (Phase 16 IA revamp, co-shipped on Phase 14+15 branch)
+
+### What shipped this session
+
+**Phase 16 — IA revamp from Claude Design handoff:**
+
+- **sidebar-data.ts** replaced with handoff version: 12 clean groups, all flat `NavLink` items (no nested collapsibles), deduplicated icon set, no legacy `/rota/*` / `/roster/*` entries
+- **13 legacy routes converted to redirects:** `/rota/index`, `/rota/planner`, `/rota/swaps`, `/rota/history`, `/rota/calendar/index`, `/rota/fairness/index`, `/rota/warnings/index` → `/scheduling/dcs-oncall`; `/roster/index`, `/roster/planner`, `/roster/today`, `/roster/my-roster`, `/roster/swaps` → `/scheduling/noc-shifts`; `/roster/maintenance` → `/scheduling/maintenance`
+- **New route pages:**
+  - `/scheduling/maintenance` — full Maintenance Planner page (preserved UI from legacy roster/maintenance)
+  - `/compliance` (index) — PPE / Items / Training tab hub (defaults to `/compliance/ppe`)
+  - `/settings` (index) — 7-tab hub: General · Departments · Roles · Leave Types · Automation · Escalation · Data Import
+  - `/forms` (index) — redirects to `/policy` (Phase 17 will split to dedicated Forms page)
+- **Orphaned routes surfaced:** `/analytics`, `/audit`, `/cycles` now visible in nav under "Reports & Analytics" / "Performance"
+- **Procurement + Identity & Access** promoted to dedicated nav groups (were buried in "Changes & Access")
+- routeTree.gen.ts regenerated with 4 new index routes
+
+### Tests
+
+- ✅ `bun run check-types` — 3/3 tasks successful (clean cache run)
+- ⚠️ E2E tests not run (dev server not started this session)
+
+### Outstanding / deferred
+
+- **Phase 3 cutover gate** — rota/roster/noc-shifts routers still mounted; delete after 7-day zero-5xx
+- **Phase 14 seed gaps** — Step 20 (leave), Step 24 (PPE issuances), staff.rowCount=23 vs target 281
+- **`/forms` permanent page** — currently redirects to `/policy`; Phase 17 will create dedicated forms-only view
+
+### File changes (this session only)
+
+- `apps/web/src/components/layout/data/sidebar-data.ts` — full replacement (handoff)
+- `apps/web/src/routes/_authenticated/scheduling/maintenance.tsx` — new Maintenance Planner page
+- `apps/web/src/routes/_authenticated/compliance/index.tsx` — new tab hub
+- `apps/web/src/routes/_authenticated/settings/index.tsx` — new tab hub
+- `apps/web/src/routes/_authenticated/forms/index.tsx` — new redirect
+- `apps/web/src/routes/_authenticated/rota/*.tsx` (7 files) — converted to redirects
+- `apps/web/src/routes/_authenticated/roster/*.tsx` (6 files) — converted to redirects
+- `apps/web/src/routeTree.gen.ts` — regenerated
+
+---
+
 ## 2026-05-12 — Phase 14+15 — [WIP] Seed fixes + UI deduplication
 
 - **Agent:** Claude Code (claude-sonnet-4-6)

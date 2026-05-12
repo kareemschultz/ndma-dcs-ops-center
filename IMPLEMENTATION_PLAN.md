@@ -35,6 +35,7 @@
 | 13 | Obsolete docs cleanup | 🟢 Done | `phase/13-cleanup` (merged) | Claude Code | ff46c25 | 2026-05-06 |
 | 14 | Final historical seed | 🔵 In Progress | `phase/15-hardening` | Claude Code sonnet-4-6 | — | 2026-05-08 |
 | 15 | Hardening | 🔵 In Progress | `phase/15-hardening` | Claude Code sonnet-4-6 | — | 2026-05-08 |
+| 16 | IA revamp + Phase-3 cutover | 🔵 In Progress | `claude/inspiring-morse-bdf638` | Claude Code sonnet-4-6 + Claude Design handoff | 62d74a9 | 2026-05-12 |
 
 **Legend:** ⬜ Queued · 🟡 Not Started · 🔵 In Progress · 🟠 Blocked · 🟢 Done · 🔴 Reverted
 

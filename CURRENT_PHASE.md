@@ -1,9 +1,9 @@
 # Current Phase
 
-**Active phase:** Phase 14 + 15 (co-shipped)
-**Status:** 🔵 In Progress — seed script written; hardening fixes applied; UI deduplication fixes applied
+**Active phase:** Phase 14 + 15 + 16 (co-shipped on same branch)
+**Status:** 🔵 In Progress — seed script written; hardening fixes applied; IA revamp complete
 **Branch:** `claude/inspiring-morse-bdf638` (PR #41 — open)
-**Main HEAD:** `79c5809` (feat(phase-14+15): historical seed script + hardening fixes)
+**Latest commit:** `62d74a9` (feat(phase-16): IA revamp — sidebar, redirects, new index pages)
 **Migration index:** 31 (latest: `0031_work_year_period.sql`)
 
 ## What is on main (Phases 0-13)
@@ -57,6 +57,18 @@ Fixes applied in this session:
 - **RBAC matrix**: Added Phase 15 describe block covering platform_accounts/attendance/callouts import RBAC
 - **Smoke tests**: Expanded from 24 to 40+ pages (all Phase 3-13 pages now covered)
 - **PRODUCTION_READINESS_CHECKLIST.md**: Created comprehensive 10-section deployment checklist
+
+## Phase 16 — IA Revamp (🔵 In Progress, commit 62d74a9)
+
+From Claude Design handoff. All items shipped:
+- ✅ sidebar-data.ts replaced (12 groups, flat NavLinks, deduplicated icons)
+- ✅ 13 /rota/* + /roster/* routes converted to Navigate redirects
+- ✅ /scheduling/maintenance — new full Maintenance Planner page
+- ✅ /compliance/index.tsx — tab hub (PPE / Items / Training)
+- ✅ /settings/index.tsx — tab hub (7 tabs)
+- ✅ /forms/index.tsx — redirect to /policy (Phase 17 will split)
+- ✅ Analytics, Audit Log, Cycles surfaced in nav
+- ⏳ Phase 3 cutover gate (delete rota.ts/roster.ts after 7-day zero-5xx window)
 
 ## Known pending issues
 
