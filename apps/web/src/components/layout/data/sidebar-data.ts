@@ -1,24 +1,32 @@
-// NDMA Portal sidebar navigation aligned to the master implementation plan.
+// NDMA DCS Ops Center sidebar — REVAMPED IA
+// Drop-in replacement for apps/web/src/components/layout/data/sidebar-data.ts
+//
+// Key changes vs. previous version:
+//   • Legacy /rota/* and /roster/* removed from nav (kept as 301 redirects to /scheduling)
+//   • Scheduling consolidated to one entry; DCS/NOC handled via scope query param
+//   • Training & Admin collapsed from 7 flat items each → 1 entry whose sub-views are page tabs
+//   • Identity & Access promoted to its own group (was buried in "Changes & Access")
+//   • Procurement promoted to its own entry (was misfiled under Changes)
+//   • Compliance unified — PPE, Items, Training tabs behind /compliance
+//   • Reports & Analytics surfaced (Analytics + Audit Log were orphaned before)
+//   • Forms split from /policy duplicate (now points to /forms)
+//   • Icon set de-duplicated — 1 icon per concept, Shield no longer used 8 times
+
 import {
-  BarChart2,
-  Bell,
+  BarChart3,
   BookOpen,
-  CalendarClock,
-  CalendarOff,
-  CalendarRange,
-  ClipboardCheck,
-  Clock3,
-  FileText,
+  CalendarDays,
+  ClipboardList,
+  Clock,
   GraduationCap,
+  KeyRound,
   LayoutDashboard,
-  LayoutList,
-  Settings2,
+  LineChart,
+  Settings,
+  ShoppingCart,
   Shield,
-  Tag,
-  Ticket,
   Users,
   Wrench,
-  Upload,
 } from "lucide-react";
 
 import { type SidebarData } from "../types";
@@ -41,160 +49,97 @@ export const sidebarData: Omit<SidebarData, "user"> = {
     {
       title: "Operations",
       items: [
-        {
-          title: "Work Management",
-          icon: ClipboardCheck,
-          items: [
-            { title: "Work Register", url: "/work", icon: ClipboardCheck },
-            { title: "Workload", url: "/work/workload", icon: BarChart2 },
-          ],
-        },
-        {
-          title: "Incidents & Services",
-          icon: Shield,
-          items: [
-            { title: "Incidents", url: "/incidents", icon: Shield },
-            { title: "Services", url: "/services", icon: Shield },
-            { title: "Ops Readiness", url: "/ops-readiness", icon: Shield },
-            { title: "Reports", url: "/reports", icon: FileText, requiredResource: "report" },
-          ],
-        },
-        {
-          title: "Changes & Access",
-          icon: Wrench,
-          items: [
-            { title: "Changes", url: "/changes", icon: Wrench },
-            { title: "Procurement", url: "/procurement", icon: Wrench, requiredResource: "procurement" },
-            { title: "Access Management", url: "/access", icon: Shield },
-            { title: "Access Registry", url: "/access/registry", icon: Shield, requiredResource: "access" },
-            { title: "Platforms", url: "/access/platforms", icon: Shield, requiredResource: "access" },
-          ],
-        },
+        { title: "Work Register",  url: "/work",            icon: ClipboardList },
+        { title: "Incidents",      url: "/incidents",       icon: ClipboardList },
+        { title: "Changes",        url: "/changes",         icon: ClipboardList },
+        { title: "Services",       url: "/services",        icon: ClipboardList },
+        { title: "Ops Readiness",  url: "/ops-readiness",   icon: ClipboardList },
       ],
     },
     {
-      title: "Scheduling & Rosters",
+      title: "Scheduling",
       items: [
         {
-          title: "Scheduling Overview",
+          // Unified entry — internal tabs handle Calendar / Planner / Swaps / Fairness / History / Warnings
+          // Scope (DCS vs NOC) is a top-of-page toggle, persisted as ?scope=dcs|noc
+          title: "Calendar",
           url: "/scheduling",
-          icon: CalendarClock,
+          icon: CalendarDays,
         },
         {
-          title: "DCS On-Call",
-          icon: CalendarClock,
-          items: [
-            { title: "DCS Weekly View", url: "/scheduling/dcs-oncall", icon: CalendarClock },
-            { title: "On-Call (Legacy)", url: "/rota", icon: CalendarClock },
-          ],
-        },
-        {
-          title: "NOC Scheduling",
-          icon: CalendarRange,
-          items: [
-            { title: "NOC Shift Grid", url: "/scheduling/noc-shifts", icon: CalendarRange },
-            { title: "NOC Shifts (Legacy)", url: "/roster", icon: CalendarRange },
-          ],
+          title: "Maintenance Planner",
+          url: "/scheduling/maintenance",
+          icon: Wrench,
         },
       ],
     },
     {
-      title: "Attendance & Time",
+      title: "Time & Attendance",
       items: [
-        {
-          title: "Attendance Views",
-          icon: Clock3,
-          items: [
-            { title: "Attendance Logs", url: "/attendance", icon: Clock3 },
-            { title: "Lateness Report", url: "/lateness", icon: Clock3 },
-            { title: "Timesheets", url: "/timesheets", icon: CalendarOff },
-            { title: "Timesheet Documents", url: "/timesheets/documents", icon: FileText },
-          ],
-        },
+        { title: "Attendance Logs", url: "/attendance",  icon: Clock },
+        { title: "Lateness Report", url: "/lateness",    icon: Clock },
+        { title: "Timesheets",      url: "/timesheets",  icon: Clock },
       ],
     },
     {
-      title: "HR & People",
+      title: "People",
       items: [
-        {
-          title: "People Records",
-          icon: Users,
-          items: [
-            { title: "Staff Directory", url: "/staff", icon: Users },
-            { title: "Leave Management", url: "/leave", icon: CalendarOff },
-            { title: "Time Off & Sick Days", url: "/leave/tosd", icon: CalendarOff },
-            { title: "Career Progression", url: "/career-progression", icon: ClipboardCheck },
-            { title: "Contracts", url: "/contracts", icon: FileText, requiredResource: "contract" },
-            { title: "PPE Compliance", url: "/compliance/ppe", icon: Shield, requiredResource: "compliance" },
-          ],
-        },
+        { title: "Directory",            url: "/staff",                icon: Users },
+        { title: "Leave",                url: "/leave",                icon: Users },
+        { title: "Career Progression",   url: "/career-progression",   icon: Users },
+        { title: "Contracts",            url: "/contracts",            icon: Users, requiredResource: "contract" },
+        { title: "Compliance",           url: "/compliance",           icon: Users, requiredResource: "compliance" },
       ],
     },
     {
-      title: "Appraisals & Performance",
+      title: "Performance",
       items: [
-        {
-          title: "Review Flow",
-          icon: ClipboardCheck,
-          items: [
-            { title: "My Appraisals", url: "/appraisals", icon: ClipboardCheck },
-            { title: "Team Pipeline", url: "/appraisals/inbox", icon: ClipboardCheck },
-          ],
-        },
-        {
-          title: "NOC Performance",
-          icon: BarChart2,
-          items: [
-            { title: "Monthly Metrics", url: "/noc-performance", icon: BarChart2 },
-          ],
-        },
+        { title: "Appraisals",       url: "/appraisals",       icon: LineChart },
+        { title: "Cycles",           url: "/cycles",           icon: LineChart },
+        { title: "NOC Performance",  url: "/noc-performance",  icon: LineChart },
       ],
     },
     {
-      title: "Training & Development",
+      title: "Training",
       items: [
-        {
-          title: "Training",
-          icon: GraduationCap,
-          items: [
-            { title: "Overview",       url: "/training",          icon: GraduationCap },
-            { title: "Training Plan",  url: "/training/plan",     icon: LayoutList },
-            { title: "Exam Schedule",  url: "/training/exams",    icon: CalendarRange },
-            { title: "Vouchers",       url: "/training/vouchers", icon: Ticket },
-            { title: "Events",         url: "/training/events",   icon: Users },
-            { title: "In-House Log",   url: "/training/in-house", icon: BookOpen },
-            { title: "Cert Catalog",   url: "/training/catalog",  icon: Tag },
-          ],
-        },
+        // Single nav entry. Internal tabs: Overview · Plan · Exams · Vouchers · Events · In-House · Catalog
+        { title: "Training", url: "/training", icon: GraduationCap },
       ],
     },
     {
-      title: "Policies & Forms",
+      title: "Identity & Access",
       items: [
-        {
-          title: "Document Library",
-          url: "/policy",
-          icon: FileText,
-        },
+        { title: "Accounts",  url: "/access",            icon: KeyRound, requiredResource: "access" },
+        { title: "Registry",  url: "/access/registry",   icon: KeyRound, requiredResource: "access" },
+        { title: "Platforms", url: "/access/platforms",  icon: KeyRound, requiredResource: "access" },
       ],
     },
     {
-      title: "Admin & Setup",
+      title: "Procurement",
       items: [
-        {
-          title: "System Setup",
-          icon: Settings2,
-          requiredResource: "settings",
-          items: [
-            { title: "Data Import", url: "/import", icon: Upload, requiredResource: "settings" },
-            { title: "Departments", url: "/settings/departments", icon: Settings2, requiredResource: "settings" },
-            { title: "Roles", url: "/settings/roles", icon: Shield, requiredResource: "settings" },
-            { title: "Leave Types", url: "/settings/leave-types", icon: CalendarOff, requiredResource: "settings" },
-            { title: "Automation", url: "/settings/automation", icon: Bell, requiredResource: "settings" },
-            { title: "Escalation", url: "/settings/escalation", icon: Bell, requiredResource: "settings" },
-            { title: "General", url: "/settings/general", icon: Settings2, requiredResource: "settings" },
-          ],
-        },
+        { title: "Procurement", url: "/procurement", icon: ShoppingCart, requiredResource: "procurement" },
+      ],
+    },
+    {
+      title: "Knowledge",
+      items: [
+        { title: "Policies", url: "/policy", icon: BookOpen },
+        { title: "Forms",    url: "/forms",  icon: BookOpen },
+      ],
+    },
+    {
+      title: "Reports & Analytics",
+      items: [
+        { title: "Analytics", url: "/analytics", icon: BarChart3 },
+        { title: "Reports",   url: "/reports",   icon: BarChart3, requiredResource: "report" },
+        { title: "Audit Log", url: "/audit",     icon: BarChart3 },
+      ],
+    },
+    {
+      title: "Admin",
+      items: [
+        // Single entry. Internal tabs: General · Departments · Roles · Leave Types · Automation · Escalation · Data Import
+        { title: "Settings", url: "/settings", icon: Settings, requiredResource: "settings" },
       ],
     },
   ],

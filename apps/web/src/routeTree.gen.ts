@@ -17,6 +17,7 @@ import { Route as AuthenticatedWorkIndexRouteImport } from './routes/_authentica
 import { Route as AuthenticatedTrainingIndexRouteImport } from './routes/_authenticated/training/index'
 import { Route as AuthenticatedTimesheetsIndexRouteImport } from './routes/_authenticated/timesheets/index'
 import { Route as AuthenticatedStaffIndexRouteImport } from './routes/_authenticated/staff/index'
+import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedServicesIndexRouteImport } from './routes/_authenticated/services/index'
 import { Route as AuthenticatedSchedulingIndexRouteImport } from './routes/_authenticated/scheduling/index'
 import { Route as AuthenticatedRotaIndexRouteImport } from './routes/_authenticated/rota/index'
@@ -32,8 +33,10 @@ import { Route as AuthenticatedLatenessIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedIncidentsIndexRouteImport } from './routes/_authenticated/incidents/index'
 import { Route as AuthenticatedImportIndexRouteImport } from './routes/_authenticated/import/index'
 import { Route as AuthenticatedHrIndexRouteImport } from './routes/_authenticated/hr/index'
+import { Route as AuthenticatedFormsIndexRouteImport } from './routes/_authenticated/forms/index'
 import { Route as AuthenticatedCyclesIndexRouteImport } from './routes/_authenticated/cycles/index'
 import { Route as AuthenticatedContractsIndexRouteImport } from './routes/_authenticated/contracts/index'
+import { Route as AuthenticatedComplianceIndexRouteImport } from './routes/_authenticated/compliance/index'
 import { Route as AuthenticatedChangesIndexRouteImport } from './routes/_authenticated/changes/index'
 import { Route as AuthenticatedCareerProgressionIndexRouteImport } from './routes/_authenticated/career-progression/index'
 import { Route as AuthenticatedAuditIndexRouteImport } from './routes/_authenticated/audit/index'
@@ -60,6 +63,7 @@ import { Route as AuthenticatedSettingsDepartmentsRouteImport } from './routes/_
 import { Route as AuthenticatedSettingsDepartmentAssignmentsRouteImport } from './routes/_authenticated/settings/department-assignments'
 import { Route as AuthenticatedSettingsAutomationRouteImport } from './routes/_authenticated/settings/automation'
 import { Route as AuthenticatedSchedulingNocShiftsRouteImport } from './routes/_authenticated/scheduling/noc-shifts'
+import { Route as AuthenticatedSchedulingMaintenanceRouteImport } from './routes/_authenticated/scheduling/maintenance'
 import { Route as AuthenticatedSchedulingDcsOncallRouteImport } from './routes/_authenticated/scheduling/dcs-oncall'
 import { Route as AuthenticatedRotaSwapsRouteImport } from './routes/_authenticated/rota/swaps'
 import { Route as AuthenticatedRotaPlannerRouteImport } from './routes/_authenticated/rota/planner'
@@ -135,6 +139,12 @@ const AuthenticatedStaffIndexRoute = AuthenticatedStaffIndexRouteImport.update({
   path: '/staff/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSettingsIndexRoute =
+  AuthenticatedSettingsIndexRouteImport.update({
+    id: '/settings/',
+    path: '/settings/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedServicesIndexRoute =
   AuthenticatedServicesIndexRouteImport.update({
     id: '/services/',
@@ -222,6 +232,11 @@ const AuthenticatedHrIndexRoute = AuthenticatedHrIndexRouteImport.update({
   path: '/hr/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFormsIndexRoute = AuthenticatedFormsIndexRouteImport.update({
+  id: '/forms/',
+  path: '/forms/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCyclesIndexRoute =
   AuthenticatedCyclesIndexRouteImport.update({
     id: '/cycles/',
@@ -232,6 +247,12 @@ const AuthenticatedContractsIndexRoute =
   AuthenticatedContractsIndexRouteImport.update({
     id: '/contracts/',
     path: '/contracts/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedComplianceIndexRoute =
+  AuthenticatedComplianceIndexRouteImport.update({
+    id: '/compliance/',
+    path: '/compliance/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedChangesIndexRoute =
@@ -386,6 +407,12 @@ const AuthenticatedSchedulingNocShiftsRoute =
   AuthenticatedSchedulingNocShiftsRouteImport.update({
     id: '/scheduling/noc-shifts',
     path: '/scheduling/noc-shifts',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSchedulingMaintenanceRoute =
+  AuthenticatedSchedulingMaintenanceRouteImport.update({
+    id: '/scheduling/maintenance',
+    path: '/scheduling/maintenance',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedSchedulingDcsOncallRoute =
@@ -614,6 +641,7 @@ export interface FileRoutesByFullPath {
   '/rota/planner': typeof AuthenticatedRotaPlannerRoute
   '/rota/swaps': typeof AuthenticatedRotaSwapsRoute
   '/scheduling/dcs-oncall': typeof AuthenticatedSchedulingDcsOncallRoute
+  '/scheduling/maintenance': typeof AuthenticatedSchedulingMaintenanceRoute
   '/scheduling/noc-shifts': typeof AuthenticatedSchedulingNocShiftsRoute
   '/settings/automation': typeof AuthenticatedSettingsAutomationRoute
   '/settings/department-assignments': typeof AuthenticatedSettingsDepartmentAssignmentsRoute
@@ -640,8 +668,10 @@ export interface FileRoutesByFullPath {
   '/audit/': typeof AuthenticatedAuditIndexRoute
   '/career-progression/': typeof AuthenticatedCareerProgressionIndexRoute
   '/changes/': typeof AuthenticatedChangesIndexRoute
+  '/compliance/': typeof AuthenticatedComplianceIndexRoute
   '/contracts/': typeof AuthenticatedContractsIndexRoute
   '/cycles/': typeof AuthenticatedCyclesIndexRoute
+  '/forms/': typeof AuthenticatedFormsIndexRoute
   '/hr/': typeof AuthenticatedHrIndexRoute
   '/import/': typeof AuthenticatedImportIndexRoute
   '/incidents/': typeof AuthenticatedIncidentsIndexRoute
@@ -657,6 +687,7 @@ export interface FileRoutesByFullPath {
   '/rota/': typeof AuthenticatedRotaIndexRoute
   '/scheduling/': typeof AuthenticatedSchedulingIndexRoute
   '/services/': typeof AuthenticatedServicesIndexRoute
+  '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/staff/': typeof AuthenticatedStaffIndexRoute
   '/timesheets/': typeof AuthenticatedTimesheetsIndexRoute
   '/training/': typeof AuthenticatedTrainingIndexRoute
@@ -699,6 +730,7 @@ export interface FileRoutesByTo {
   '/rota/planner': typeof AuthenticatedRotaPlannerRoute
   '/rota/swaps': typeof AuthenticatedRotaSwapsRoute
   '/scheduling/dcs-oncall': typeof AuthenticatedSchedulingDcsOncallRoute
+  '/scheduling/maintenance': typeof AuthenticatedSchedulingMaintenanceRoute
   '/scheduling/noc-shifts': typeof AuthenticatedSchedulingNocShiftsRoute
   '/settings/automation': typeof AuthenticatedSettingsAutomationRoute
   '/settings/department-assignments': typeof AuthenticatedSettingsDepartmentAssignmentsRoute
@@ -725,8 +757,10 @@ export interface FileRoutesByTo {
   '/audit': typeof AuthenticatedAuditIndexRoute
   '/career-progression': typeof AuthenticatedCareerProgressionIndexRoute
   '/changes': typeof AuthenticatedChangesIndexRoute
+  '/compliance': typeof AuthenticatedComplianceIndexRoute
   '/contracts': typeof AuthenticatedContractsIndexRoute
   '/cycles': typeof AuthenticatedCyclesIndexRoute
+  '/forms': typeof AuthenticatedFormsIndexRoute
   '/hr': typeof AuthenticatedHrIndexRoute
   '/import': typeof AuthenticatedImportIndexRoute
   '/incidents': typeof AuthenticatedIncidentsIndexRoute
@@ -742,6 +776,7 @@ export interface FileRoutesByTo {
   '/rota': typeof AuthenticatedRotaIndexRoute
   '/scheduling': typeof AuthenticatedSchedulingIndexRoute
   '/services': typeof AuthenticatedServicesIndexRoute
+  '/settings': typeof AuthenticatedSettingsIndexRoute
   '/staff': typeof AuthenticatedStaffIndexRoute
   '/timesheets': typeof AuthenticatedTimesheetsIndexRoute
   '/training': typeof AuthenticatedTrainingIndexRoute
@@ -786,6 +821,7 @@ export interface FileRoutesById {
   '/_authenticated/rota/planner': typeof AuthenticatedRotaPlannerRoute
   '/_authenticated/rota/swaps': typeof AuthenticatedRotaSwapsRoute
   '/_authenticated/scheduling/dcs-oncall': typeof AuthenticatedSchedulingDcsOncallRoute
+  '/_authenticated/scheduling/maintenance': typeof AuthenticatedSchedulingMaintenanceRoute
   '/_authenticated/scheduling/noc-shifts': typeof AuthenticatedSchedulingNocShiftsRoute
   '/_authenticated/settings/automation': typeof AuthenticatedSettingsAutomationRoute
   '/_authenticated/settings/department-assignments': typeof AuthenticatedSettingsDepartmentAssignmentsRoute
@@ -812,8 +848,10 @@ export interface FileRoutesById {
   '/_authenticated/audit/': typeof AuthenticatedAuditIndexRoute
   '/_authenticated/career-progression/': typeof AuthenticatedCareerProgressionIndexRoute
   '/_authenticated/changes/': typeof AuthenticatedChangesIndexRoute
+  '/_authenticated/compliance/': typeof AuthenticatedComplianceIndexRoute
   '/_authenticated/contracts/': typeof AuthenticatedContractsIndexRoute
   '/_authenticated/cycles/': typeof AuthenticatedCyclesIndexRoute
+  '/_authenticated/forms/': typeof AuthenticatedFormsIndexRoute
   '/_authenticated/hr/': typeof AuthenticatedHrIndexRoute
   '/_authenticated/import/': typeof AuthenticatedImportIndexRoute
   '/_authenticated/incidents/': typeof AuthenticatedIncidentsIndexRoute
@@ -829,6 +867,7 @@ export interface FileRoutesById {
   '/_authenticated/rota/': typeof AuthenticatedRotaIndexRoute
   '/_authenticated/scheduling/': typeof AuthenticatedSchedulingIndexRoute
   '/_authenticated/services/': typeof AuthenticatedServicesIndexRoute
+  '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/staff/': typeof AuthenticatedStaffIndexRoute
   '/_authenticated/timesheets/': typeof AuthenticatedTimesheetsIndexRoute
   '/_authenticated/training/': typeof AuthenticatedTrainingIndexRoute
@@ -873,6 +912,7 @@ export interface FileRouteTypes {
     | '/rota/planner'
     | '/rota/swaps'
     | '/scheduling/dcs-oncall'
+    | '/scheduling/maintenance'
     | '/scheduling/noc-shifts'
     | '/settings/automation'
     | '/settings/department-assignments'
@@ -899,8 +939,10 @@ export interface FileRouteTypes {
     | '/audit/'
     | '/career-progression/'
     | '/changes/'
+    | '/compliance/'
     | '/contracts/'
     | '/cycles/'
+    | '/forms/'
     | '/hr/'
     | '/import/'
     | '/incidents/'
@@ -916,6 +958,7 @@ export interface FileRouteTypes {
     | '/rota/'
     | '/scheduling/'
     | '/services/'
+    | '/settings/'
     | '/staff/'
     | '/timesheets/'
     | '/training/'
@@ -958,6 +1001,7 @@ export interface FileRouteTypes {
     | '/rota/planner'
     | '/rota/swaps'
     | '/scheduling/dcs-oncall'
+    | '/scheduling/maintenance'
     | '/scheduling/noc-shifts'
     | '/settings/automation'
     | '/settings/department-assignments'
@@ -984,8 +1028,10 @@ export interface FileRouteTypes {
     | '/audit'
     | '/career-progression'
     | '/changes'
+    | '/compliance'
     | '/contracts'
     | '/cycles'
+    | '/forms'
     | '/hr'
     | '/import'
     | '/incidents'
@@ -1001,6 +1047,7 @@ export interface FileRouteTypes {
     | '/rota'
     | '/scheduling'
     | '/services'
+    | '/settings'
     | '/staff'
     | '/timesheets'
     | '/training'
@@ -1044,6 +1091,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rota/planner'
     | '/_authenticated/rota/swaps'
     | '/_authenticated/scheduling/dcs-oncall'
+    | '/_authenticated/scheduling/maintenance'
     | '/_authenticated/scheduling/noc-shifts'
     | '/_authenticated/settings/automation'
     | '/_authenticated/settings/department-assignments'
@@ -1070,8 +1118,10 @@ export interface FileRouteTypes {
     | '/_authenticated/audit/'
     | '/_authenticated/career-progression/'
     | '/_authenticated/changes/'
+    | '/_authenticated/compliance/'
     | '/_authenticated/contracts/'
     | '/_authenticated/cycles/'
+    | '/_authenticated/forms/'
     | '/_authenticated/hr/'
     | '/_authenticated/import/'
     | '/_authenticated/incidents/'
@@ -1087,6 +1137,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rota/'
     | '/_authenticated/scheduling/'
     | '/_authenticated/services/'
+    | '/_authenticated/settings/'
     | '/_authenticated/staff/'
     | '/_authenticated/timesheets/'
     | '/_authenticated/training/'
@@ -1159,6 +1210,13 @@ declare module '@tanstack/react-router' {
       path: '/staff'
       fullPath: '/staff/'
       preLoaderRoute: typeof AuthenticatedStaffIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings/': {
+      id: '/_authenticated/settings/'
+      path: '/settings'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/services/': {
@@ -1266,6 +1324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHrIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/forms/': {
+      id: '/_authenticated/forms/'
+      path: '/forms'
+      fullPath: '/forms/'
+      preLoaderRoute: typeof AuthenticatedFormsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/cycles/': {
       id: '/_authenticated/cycles/'
       path: '/cycles'
@@ -1278,6 +1343,13 @@ declare module '@tanstack/react-router' {
       path: '/contracts'
       fullPath: '/contracts/'
       preLoaderRoute: typeof AuthenticatedContractsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/compliance/': {
+      id: '/_authenticated/compliance/'
+      path: '/compliance'
+      fullPath: '/compliance/'
+      preLoaderRoute: typeof AuthenticatedComplianceIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/changes/': {
@@ -1460,6 +1532,13 @@ declare module '@tanstack/react-router' {
       path: '/scheduling/noc-shifts'
       fullPath: '/scheduling/noc-shifts'
       preLoaderRoute: typeof AuthenticatedSchedulingNocShiftsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/scheduling/maintenance': {
+      id: '/_authenticated/scheduling/maintenance'
+      path: '/scheduling/maintenance'
+      fullPath: '/scheduling/maintenance'
+      preLoaderRoute: typeof AuthenticatedSchedulingMaintenanceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/scheduling/dcs-oncall': {
@@ -1742,6 +1821,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRotaPlannerRoute: typeof AuthenticatedRotaPlannerRoute
   AuthenticatedRotaSwapsRoute: typeof AuthenticatedRotaSwapsRoute
   AuthenticatedSchedulingDcsOncallRoute: typeof AuthenticatedSchedulingDcsOncallRoute
+  AuthenticatedSchedulingMaintenanceRoute: typeof AuthenticatedSchedulingMaintenanceRoute
   AuthenticatedSchedulingNocShiftsRoute: typeof AuthenticatedSchedulingNocShiftsRoute
   AuthenticatedSettingsAutomationRoute: typeof AuthenticatedSettingsAutomationRoute
   AuthenticatedSettingsDepartmentAssignmentsRoute: typeof AuthenticatedSettingsDepartmentAssignmentsRoute
@@ -1768,8 +1848,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAuditIndexRoute: typeof AuthenticatedAuditIndexRoute
   AuthenticatedCareerProgressionIndexRoute: typeof AuthenticatedCareerProgressionIndexRoute
   AuthenticatedChangesIndexRoute: typeof AuthenticatedChangesIndexRoute
+  AuthenticatedComplianceIndexRoute: typeof AuthenticatedComplianceIndexRoute
   AuthenticatedContractsIndexRoute: typeof AuthenticatedContractsIndexRoute
   AuthenticatedCyclesIndexRoute: typeof AuthenticatedCyclesIndexRoute
+  AuthenticatedFormsIndexRoute: typeof AuthenticatedFormsIndexRoute
   AuthenticatedHrIndexRoute: typeof AuthenticatedHrIndexRoute
   AuthenticatedImportIndexRoute: typeof AuthenticatedImportIndexRoute
   AuthenticatedIncidentsIndexRoute: typeof AuthenticatedIncidentsIndexRoute
@@ -1785,6 +1867,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRotaIndexRoute: typeof AuthenticatedRotaIndexRoute
   AuthenticatedSchedulingIndexRoute: typeof AuthenticatedSchedulingIndexRoute
   AuthenticatedServicesIndexRoute: typeof AuthenticatedServicesIndexRoute
+  AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
   AuthenticatedStaffIndexRoute: typeof AuthenticatedStaffIndexRoute
   AuthenticatedTimesheetsIndexRoute: typeof AuthenticatedTimesheetsIndexRoute
   AuthenticatedTrainingIndexRoute: typeof AuthenticatedTrainingIndexRoute
@@ -1828,6 +1911,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRotaPlannerRoute: AuthenticatedRotaPlannerRoute,
   AuthenticatedRotaSwapsRoute: AuthenticatedRotaSwapsRoute,
   AuthenticatedSchedulingDcsOncallRoute: AuthenticatedSchedulingDcsOncallRoute,
+  AuthenticatedSchedulingMaintenanceRoute:
+    AuthenticatedSchedulingMaintenanceRoute,
   AuthenticatedSchedulingNocShiftsRoute: AuthenticatedSchedulingNocShiftsRoute,
   AuthenticatedSettingsAutomationRoute: AuthenticatedSettingsAutomationRoute,
   AuthenticatedSettingsDepartmentAssignmentsRoute:
@@ -1856,8 +1941,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCareerProgressionIndexRoute:
     AuthenticatedCareerProgressionIndexRoute,
   AuthenticatedChangesIndexRoute: AuthenticatedChangesIndexRoute,
+  AuthenticatedComplianceIndexRoute: AuthenticatedComplianceIndexRoute,
   AuthenticatedContractsIndexRoute: AuthenticatedContractsIndexRoute,
   AuthenticatedCyclesIndexRoute: AuthenticatedCyclesIndexRoute,
+  AuthenticatedFormsIndexRoute: AuthenticatedFormsIndexRoute,
   AuthenticatedHrIndexRoute: AuthenticatedHrIndexRoute,
   AuthenticatedImportIndexRoute: AuthenticatedImportIndexRoute,
   AuthenticatedIncidentsIndexRoute: AuthenticatedIncidentsIndexRoute,
@@ -1873,6 +1960,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRotaIndexRoute: AuthenticatedRotaIndexRoute,
   AuthenticatedSchedulingIndexRoute: AuthenticatedSchedulingIndexRoute,
   AuthenticatedServicesIndexRoute: AuthenticatedServicesIndexRoute,
+  AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
   AuthenticatedStaffIndexRoute: AuthenticatedStaffIndexRoute,
   AuthenticatedTimesheetsIndexRoute: AuthenticatedTimesheetsIndexRoute,
   AuthenticatedTrainingIndexRoute: AuthenticatedTrainingIndexRoute,
