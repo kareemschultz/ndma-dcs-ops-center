@@ -11,6 +11,10 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // Force a single copy of React across all chunks — prevents the
+    // "Cannot read properties of undefined (reading 'useLayoutEffect')" crash
+    // that occurs when the router chunk evaluates before the react chunk.
+    dedupe: ["react", "react-dom", "react/jsx-runtime"],
   },
   server: {
     port: 3001,
@@ -20,6 +24,17 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes("node_modules")) {
+            // React MUST be checked first — any module matching react goes here
+            // so it is never bundled into a chunk that loads before this one.
+            if (
+              id.includes("react-dom") ||
+              id.includes("react/") ||
+              id.includes("/react.") ||
+              id.includes("\\react\\") ||
+              id.includes("\\react.")
+            ) {
+              return "vendor-react";
+            }
             if (id.includes("recharts") || id.includes("d3-") || id.includes("victory-vendor")) {
               return "vendor-recharts";
             }
@@ -31,9 +46,6 @@ export default defineConfig({
             }
             if (id.includes("@tanstack/react-router") || id.includes("@tanstack/router")) {
               return "vendor-tanstack-router";
-            }
-            if (id.includes("react-dom") || id.includes("react/") || id.includes("/react.")) {
-              return "vendor-react";
             }
             if (id.includes("lucide-react")) {
               return "vendor-lucide";
