@@ -23,40 +23,30 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes("node_modules")) {
-            // React MUST be checked first — any module matching react goes here
-            // so it is never bundled into a chunk that loads before this one.
-            if (
-              id.includes("react-dom") ||
-              id.includes("react/") ||
-              id.includes("/react.") ||
-              id.includes("\\react\\") ||
-              id.includes("\\react.")
-            ) {
-              return "vendor-react";
-            }
-            if (id.includes("recharts") || id.includes("d3-") || id.includes("victory-vendor")) {
-              return "vendor-recharts";
-            }
-            if (id.includes("react-hook-form") || id.includes("@hookform")) {
-              return "vendor-forms";
-            }
-            if (id.includes("@tanstack/react-query") || id.includes("@tanstack/query")) {
-              return "vendor-tanstack-query";
-            }
-            if (id.includes("@tanstack/react-router") || id.includes("@tanstack/router")) {
-              return "vendor-tanstack-router";
-            }
-            if (id.includes("lucide-react")) {
-              return "vendor-lucide";
-            }
-            if (id.includes("date-fns")) {
-              return "vendor-dates";
-            }
+          if (!id.includes("node_modules")) return;
+          // Group the entire React ecosystem (react, react-dom, scheduler,
+          // use-sync-external-store) into ONE chunk. Previously "scheduler"
+          // wasn't matched and landed in the router chunk, creating a circular
+          // chunk dependency that left React undefined at router init time.
+          if (
+            id.includes("/react/") ||
+            id.includes("/react-dom/") ||
+            id.includes("/react-is/") ||
+            id.includes("/scheduler/") ||
+            id.includes("/use-sync-external-store/")
+          ) {
+            return "vendor-react";
+          }
+          // Heavy standalone libs that don't import React themselves
+          if (id.includes("recharts") || id.includes("/d3-") || id.includes("victory-vendor")) {
+            return "vendor-recharts";
+          }
+          if (id.includes("date-fns")) {
+            return "vendor-dates";
           }
         },
       },
     },
-    chunkSizeWarningLimit: 800,
+    chunkSizeWarningLimit: 1000,
   },
 });
