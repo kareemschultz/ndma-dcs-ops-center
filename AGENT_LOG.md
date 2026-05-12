@@ -10,6 +10,50 @@
 
 ---
 
+## 2026-05-12 — Phase 14+15 — [WIP] Seed fixes + UI deduplication
+
+- **Agent:** Claude Code (claude-sonnet-4-6)
+- **Date:** 2026-05-12
+- **Branch:** `claude/inspiring-morse-bdf638` (PR #41 — open)
+- **Type:** Phase work — WIP (continuing Phase 14+15)
+
+### What shipped this session
+
+**Phase 14 — Seed script fixes (`packages/db/src/seed-historical.ts`):**
+- Step 17 (NOC shifts): header detection fixed (row 2 not row 1); staff rows start at row 5; short codes (D/S/N/off/al) mapped to full enum values (`12hr Day`/`12hr Night`/`Off`/`Annual Leave`/`Sick Leave`) to match prod DB enum
+- Step 21 (TOSD): fixed staff column detection (col 3 = 'staff', not col 1 = 'date'); skip non-TOSD sheets ('2021', 'callout'); added 'emergency'/'work from home' type aliases
+- Step 11 (commendations): added `findStaffByFirstName()` ILIKE fallback for source files that use first names only
+- Step 14 (NOC metrics): sheet name regex `\s*` (no-space variants like 'Aug2024'); `staffId` not `staffProfileId`; `Math.round()` not `String()`; NaN → 0 guard
+- Step 1 (departments): conflict target changed from `id` to `code`; prod IDs matched (`dept-asn`, `dept-core`, `dept-enterprise`)
+- Production `.env` + `.env.seed` files created with correct `DATABASE_URL` pointing to `dcs_ops` via SSH tunnel
+
+**Phase 15 — UI deduplication (`apps/web/`):**
+- Sidebar DCS On-Call: collapsed from 8 items → 2 (DCS Weekly View + On-Call Legacy); removed Planner/Swaps/Calendar/Fairness/History/Warnings — already accessible as `SchedulingTabs` within `/rota`
+- Sidebar NOC Scheduling: collapsed from 7 items → 2 (NOC Shift Grid + NOC Shifts Legacy); removed Planner/Today/My Roster/Swaps/Maintenance — already accessible as `SchedulingTabs` within `/roster`
+- Sidebar Policies & Forms: removed duplicate "Internal Forms" entry (same `/policy` URL as "NDMA Policies"); replaced with single `NavLink` "Document Library" → `/policy` (page itself has tabs for both)
+- Scheduling Overview (`/scheduling`): replaced tab-of-cards linking to legacy routes with 2-card grid linking to `/scheduling/dcs-oncall` + `/scheduling/noc-shifts`, with "Legacy View" secondary buttons
+
+### Tests
+
+- ✅ `bun run check-types` — 3/3 tasks successful (ui, server, web)
+- ⚠️ E2E tests not run (dev server not started this session)
+
+### Outstanding / deferred
+
+- **Phase 14 execution against prod** — SSH tunnel must be open; run `bun run db:seed:historical`
+- **Step 20** (leave requests from AnnualLeaveRosterNOC.xlsx) — file absent from source-of-truth/04-shared-leave/
+- **Step 24** (PPE issuances) — DCS staff in file are not in the DB; shoe size matrix doesn't match item codes
+- **Phase 3 cutover gate** — rota.ts/roster.ts/noc-shifts.ts legacy routes still mounted; delete after 7-day zero-5xx
+
+### File changes
+
+- `packages/db/src/seed-historical.ts` — step 1/11/14/17/21 fixes
+- `apps/web/src/components/layout/data/sidebar-data.ts` — nav deduplication
+- `apps/web/src/routes/_authenticated/scheduling/index.tsx` — overview redesign
+- `CURRENT_PHASE.md` — branch reference corrected to `claude/inspiring-morse-bdf638`
+
+---
+
 ## 2026-05-08 — Phase 14+15 — [WIP] Historical seed script + hardening fixes
 
 - **Agent:** Claude Code (claude-sonnet-4-6)

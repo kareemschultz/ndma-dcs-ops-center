@@ -1,9 +1,9 @@
 # Current Phase
 
 **Active phase:** Phase 14 + 15 (co-shipped)
-**Status:** 🔵 In Progress — seed script written; hardening fixes applied
-**Branch:** `claude/eloquent-cohen-59d39d` (PR pending)
-**Main HEAD:** `d2b1b67`
+**Status:** 🔵 In Progress — seed script written; hardening fixes applied; UI deduplication fixes applied
+**Branch:** `claude/inspiring-morse-bdf638` (PR #41 — open)
+**Main HEAD:** `79c5809` (feat(phase-14+15): historical seed script + hardening fixes)
 **Migration index:** 31 (latest: `0031_work_year_period.sql`)
 
 ## What is on main (Phases 0-13)
