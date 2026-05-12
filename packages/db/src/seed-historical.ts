@@ -510,8 +510,8 @@ async function step14_nocMonthlyMetrics() {
 
   for (const sheet of wb.worksheets) {
     const sheetName = sheet.name;
-    // Sheet names like "Jan 2024", "Feb 2024", etc.
-    const dateMatch = sheetName.match(/([A-Za-z]+)\s+(\d{4})/);
+    // Sheet names like "Aug2024", "Jan2025", "January2026" (no space between month and year)
+    const dateMatch = sheetName.match(/([A-Za-z]+)\s*(\d{4})/);
     if (!dateMatch) continue;
 
     const monthNames = ["jan", "feb", "mar", "apr", "may", "jun",
@@ -535,7 +535,7 @@ async function step14_nocMonthlyMetrics() {
     for (let col = 2; col <= staffNames.length + 1; col++) {
       const staffName = staffNames[col - 2];
       if (!staffName) continue;
-      const staffId = await findStaffByName(staffName);
+      const staffId = await findStaffByName(staffName) ?? await findStaffByFirstName(staffName);
       if (!staffId) { warnings.push(`Staff not found: ${staffName}`); skipped++; continue; }
 
       const metrics: Record<string, number> = {};
