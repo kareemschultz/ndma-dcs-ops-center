@@ -199,12 +199,13 @@ function shouldRun(step: number): boolean {
  */
 async function step01_departments() {
   const done = startStep(1, "departments + sub-departments", "departments");
+  // IDs match what seed.ts originally created in prod (dept-dcs, dept-noc, dept-asn, etc.)
   const canonical = [
     { id: "dept-dcs", name: "Data Centre Services", code: "DCS", parentId: null },
     { id: "dept-noc", name: "Network Operations Centre", code: "NOC", parentId: null },
-    { id: "dept-dcs-asn", name: "ASN Support", code: "ASN", parentId: "dept-dcs" },
-    { id: "dept-dcs-core", name: "Core Support", code: "CORE", parentId: "dept-dcs" },
-    { id: "dept-dcs-enterprise", name: "Enterprise Support", code: "ENT", parentId: "dept-dcs" },
+    { id: "dept-asn", name: "Applications, Systems & NetOps", code: "ASN", parentId: "dept-dcs" },
+    { id: "dept-core", name: "Core Infrastructure", code: "CORE", parentId: "dept-dcs" },
+    { id: "dept-enterprise", name: "Enterprise Systems", code: "ENT", parentId: "dept-dcs" },
     { id: "dept-noc-day", name: "NOC Day Shift", code: "NOC-D", parentId: "dept-noc" },
     { id: "dept-noc-night", name: "NOC Night Shift", code: "NOC-N", parentId: "dept-noc" },
   ];
@@ -213,8 +214,8 @@ async function step01_departments() {
   if (!DRY_RUN) {
     for (const dept of canonical) {
       await db.insert(departments).values(dept).onConflictDoUpdate({
-        target: [departments.id],
-        set: { code: dept.code, name: dept.name },
+        target: [departments.code],
+        set: { name: dept.name, parentId: dept.parentId },
       });
       upserted++;
     }
@@ -544,26 +545,37 @@ async function step14_nocMonthlyMetrics() {
         const metricName = metricNames[metricRow - 2];
         if (!metricName) continue;
         const val = cellText(row.getCell(col));
-        metrics[metricName] = val ? parseFloat(val) : 0;
+        const parsed = parseFloat(val);
+        metrics[metricName] = isNaN(parsed) ? 0 : parsed;
       }
 
       if (!DRY_RUN) {
         await db.insert(nocMonthlyMetrics).values({
-          staffProfileId: staffId,
+          staffId,
           year,
           month,
-          mt: String(metrics.mt ?? 0),
-          ittIncident: String(metrics.itt_incident ?? 0),
-          ittProblem: String(metrics.itt_problem ?? 0),
-          daysDayShift: String(metrics.days_day_shift ?? 0),
-          daysSwingShift: String(metrics.days_swing_shift ?? 0),
-          daysNightShift: String(metrics.days_night_shift ?? 0),
-          noccc: String(metrics.noccc ?? 0),
-          nct: String(metrics.nct ?? 0),
-          ma: String(metrics.ma ?? 0),
+          mt: Math.round(metrics.mt ?? 0),
+          ittIncident: Math.round(metrics.itt_incident ?? 0),
+          ittProblem: Math.round(metrics.itt_problem ?? 0),
+          daysDayShift: Math.round(metrics.days_day_shift ?? 0),
+          daysSwingShift: Math.round(metrics.days_swing_shift ?? 0),
+          daysNightShift: Math.round(metrics.days_night_shift ?? 0),
+          noccc: Math.round(metrics.noccc ?? 0),
+          nct: Math.round(metrics.nct ?? 0),
+          ma: Math.round(metrics.ma ?? 0),
         }).onConflictDoUpdate({
-          target: [nocMonthlyMetrics.staffProfileId, nocMonthlyMetrics.year, nocMonthlyMetrics.month],
-          set: metrics,
+          target: [nocMonthlyMetrics.staffId, nocMonthlyMetrics.year, nocMonthlyMetrics.month],
+          set: {
+            mt: Math.round(metrics.mt ?? 0),
+            ittIncident: Math.round(metrics.itt_incident ?? 0),
+            ittProblem: Math.round(metrics.itt_problem ?? 0),
+            daysDayShift: Math.round(metrics.days_day_shift ?? 0),
+            daysSwingShift: Math.round(metrics.days_swing_shift ?? 0),
+            daysNightShift: Math.round(metrics.days_night_shift ?? 0),
+            noccc: Math.round(metrics.noccc ?? 0),
+            nct: Math.round(metrics.nct ?? 0),
+            ma: Math.round(metrics.ma ?? 0),
+          },
         });
       }
       upserted++;
@@ -631,9 +643,9 @@ async function step17_nocShifts() {
           if (!shiftRaw) continue;
 
           const shiftTypeMap: Record<string, string> = {
-            "D": "D", "S": "S", "N": "N",
-            "OFF": "off", "AL": "al", "ML": "ml",
-            "SICK": "sick",
+            "D": "12hr Day", "S": "12hr Day", "N": "12hr Night",
+            "OFF": "Off", "AL": "Annual Leave", "ML": "Annual Leave",
+            "SICK": "Sick Leave",
           };
           const shiftType = shiftTypeMap[shiftRaw];
           if (!shiftType) continue;
@@ -646,7 +658,7 @@ async function step17_nocShifts() {
             await db.insert(nocShifts).values({
               staffId,
               shiftDate,
-              shiftType: shiftType as "D" | "S" | "N" | "sick" | "off" | "al" | "ml",
+              shiftType: shiftType as "12hr Day" | "12hr Night" | "Off" | "Annual Leave" | "Sick Leave",
             }).onConflictDoNothing();
           }
           upserted++;
