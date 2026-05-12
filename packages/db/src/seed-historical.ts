@@ -124,6 +124,9 @@ async function loadWorkbook(filePath: string): Promise<ExcelJS.Workbook | null> 
 
 function cellText(cell: ExcelJS.Cell): string {
   if (!cell || cell.value === null || cell.value === undefined) return "";
+  if (cell.value instanceof Date) {
+    return cell.value.toISOString().slice(0, 10);
+  }
   if (typeof cell.value === "object" && "text" in cell.value) {
     return String((cell.value as { text: string }).text).trim();
   }
@@ -154,6 +157,18 @@ async function findStaffByName(name: string): Promise<string | null> {
   const trimmed = name.trim();
   const profile = await db.query.user.findFirst({
     where: sql`lower(${user.name}) = lower(${trimmed})`,
+  });
+  if (!profile) return null;
+  const sp = await db.query.staffProfiles.findFirst({
+    where: eq(staffProfiles.userId, profile.id),
+  });
+  return sp?.id ?? null;
+}
+
+async function findStaffByFirstName(firstName: string): Promise<string | null> {
+  const trimmed = firstName.trim();
+  const profile = await db.query.user.findFirst({
+    where: sql`lower(${user.name}) LIKE lower(${trimmed + " %"})`,
   });
   if (!profile) return null;
   const sp = await db.query.staffProfiles.findFirst({
@@ -198,8 +213,8 @@ async function step01_departments() {
   if (!DRY_RUN) {
     for (const dept of canonical) {
       await db.insert(departments).values(dept).onConflictDoUpdate({
-        target: [departments.name],
-        set: { code: dept.code },
+        target: [departments.id],
+        set: { code: dept.code, name: dept.name },
       });
       upserted++;
     }
@@ -239,10 +254,17 @@ async function step02_staff() {
 
   const col = (name: string) => headers.indexOf(name);
 
+  const nameColIdx = col("name") + 1 || col("names") + 1;
+  const emailColIdx = col("email") + 1 || col("staff_email") + 1;
+  if (!emailColIdx) {
+    done({ upserted: 0, skipped: 0, errors: 0, warnings: ["No email column found in Employee Data — skipped"] });
+    return;
+  }
+
   for (let i = 2; i <= sheet.rowCount; i++) {
     const row = sheet.getRow(i);
-    const name = cellText(row.getCell(col("name") + 1));
-    const email = cellText(row.getCell(col("email") + 1)).toLowerCase();
+    const name = cellText(row.getCell(nameColIdx));
+    const email = cellText(row.getCell(emailColIdx)).toLowerCase();
     if (!email || !name) { skipped++; continue; }
 
     const existing = await db.query.user.findFirst({ where: eq(user.email, email) });
@@ -308,6 +330,9 @@ async function step03_serviceAccessRegistry() {
     const emailCol = headers.indexOf("email") + 1 || headers.indexOf("staff_email") + 1;
     const userCol = headers.indexOf("username") + 1 || headers.indexOf("account_username") + 1;
     const activeCol = headers.indexOf("active") + 1 || headers.indexOf("account_active") + 1;
+
+    // Skip sheet if required columns are absent
+    if (!emailCol || !userCol) { warnings.push(`Sheet "${sheetName}": no email/username columns — skipped`); continue; }
 
     for (let i = 2; i <= worksheet.rowCount; i++) {
       const row = worksheet.getRow(i);
@@ -387,7 +412,6 @@ async function step05_contracts() {
             contractType: "permanent",
             startDate: "2024-01-01",
             endDate,
-            renewalStatus: "not_due",
             status: "active",
           }).onConflictDoNothing();
         }
@@ -436,7 +460,7 @@ async function step11_commendations() {
       const row = sheet.getRow(i);
       const staffName = cellText(row.getCell(1));
       if (!staffName) continue;
-      const staffId = await findStaffByName(staffName);
+      const staffId = await findStaffByName(staffName) ?? await findStaffByFirstName(staffName);
       if (!staffId) { warnings.push(`Staff not found: ${staffName}`); skipped++; continue; }
 
       row.eachCell((cell, colNum) => {
@@ -581,18 +605,22 @@ async function step17_nocShifts() {
       const month = monthNames.indexOf(monthMatch[0].toLowerCase().slice(0, 3)) + 1;
       if (!month) continue;
 
-      const headerRow = sheet.getRow(1);
+      // Row 1 = title (merged), Row 2 = day-number headers, Row 3 = DOW, Row 4 = legend
+      const headerRow = sheet.getRow(2);
       const days: number[] = [];
       headerRow.eachCell((cell, colNum) => {
         if (colNum === 1) return;
-        const dayNum = parseInt(cellText(cell), 10);
+        const raw = cellText(cell);
+        const dayNum = parseInt(raw, 10);
         if (dayNum >= 1 && dayNum <= 31) days.push(dayNum);
+        else days.push(0); // placeholder to keep colIdx aligned
       });
 
-      for (let i = 2; i <= sheet.rowCount; i++) {
+      for (let i = 5; i <= sheet.rowCount; i++) {
         const row = sheet.getRow(i);
         const staffName = cellText(row.getCell(1));
-        if (!staffName) continue;
+        // Skip note/legend rows: empty, too long, or known note keywords
+        if (!staffName || staffName.length > 40 || /^(NOTES|CHANGES|Changes|Technical|ganesh|keoma|shameer|morrison)/i.test(staffName)) continue;
         const staffId = await findStaffByName(staffName);
         if (!staffId) { warnings.push(`Staff not found: ${staffName}`); skipped++; continue; }
 
@@ -713,22 +741,26 @@ async function step21_tosdRecords() {
   const typeMap: Record<string, "reported_sick" | "medical" | "absent" | "time_off" | "work_from_home" | "lateness" | "callout_legacy"> = {
     "sick": "reported_sick", "reported_sick": "reported_sick",
     "medical": "medical", "mc": "medical",
-    "absent": "absent", "unauthorized": "absent",
+    "absent": "absent", "unauthorized": "absent", "emergency": "absent",
     "time_off": "time_off", "time off": "time_off",
-    "wfh": "work_from_home", "work_from_home": "work_from_home",
+    "wfh": "work_from_home", "work_from_home": "work_from_home", "work from home": "work_from_home",
     "lateness": "lateness", "late": "lateness",
     "callout": "callout_legacy", "call_out": "callout_legacy", "callout_legacy": "callout_legacy",
   };
 
   for (const sheet of wb.worksheets) {
+    // Skip cross-tab (2021) and callout-format sheets — different structure
+    if (sheet.name === "2021" || sheet.name.toLowerCase().includes("callout")) continue;
+
     const headerRow = sheet.getRow(1);
     const headers: string[] = [];
     headerRow.eachCell((cell) => headers.push(cellText(cell).toLowerCase().replace(/\s+/g, "_")));
     const col = (n: string) => headers.indexOf(n) + 1;
 
-    const staffCol = col("staff_name") || col("name") || 1;
-    const dateCol = col("date") || 2;
-    const typeCol = col("type") || col("category") || 3;
+    // TOSD sheets: Date | Type | Staff | Reason | Days | Hours
+    const staffCol = col("staff") || col("staff_name") || col("name") || 3;
+    const dateCol = col("date") || 1;
+    const typeCol = col("type") || col("category") || 2;
     const reasonCol = col("reason") || col("notes") || 4;
     const daysCol = col("days") || 5;
     const hoursCol = col("hours") || 6;
@@ -942,23 +974,20 @@ async function step24_ppeIssuances() {
 async function step34_onboardingTemplates() {
   const done = startStep(34, "onboarding task templates", "onboarding_task_templates");
   const templates = [
-    { taskName: "IT equipment request submitted", category: "IT Setup", sortOrder: 1 },
-    { taskName: "User accounts created (AD, email, iTop, Zabbix)", category: "IT Setup", sortOrder: 2 },
-    { taskName: "Building access card issued", category: "Access & Security", sortOrder: 3 },
-    { taskName: "Server room access granted (if applicable)", category: "Access & Security", sortOrder: 4 },
-    { taskName: "HR documentation completed (contract, emergency contacts)", category: "HR", sortOrder: 5 },
-    { taskName: "Department orientation completed", category: "Onboarding", sortOrder: 6 },
-    { taskName: "Assigned buddy / mentor", category: "Onboarding", sortOrder: 7 },
-    { taskName: "PPE issued", category: "Compliance", sortOrder: 8 },
+    { taskName: "IT equipment request submitted",                        responsibleDept: "IT",       seq: 1 },
+    { taskName: "User accounts created (AD, email, iTop, Zabbix)",      responsibleDept: "IT",       seq: 2 },
+    { taskName: "Building access card issued",                           responsibleDept: "Security", seq: 3 },
+    { taskName: "Server room access granted (if applicable)",            responsibleDept: "Security", seq: 4 },
+    { taskName: "HR documentation completed (contract, emergency contacts)", responsibleDept: "HR",  seq: 5 },
+    { taskName: "Department orientation completed",                      responsibleDept: "HR",       seq: 6 },
+    { taskName: "Assigned buddy / mentor",                               responsibleDept: "DCS",      seq: 7 },
+    { taskName: "PPE issued",                                            responsibleDept: "DCS",      seq: 8 },
   ];
 
   let upserted = 0;
   if (!DRY_RUN) {
     for (const t of templates) {
-      await db.insert(onboardingTaskTemplates).values(t).onConflictDoUpdate({
-        target: [onboardingTaskTemplates.taskName],
-        set: { category: t.category, sortOrder: t.sortOrder },
-      });
+      await db.insert(onboardingTaskTemplates).values({ taskName: t.taskName, responsibleDept: t.responsibleDept, seq: t.seq }).onConflictDoNothing();
       upserted++;
     }
   } else {
