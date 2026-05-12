@@ -2,7 +2,6 @@
 import {
   BarChart2,
   Bell,
-  AlertTriangle,
   BookOpen,
   CalendarClock,
   CalendarOff,
@@ -87,12 +86,6 @@ export const sidebarData: Omit<SidebarData, "user"> = {
           items: [
             { title: "DCS Weekly View", url: "/scheduling/dcs-oncall", icon: CalendarClock },
             { title: "On-Call (Legacy)", url: "/rota", icon: CalendarClock },
-            { title: "Planner", url: "/rota/planner", icon: Wrench },
-            { title: "Swaps", url: "/rota/swaps", icon: CalendarRange },
-            { title: "Calendar", url: "/rota/calendar", icon: CalendarClock },
-            { title: "Fairness", url: "/rota/fairness", icon: BarChart2 },
-            { title: "History", url: "/rota/history", icon: FileText },
-            { title: "Warnings", url: "/rota/warnings", icon: AlertTriangle },
           ],
         },
         {
@@ -101,11 +94,6 @@ export const sidebarData: Omit<SidebarData, "user"> = {
           items: [
             { title: "NOC Shift Grid", url: "/scheduling/noc-shifts", icon: CalendarRange },
             { title: "NOC Shifts (Legacy)", url: "/roster", icon: CalendarRange },
-            { title: "Planner", url: "/roster/planner", icon: Wrench },
-            { title: "Today", url: "/roster/today", icon: CalendarClock },
-            { title: "My Roster", url: "/roster/my-roster", icon: Users },
-            { title: "Swaps", url: "/roster/swaps", icon: CalendarRange },
-            { title: "Maintenance Planner", url: "/roster/maintenance", icon: Wrench },
           ],
         },
       ],
@@ -185,11 +173,8 @@ export const sidebarData: Omit<SidebarData, "user"> = {
       items: [
         {
           title: "Document Library",
+          url: "/policy",
           icon: FileText,
-          items: [
-            { title: "NDMA Policies", url: "/policy", icon: FileText },
-            { title: "Internal Forms", url: "/policy", icon: FileText },
-          ],
         },
       ],
     },

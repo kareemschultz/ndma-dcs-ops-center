@@ -1,9 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarClock, CalendarRange, Wrench } from "lucide-react";
+import { CalendarClock, CalendarRange } from "lucide-react";
 
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@ndma-dcs-staff-portal/ui/components/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ndma-dcs-staff-portal/ui/components/tabs";
 
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
@@ -34,58 +33,51 @@ function SchedulingPage() {
           </p>
         </div>
 
-        <Tabs defaultValue="dcs" className="space-y-4">
-          <TabsList variant="line" className="justify-start">
-            <TabsTrigger value="dcs">DCS On-Call</TabsTrigger>
-            <TabsTrigger value="noc">NOC Shifts</TabsTrigger>
-            <TabsTrigger value="planner">Planner</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="dcs">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">DCS On-Call</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-wrap items-center gap-3">
-                <p className="text-sm text-muted-foreground">
-                  Manage DCS block assignments, swaps, and the on-call planning calendar.
-                </p>
-                <Button render={<Link to="/rota" />}>Open DCS On-Call</Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="noc">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">NOC Shifts</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-wrap items-center gap-3">
-                <p className="text-sm text-muted-foreground">
-                  Review the monthly shift grid and per-staff daily assignments.
-                </p>
-                <Button render={<Link to="/roster" />}>Open NOC Shifts</Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="planner">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Planner</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-wrap items-center gap-3">
-                <p className="text-sm text-muted-foreground">
-                  Open roster planning tools for maintenance windows and future scheduling.
-                </p>
-                <Button render={<Link to="/roster/planner" />}>
-                  <Wrench className="mr-1.5 size-3.5" />
-                  Open Planner
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CalendarClock className="size-4 text-muted-foreground" />
+                DCS On-Call
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                View and manage the weekly DCS on-call roster with 4-role block assignments.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button render={<Link to="/scheduling/dcs-oncall" />}>
+                  Weekly View
                 </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                <Button variant="outline" render={<Link to="/rota" />}>
+                  Legacy View
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CalendarRange className="size-4 text-muted-foreground" />
+                NOC Shifts
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Review the monthly NOC shift grid and per-staff daily assignments.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button render={<Link to="/scheduling/noc-shifts" />}>
+                  Shift Grid
+                </Button>
+                <Button variant="outline" render={<Link to="/roster" />}>
+                  Legacy View
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </Main>
     </>
   );
