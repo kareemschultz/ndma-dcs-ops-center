@@ -1093,3 +1093,50 @@ Claude Code (opus-4.7, 1M context — continuation of 2026-05-12 session)
 - No active phases. All 16 phases complete on main.
 - Next work: production deployment — apply migrations 0008-0032, run `bun run db:seed:historical` against prod
 - See `PRODUCTION_READINESS_CHECKLIST.md` for deployment checklist
+
+---
+
+## Session 2026-05-13 (Design Handoff Implementation)
+
+### Goal
+Apply Claude Design export (ndma-hrms) to the codebase — scheduling revamp, HR/people redesign, NDMA blue color token, new shared components.
+
+### What was done
+
+**NDMA blue token**
+- `packages/ui/src/styles/globals.css`: `--primary: oklch(0.52 0.158 240)` (NDMA logo blue); dark `oklch(0.65 0.155 240)`
+
+**New shared components**
+- `apps/web/src/components/layout/scheduling-sub-nav.tsx`
+- `apps/web/src/components/layout/leave-sub-nav.tsx`
+- `apps/web/src/components/layout/compliance-sub-nav.tsx`
+- `apps/web/src/components/leave-violations-badge.tsx`
+
+**Scheduling pages (full replacement from design export)**
+- `scheduling/index.tsx` — hub with stats strip, on-call card, NOC coverage card, maintenance progress
+- `scheduling/dcs-oncall.tsx` — current-week highlight, avatar chips, 12-week default view
+- `scheduling/noc-shifts.tsx` — all 7 shift types coloured chips, day-of-week headers, summary column
+- `scheduling/maintenance.tsx` — task-first layout; **BUG FIXED**: `orpc.roster.maintenance.*` → `orpc.scheduling.maintenance.*`
+
+**People/HR/Performance pages (design export + field name corrections)**
+- `staff/index.tsx` — stats strip, avatar initials, board left-border accents
+- `leave/index.tsx` — balance progress bars, type filter pills; field corrections: `carriedOver`, `defaultAnnualAllowance`, `approvedBy`, `rejectionReason`
+- `leave/calendar.tsx` — staff initials in leave blocks, LeaveSubNav
+- `noc-performance/index.tsx` — full column names, EOM hero, commendations tab, journal tab
+- `appraisals/index.tsx` — CycleBanner, ScoreBar, UrgencyBadge, FollowupsTab
+- `appraisals/inbox.tsx` — **BUG FIXED**: `window.prompt()` → proper Dialog + Textarea for rejection reason
+- `contracts/index.tsx` — stats strip, urgency tiers, days coloured by severity
+- `training/index.tsx` — summary strip, sub-nav, voucher alerts
+- `compliance/index.tsx` — NEW hub with 3 compliance cards, health %, corrected oRPC paths
+- `compliance/ppe.tsx` — ComplianceSubNav added
+- `components/layout/data/sidebar-data.ts` — clean restructured navigation
+- `components/layout/header.tsx` + `authenticated-layout.tsx` — updated layout
+
+### Commits
+- `03565f1` — feat(design): apply Claude Design handoff — scheduling revamp, HR/people redesign, NDMA blue
+
+### Result
+- Typecheck: ✅ 3 packages, 0 errors (verified 2026-05-13 after commit)
+- All pages render (build succeeds, 3501 modules)
+- Scheduling maintenance router bug fixed (was `roster.*`, now `scheduling.*`)
+- window.prompt() replaced with proper Dialog in appraisals inbox
