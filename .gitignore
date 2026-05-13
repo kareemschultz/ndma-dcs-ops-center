@@ -47,8 +47,10 @@ AccountManagement*.xlsx
 !apps/web/public/import-templates/*.csv
 
 # Source-of-truth archive — read-only reference, never commit (229MB)
-source-of-truth/
+/source-of-truth/
 /ndma-source-of-truth-*.zip
+# Exception: extracted canonical snapshot in docs/ is committed
+!docs/source-of-truth/
 /category-zips/
 /WorkUpdate_*.xlsx
 /files.zip
