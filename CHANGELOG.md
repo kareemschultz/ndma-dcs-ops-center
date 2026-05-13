@@ -4,6 +4,18 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
+## [Design polish + e2e screenshot tour] — 2026-05-13
+
+### Changed
+- **Full green → blue color sweep** (43 source files): all `bg-green-*` / `text-green-*` / `border-green-*` Tailwind classes and Recharts hex colors (`#22c55e`, `#16a34a`) replaced with blue equivalents (`bg-blue-*`, `#3b82f6`, `#2563eb`). Affects status badges for `approved`, `completed`, `done`, `active`, `synced`, `light_load` states.
+- **Base UI nav warnings fixed** (appraisals, scheduling, policy pages): `Button render={<Link>}` replaced with `useNavigate()` + onClick; external links use `buttonVariants()` pattern.
+- **NOC performance page**: added missing `<h1>` heading (smoke test requirement).
+
+### Added
+- `apps/web/tests/e2e/screenshot-tour.spec.ts` — 22-page screenshot spec using stored auth session (`tests/.auth/user.json`); outputs to `tests/screenshots/` (gitignored).
+
+---
+
 ## [Phase 16 — IA revamp + Phase 14+15 closeout] — 2026-05-13
 
 ### Added
