@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CalendarClock, CalendarRange } from "lucide-react";
 
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
@@ -13,6 +13,7 @@ export const Route = createFileRoute("/_authenticated/scheduling/")({
 });
 
 function SchedulingPage() {
+  const navigate = useNavigate();
   return (
     <>
       <Header fixed>
@@ -46,10 +47,10 @@ function SchedulingPage() {
                 View and manage the weekly DCS on-call roster with 4-role block assignments.
               </p>
               <div className="flex flex-wrap gap-2">
-                <Button render={<Link to="/scheduling/dcs-oncall" />}>
+                <Button onClick={() => navigate({ to: "/scheduling/dcs-oncall" })}>
                   Weekly View
                 </Button>
-                <Button variant="outline" render={<Link to="/rota" />}>
+                <Button variant="outline" onClick={() => navigate({ to: "/scheduling/dcs-oncall" })}>
                   Legacy View
                 </Button>
               </div>
@@ -68,10 +69,10 @@ function SchedulingPage() {
                 Review the monthly NOC shift grid and per-staff daily assignments.
               </p>
               <div className="flex flex-wrap gap-2">
-                <Button render={<Link to="/scheduling/noc-shifts" />}>
+                <Button onClick={() => navigate({ to: "/scheduling/noc-shifts" })}>
                   Shift Grid
                 </Button>
-                <Button variant="outline" render={<Link to="/roster" />}>
+                <Button variant="outline" onClick={() => navigate({ to: "/scheduling/noc-shifts" })}>
                   Legacy View
                 </Button>
               </div>

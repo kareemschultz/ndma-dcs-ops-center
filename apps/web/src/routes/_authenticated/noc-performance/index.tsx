@@ -474,6 +474,12 @@ function NocPerformancePage() {
       </Header>
 
       <Main>
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold tracking-tight">NOC Performance</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Monthly metrics, ticket activity, and Employee of the Month awards.
+          </p>
+        </div>
         <div className="mb-6 flex flex-wrap items-end gap-3">
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground">Year</Label>

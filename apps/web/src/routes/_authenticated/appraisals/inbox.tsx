@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Inbox, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/appraisals/inbox")({
 });
 
 function AppraisalsInboxPage() {
+  const navigate = useNavigate();
   const { data: session } = authClient.useSession();
   const role = (session?.user as Record<string, unknown> | undefined)?.role as string | undefined;
   const canReview = role === "admin" || role === "hrAdminOps" || role === "manager";
@@ -67,7 +68,7 @@ function AppraisalsInboxPage() {
               Manager review queue for Sachin Ramsuran. Review submitted appraisals and push them through approval or rejection.
             </p>
           </div>
-          <Button variant="outline" render={<Link to="/appraisals" />}>
+          <Button variant="outline" onClick={() => navigate({ to: "/appraisals" })}>
             Back to Appraisals
           </Button>
         </div>

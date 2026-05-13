@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ClipboardCheck, Download, FileText, NotebookPen, Star } from "lucide-react";
 
@@ -80,6 +80,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function StaffAppraisalDetailPage() {
+  const navigate = useNavigate();
   const { staffProfileId } = Route.useParams();
 
   const { data, isLoading, isError } = useQuery(
@@ -160,7 +161,7 @@ function StaffAppraisalDetailPage() {
 
       <Main className="space-y-6">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" render={<Link to="/appraisals" />}>
+          <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/appraisals" })}>
             <ArrowLeft className="mr-1.5 size-3.5" />
             Back to Appraisals
           </Button>

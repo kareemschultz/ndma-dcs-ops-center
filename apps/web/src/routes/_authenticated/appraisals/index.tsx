@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode } from "react";
 import { useState } from "react";
@@ -183,6 +183,7 @@ function StatCard({
 }
 
 function AppraisalsPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { team } = useTeamFilter();
   const [tab, setTab] = useState("records");
@@ -300,7 +301,7 @@ function AppraisalsPage() {
           <span className="text-sm font-medium">Appraisals</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
-          <Button variant="outline" size="sm" render={<Link to="/appraisals/inbox" />}>
+          <Button variant="outline" size="sm" onClick={() => navigate({ to: "/appraisals/inbox" })}>
             <Inbox className="mr-1.5 size-3.5" />
             Inbox
           </Button>
@@ -603,7 +604,7 @@ function AppraisalsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          render={<Link to="/appraisals/staff/$staffProfileId" params={{ staffProfileId: appraisal.staffProfileId }} />}
+                          onClick={() => navigate({ to: "/appraisals/staff/$staffProfileId", params: { staffProfileId: appraisal.staffProfileId } })}
                         >
                           View Staff
                         </Button>
