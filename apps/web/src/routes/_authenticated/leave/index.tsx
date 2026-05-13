@@ -25,6 +25,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@ndma-dcs-staff-portal/ui/components/table";
 import { Header } from "@/components/layout/header";
+import { LeaveViolationsBadge } from "@/components/leave-violations-badge";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { useTeamFilter } from "@/lib/team-filter";
@@ -260,6 +261,7 @@ function LeavePage() {
                   <TableHead>Dates</TableHead>
                   <TableHead>Days</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Violations</TableHead>
                   <TableHead>Approver</TableHead>
                   <TableHead className="w-24">Actions</TableHead>
                 </TableRow>
@@ -267,7 +269,7 @@ function LeavePage() {
               <TableBody>
                 {rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
                       No leave requests found.
                     </TableCell>
                   </TableRow>
@@ -280,6 +282,7 @@ function LeavePage() {
                     </TableCell>
                     <TableCell><span className="tabular-nums font-medium">{r.totalDays}</span></TableCell>
                     <TableCell><LeaveStatusBadge status={r.status} /></TableCell>
+                    <TableCell><LeaveViolationsBadge violations={r.violations} /></TableCell>
                     <TableCell className="text-sm">{r.approvedBy?.name ?? "—"}</TableCell>
                     <TableCell>
                       {r.status === "pending" && (
