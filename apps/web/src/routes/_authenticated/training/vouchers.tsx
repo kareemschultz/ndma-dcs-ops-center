@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Bell, Plus, Ticket } from "lucide-react";
+import { Bell, Pencil, Plus, Ticket } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@ndma-dcs-staff-portal/ui/components/badge";
@@ -55,16 +55,43 @@ const STATUS_BADGE: Record<string, "default" | "secondary" | "destructive" | "ou
 
 type VoucherStatus = "unused" | "assigned" | "booked" | "complete_pass" | "complete_fail" | "missed" | "expired";
 
+const ALL_STATUSES: VoucherStatus[] = [
+  "unused",
+  "assigned",
+  "booked",
+  "complete_pass",
+  "complete_fail",
+  "missed",
+  "expired",
+];
+
+type Voucher = {
+  id: number;
+  voucherNumber: string;
+  productName: string;
+  mustBeUsedBy: string;
+  status: VoucherStatus;
+  assignedStaff?: { user?: { name?: string } } | null;
+};
+
 export default function ExamVouchersPage() {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<VoucherStatus | "all">("all");
+
+  // Add dialog
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [form, setForm] = useState({ voucherNumber: "", productName: "", mustBeUsedBy: "" });
+
+  // Assign dialog
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-
-  // Form state
-  const [form, setForm] = useState({ voucherNumber: "", productName: "", mustBeUsedBy: "" });
   const [assignStaffId, setAssignStaffId] = useState("");
+
+  // Update status dialog
+  const [updateStatusDialogOpen, setUpdateStatusDialogOpen] = useState(false);
+  const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
+  const [newStatus, setNewStatus] = useState<VoucherStatus>("assigned");
+  const [dateBooked, setDateBooked] = useState("");
 
   const { data: vouchers, isLoading } = useQuery(
     orpc.examVouchers.list.queryOptions({
@@ -97,6 +124,20 @@ export default function ExamVouchersPage() {
     }),
   );
 
+  const updateStatusMutation = useMutation(
+    orpc.examVouchers.updateStatus.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: orpc.examVouchers.list.key() });
+        setUpdateStatusDialogOpen(false);
+        setSelectedVoucher(null);
+        setNewStatus("assigned");
+        setDateBooked("");
+        toast.success("Voucher status updated");
+      },
+      onError: () => toast.error("Failed to update voucher status"),
+    }),
+  );
+
   const remindersMutation = useMutation(
     orpc.examVouchers.sendExpiryReminders.mutationOptions({
       onSuccess: (data) => toast.success(`Sent ${data.notified} expiry reminder(s)`),
@@ -115,6 +156,22 @@ export default function ExamVouchersPage() {
   function handleAssign() {
     if (!selectedId || !assignStaffId) return;
     assignMutation.mutate({ id: selectedId, staffId: assignStaffId });
+  }
+
+  function openUpdateStatus(voucher: Voucher) {
+    setSelectedVoucher(voucher);
+    setNewStatus(voucher.status);
+    setDateBooked("");
+    setUpdateStatusDialogOpen(true);
+  }
+
+  function handleUpdateStatus() {
+    if (!selectedVoucher) return;
+    updateStatusMutation.mutate({
+      id: selectedVoucher.id,
+      status: newStatus,
+      ...(newStatus === "booked" && dateBooked ? { dateBooked } : {}),
+    });
   }
 
   return (
@@ -200,18 +257,28 @@ export default function ExamVouchersPage() {
                         <Badge variant={STATUS_BADGE[v.status] ?? "outline"}>{v.status}</Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        {v.status === "unused" && (
+                        <div className="flex items-center justify-end gap-1">
+                          {v.status === "unused" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedId(v.id);
+                                setAssignDialogOpen(true);
+                              }}
+                            >
+                              Assign
+                            </Button>
+                          )}
                           <Button
                             size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedId(v.id);
-                              setAssignDialogOpen(true);
-                            }}
+                            variant="ghost"
+                            onClick={() => openUpdateStatus(v as Voucher)}
+                            title="Update status"
                           >
-                            Assign
+                            <Pencil className="h-4 w-4" />
                           </Button>
-                        )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -282,7 +349,7 @@ export default function ExamVouchersPage() {
                 <SelectTrigger>
                   <SelectValue>
                     {assignStaffId
-                      ? (staff?.find(s => s.id === assignStaffId)?.user?.name ?? staff?.find(s => s.id === assignStaffId)?.employeeId ?? assignStaffId)
+                      ? (staff?.find((s) => s.id === assignStaffId)?.user?.name ?? staff?.find((s) => s.id === assignStaffId)?.employeeId ?? assignStaffId)
                       : "Select staff…"}
                   </SelectValue>
                 </SelectTrigger>
@@ -302,6 +369,66 @@ export default function ExamVouchersPage() {
             </Button>
             <Button onClick={handleAssign} disabled={assignMutation.isPending}>
               Assign
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Status Dialog */}
+      <Dialog open={updateStatusDialogOpen} onOpenChange={setUpdateStatusDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Voucher Status</DialogTitle>
+            <DialogDescription>
+              Change the status of voucher{" "}
+              <span className="font-mono font-medium">{selectedVoucher?.voucherNumber}</span>. Current
+              status: <span className="font-medium">{selectedVoucher?.status}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label>New Status</Label>
+              <Select
+                value={newStatus}
+                onValueChange={(v) => v != null && setNewStatus(v as VoucherStatus)}
+              >
+                <SelectTrigger>
+                  <SelectValue>
+                    {newStatus ?? "Select status…"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {ALL_STATUSES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {newStatus === "booked" && (
+              <div className="grid gap-2">
+                <Label>Date Booked</Label>
+                <Input
+                  type="date"
+                  value={dateBooked}
+                  onChange={(e) => setDateBooked(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setUpdateStatusDialogOpen(false);
+                setSelectedVoucher(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateStatus} disabled={updateStatusMutation.isPending}>
+              Save Status
             </Button>
           </div>
         </DialogContent>
