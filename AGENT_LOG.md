@@ -10,6 +10,48 @@
 
 ---
 
+## 2026-05-13 — Design handoff completion (session 2) — [MERGED]
+
+- **Agent:** Claude Code (claude-opus-4-7, 1M context)
+- **Date:** 2026-05-13
+- **Branch:** `main` (direct commits `7ca3260` → `a02a944`)
+- **Type:** Claude Design handoff completion — remaining handoff items
+
+### What shipped this session
+
+**Commit `7ca3260` (dashboard hero — from prior session):**
+- `apps/web/src/routes/_authenticated/index.tsx` — full "Good morning" hero dashboard:
+  NDMA blue gradient hero, personalized greeting, on-call week, incidents panel,
+  service health sparklines, DCS on-call this week, upcoming changes, NOC shift summary,
+  pending approvals quick panel
+
+**Commit `a02a944` (handoff completion):**
+- `packages/api/src/routers/appraisals.ts` — added `listFollowups` + `completeFollowup` procedures
+- `apps/web/src/routes/_authenticated/appraisals/index.tsx` — ScoreBar on score column,
+  CycleBanner (open cycle alert using `orpc.appraisalCycles.list`), UrgencyBadge on pipeline rows,
+  FollowupsTab as 4th tab (overdue count in tab label)
+- `apps/web/src/routes/_authenticated/noc-performance/index.tsx` — CommendationsTab as 5th tab:
+  award cards with narrative, create dialog, month-scoped filter
+- `apps/web/src/components/layout/training-sub-nav.tsx` — new 7-tab training sub-nav component
+- `apps/web/src/routes/_authenticated/training/index.tsx` — summary strip + sub-nav + tiles redesign
+- All 6 training sub-pages (plan, catalog, exams, events, in-house, vouchers) — TrainingSubNav added
+
+### Tests / typecheck
+- `bun run check-types` → 3/3 tasks successful, 0 errors
+
+### Deferred / gotchas discovered
+- `trainingEvents` schema has no `title` or `eventType` — used `institution` + `description`
+- `commendations` schema has no `categories` or `nominatedBy` — simplified UI to narrative-only
+- `orpc.commendations.list` input accepts `year` not `month` — month filtered client-side
+- `orpc.appraisalCycles.list` (camelCase, no underscore) — handoff used `appraisal_cycles` (incorrect)
+
+### Next steps
+- Production deployment: apply migrations 0029-0032 (`bun run db:migrate` with PROD DATABASE_URL)
+- Run historical seed on prod
+- See `PRODUCTION_READINESS_CHECKLIST.md`
+
+---
+
 ## 2026-05-13 — Phase 14+15+16 closeout — [CODE COMPLETE]
 
 - **Agent:** Claude Code (claude-opus-4-7, 1M context) — with general-purpose sub-agents for seed steps + RBAC backfill + handoff audit grep
