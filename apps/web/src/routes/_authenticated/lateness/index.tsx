@@ -91,29 +91,144 @@ interface ParsedImportRow {
 }
 
 // ─── Excel Parser ─────────────────────────────────────────────────────────────
+//
+// Format: "LatenessReportNOC&DC_YYYY_v01.xlsx"
+//   Sheets: "1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter"
+//   Row 0: empty
+//   Row 1: "Late" markers at cols 3, 8, 13
+//   Row 2: column headers  (Name|Month|Hours:Minutes:Seconds|#DaysLate per group)
+//   Row 3+: data — 3 INDEPENDENT lists side by side:
+//     Group 1  → cols 1(Name) 2(Month) 3(Hours) 4(DaysLate)
+//     Group 2  → cols 6(Name) 7(Month) 8(Hours) 9(DaysLate)
+//     Group 3  → cols 11(Name) 12(Month) 13(Hours)
+//                   Q1/Q2: 14(DaysMissing) 15(DaysOnSchedule)
+//                   Q3/Q4: 14(DaysLate)
+//   Each group is its own sorted staff list — staff in row N of Group 1
+//   may be a DIFFERENT person than row N of Group 2.
 
-/** Find column index matching any keyword within a column range. Returns -1 if not found. */
-function findColByKeyword(
-  row: (string | number | null | undefined)[],
-  startCol: number,
-  endCol: number,
-  keywords: string[],
-): number {
-  for (let ci = startCol; ci <= Math.min(endCol, row.length - 1); ci++) {
-    const cell = String(row[ci] ?? "").toLowerCase().trim();
-    if (keywords.some((k) => cell.includes(k))) return ci;
+/** Map the abbreviations used in the Excel to full month names stored in DB. */
+const MONTH_ABBREV: Record<string, string> = {
+  jan: "January", feb: "February", mar: "March",
+  april: "April", may: "May", june: "June",
+  july: "July", aug: "August", sept: "September", sep: "September",
+  oct: "October", nov: "November", dec: "December",
+};
+
+function expandMonth(abbrev: unknown): string {
+  if (abbrev == null) return "";
+  const key = String(abbrev).trim().toLowerCase();
+  return MONTH_ABBREV[key] ?? "";
+}
+
+/**
+ * Convert an Excel time value to "H:MM" string.
+ * Excel stores times as fractions of a day (e.g. 2h28m → 0.10278).
+ * XLSX.js with raw:true returns these as numbers; string 'nil'/'Nil' → "0:00".
+ */
+function normaliseTimeLate(raw: unknown): string {
+  if (raw == null) return "0:00";
+
+  if (typeof raw === "number") {
+    // Fraction of day → minutes
+    const totalMins = Math.round(raw * 24 * 60);
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    return `${h}:${String(m).padStart(2, "0")}`;
   }
-  return -1;
+
+  const s = String(raw).trim().toLowerCase();
+  if (!s || s === "nil" || s === "n/a" || s === "-" || s === "0") return "0:00";
+
+  // "H:MM:SS" or "H:MM" string
+  const parts = s.split(":");
+  if (parts.length >= 2) {
+    const h = parseInt(parts[0] ?? "0", 10) || 0;
+    const mn = parseInt(parts[1] ?? "0", 10) || 0;
+    return `${h}:${String(mn).padStart(2, "0")}`;
+  }
+
+  return "0:00";
+}
+
+/**
+ * Parse a days-late cell — some cells contain free text like
+ * "2 only the 3rd day was a clock out"; extract the leading integer.
+ */
+function toInt(raw: unknown): number {
+  if (raw == null) return 0;
+  if (typeof raw === "number") return Math.round(raw);
+  const match = String(raw).match(/^(\d+)/);
+  return match ? parseInt(match[1]!, 10) : 0;
+}
+
+function toIntOrUndefined(raw: unknown): number | undefined {
+  if (raw == null) return undefined;
+  if (typeof raw === "number") return Math.round(raw);
+  const match = String(raw).match(/^(\d+)/);
+  return match ? parseInt(match[1]!, 10) : undefined;
+}
+
+/** Skip rows that are clearly footer / note rows (not staff names). */
+function isNoteRow(name: string): boolean {
+  const l = name.toLowerCase();
+  return (
+    l.startsWith("noc staff") ||
+    l.startsWith("total") ||
+    l.startsWith("grand") ||
+    l.startsWith("note") ||
+    l === "name"
+  );
+}
+
+/**
+ * Parse one column group (nameCol, monthCol, hoursCol, col4).
+ * col4 is either DaysLate (groups 1 & 2, and group 3 Q3/Q4)
+ * or DaysMissing (group 3 Q1/Q2).
+ */
+function parseGroup(
+  row: unknown[],
+  nameCol: number,
+  monthCol: number,
+  hoursCol: number,
+  col4: number,
+  col5: number | null, // daysOnSchedule (group 3 Q1/Q2 only)
+  col4IsDaysMissing: boolean,
+  year: number,
+): ParsedImportRow | null {
+  const name = String(row[nameCol] ?? "").trim();
+  if (!name || isNoteRow(name)) return null;
+
+  const month = expandMonth(row[monthCol]);
+  if (!month) return null;
+
+  const timeLate = normaliseTimeLate(row[hoursCol]);
+  const col4Val = row[col4];
+  const col5Val = col5 != null ? row[col5] : undefined;
+
+  if (col4IsDaysMissing) {
+    return {
+      staffName: name,
+      month,
+      year,
+      totalTimeLate: timeLate,
+      daysLate: 0,               // not recorded for this group/quarter combo
+      daysMissingFromAttendance: toIntOrUndefined(col4Val),
+      daysOnSchedule: toIntOrUndefined(col5Val),
+    };
+  }
+
+  return {
+    staffName: name,
+    month,
+    year,
+    totalTimeLate: timeLate,
+    daysLate: toInt(col4Val),
+  };
 }
 
 /**
  * Parse the quarterly lateness Excel workbook.
- *
- * Supports two layouts:
- *   A) Wide / side-by-side — month names appear in a single header row, staff in rows below.
- *      Example: col A = Name, then groups of 2-4 cols per month (Time Late, Days Late, ...).
- *   B) Flat — each row is one staff × month record.
- *      Columns: Name | Month | Total Time Late | # Days Late [| Days Missing | Days On Schedule]
+ * Handles the exact "LatenessReportNOC&DC" format with fixed column positions.
  */
 function parseLatenessWorkbook(
   workbook: XLSX.WorkBook,
@@ -125,215 +240,58 @@ function parseLatenessWorkbook(
     const sheet = workbook.Sheets[sheetName];
     if (!sheet) continue;
 
-    // Detect quarter from sheet name so we know which months to expect
-    let sheetQuarter: number | null = null;
-    if (/q1|jan/i.test(sheetName)) sheetQuarter = 1;
-    else if (/q2|apr/i.test(sheetName)) sheetQuarter = 2;
-    else if (/q3|jul/i.test(sheetName)) sheetQuarter = 3;
-    else if (/q4|oct/i.test(sheetName)) sheetQuarter = 4;
+    // Detect quarter from sheet name: "1st Quarter", "2nd Quarter", etc.
+    let quarter: 1 | 2 | 3 | 4 | null = null;
+    if (/1st/i.test(sheetName)) quarter = 1;
+    else if (/2nd/i.test(sheetName)) quarter = 2;
+    else if (/3rd/i.test(sheetName)) quarter = 3;
+    else if (/4th/i.test(sheetName)) quarter = 4;
 
-    const quarterMonths: string[] =
-      sheetQuarter != null ? (MONTHS_PER_QUARTER[sheetQuarter] ?? []) : [];
+    if (quarter === null) continue; // skip unrecognised sheets
 
-    // Convert sheet to raw 2D array of strings
-    const raw = XLSX.utils.sheet_to_json<(string | number | null | undefined)[]>(sheet, {
+    // Q1 and Q2 group-3 uses DaysMissing+DaysOnSchedule instead of DaysLate
+    const group3IsDaysMissing = quarter === 1 || quarter === 2;
+
+    // Read with raw:true so Excel time fractions come through as numbers
+    const raw = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
       header: 1,
-      raw: false,
+      raw: true,
       defval: null,
     });
 
-    if (raw.length < 2) continue;
+    // Data starts at row index 3 (rows 0-2 are header rows)
+    const DATA_START = 3;
 
-    // ── Detect layout ─────────────────────────────────────────────────────
-
-    type MonthGroup = {
-      month: string;
-      timeLateCol: number;
-      daysLateCol: number;
-      daysMissingCol?: number;
-      daysOnScheduleCol?: number;
-    };
-
-    let headerRowIdx = -1;
-    let monthGroups: MonthGroup[] = [];
-    let isFlatFormat = false;
-    let flatCols = { month: -1, timeLate: -1, daysLate: -1, daysMissing: -1, daysOnSchedule: -1 };
-
-    for (let ri = 0; ri < Math.min(12, raw.length); ri++) {
+    for (let ri = DATA_START; ri < raw.length; ri++) {
       const row = raw[ri] ?? [];
 
-      // Check for month names in this row (wide format header)
-      const foundMonths: Array<{ month: string; col: number }> = [];
-      for (let ci = 0; ci < row.length; ci++) {
-        const cell = String(row[ci] ?? "").trim();
-        const matched = ALL_MONTHS.find((m) => m.toLowerCase() === cell.toLowerCase());
-        if (matched) foundMonths.push({ month: matched, col: ci });
-      }
+      // Group 1: cols 1(Name) 2(Month) 3(Hours) 4(DaysLate)
+      const g1 = parseGroup(row, 1, 2, 3, 4, null, false, year);
+      if (g1) results.push(g1);
 
-      if (foundMonths.length >= 2 || (foundMonths.length === 1 && sheetQuarter !== null)) {
-        // Wide format: sub-headers on the next row
-        const subRow = raw[ri + 1] ?? [];
+      // Group 2: cols 6(Name) 7(Month) 8(Hours) 9(DaysLate)
+      const g2 = parseGroup(row, 6, 7, 8, 9, null, false, year);
+      if (g2) results.push(g2);
 
-        monthGroups = foundMonths.map((fm, mi) => {
-          const startCol = fm.col;
-          const endCol =
-            mi + 1 < foundMonths.length ? foundMonths[mi + 1]!.col - 1 : row.length - 1;
-
-          const timeLateCol = findColByKeyword(subRow, startCol, endCol, [
-            "time late", "total time", "hours",
-          ]);
-          const daysLateCol = findColByKeyword(subRow, startCol, endCol, [
-            "days late", "# days",
-          ]);
-          const daysMissingCol = findColByKeyword(subRow, startCol, endCol, ["missing"]);
-          const daysOnScheduleCol = findColByKeyword(subRow, startCol, endCol, [
-            "on schedule", "scheduled",
-          ]);
-
-          return {
-            month: fm.month,
-            // If sub-headers not found, default to first two columns in the group
-            timeLateCol: timeLateCol !== -1 ? timeLateCol : startCol,
-            daysLateCol: daysLateCol !== -1 ? daysLateCol : startCol + 1,
-            daysMissingCol: daysMissingCol !== -1 ? daysMissingCol : undefined,
-            daysOnScheduleCol: daysOnScheduleCol !== -1 ? daysOnScheduleCol : undefined,
-          };
-        });
-
-        // Data starts two rows below the month headers (skip month header + sub-header)
-        headerRowIdx = ri + 1;
-        break;
-      }
-
-      // Check for flat format header (Name, Month, Time Late, Days Late)
-      const lrow = row.map((c) => String(c ?? "").toLowerCase().trim());
-      const nameIdx = lrow.findIndex((c) => c === "name");
-      const tlIdx = lrow.findIndex((c) => c.includes("time late") || c.includes("total time"));
-      const dlIdx = lrow.findIndex((c) => c.includes("days late") || c === "# days late");
-
-      if (nameIdx !== -1 && tlIdx !== -1 && dlIdx !== -1) {
-        isFlatFormat = true;
-        flatCols = {
-          month: lrow.findIndex((c) => c === "month" || ALL_MONTHS.some((m) => m.toLowerCase() === c)),
-          timeLate: tlIdx,
-          daysLate: dlIdx,
-          daysMissing: lrow.findIndex((c) => c.includes("missing")),
-          daysOnSchedule: lrow.findIndex((c) => c.includes("on schedule") || c.includes("scheduled")),
-        };
-        headerRowIdx = ri;
-        break;
-      }
-    }
-
-    // ── Parse data rows ────────────────────────────────────────────────────
-    const dataStart = headerRowIdx + 1;
-
-    for (let ri = dataStart; ri < raw.length; ri++) {
-      const row = raw[ri] ?? [];
-      const nameCell = String(row[0] ?? "").trim();
-
-      // Skip blank / header / subtotal rows
-      if (
-        !nameCell ||
-        nameCell.toLowerCase() === "name" ||
-        nameCell.toLowerCase().startsWith("total") ||
-        nameCell.toLowerCase().startsWith("grand")
-      ) {
-        continue;
-      }
-      if (row.slice(1).every((c) => c == null || String(c).trim() === "")) continue;
-
-      if (isFlatFormat) {
-        // One row = one staff × month record
-        const rawMonth =
-          flatCols.month !== -1 ? String(row[flatCols.month] ?? "").trim() : "";
-        const month =
-          ALL_MONTHS.find((m) => m.toLowerCase() === rawMonth.toLowerCase()) ??
-          quarterMonths[0] ??
-          "";
-        if (!month) continue;
-
-        results.push({
-          staffName: nameCell,
-          month,
-          year,
-          totalTimeLate: normaliseTimeLate(row[flatCols.timeLate]),
-          daysLate: toInt(row[flatCols.daysLate]),
-          daysMissingFromAttendance:
-            flatCols.daysMissing !== -1
-              ? toIntOrUndefined(row[flatCols.daysMissing])
-              : undefined,
-          daysOnSchedule:
-            flatCols.daysOnSchedule !== -1
-              ? toIntOrUndefined(row[flatCols.daysOnSchedule])
-              : undefined,
-        });
-      } else if (monthGroups.length > 0) {
-        // Wide: one row = one staff, multiple month column groups
-        for (const group of monthGroups) {
-          const timeLate = normaliseTimeLate(row[group.timeLateCol]);
-          const daysLate = toInt(row[group.daysLateCol]);
-          // Skip cells that are clearly empty / zero-lateness
-          if (row[group.timeLateCol] == null && row[group.daysLateCol] == null) continue;
-
-          results.push({
-            staffName: nameCell,
-            month: group.month,
-            year,
-            totalTimeLate: timeLate,
-            daysLate,
-            daysMissingFromAttendance:
-              group.daysMissingCol != null
-                ? toIntOrUndefined(row[group.daysMissingCol])
-                : undefined,
-            daysOnSchedule:
-              group.daysOnScheduleCol != null
-                ? toIntOrUndefined(row[group.daysOnScheduleCol])
-                : undefined,
-          });
-        }
-      } else if (quarterMonths.length > 0) {
-        // Positional fallback: cols 1-2 = Month1, 3-4 = Month2, 5-6 = Month3
-        quarterMonths.forEach((month, idx) => {
-          const baseCol = 1 + idx * 2;
-          const timeLate = normaliseTimeLate(row[baseCol]);
-          const daysLate = toInt(row[baseCol + 1]);
-          if (row[baseCol] == null && row[baseCol + 1] == null) return;
-          results.push({ staffName: nameCell, month, year, totalTimeLate: timeLate, daysLate });
-        });
-      }
+      // Group 3: cols 11(Name) 12(Month) 13(Hours) 14(DaysMissing or DaysLate) [15(DaysOnSchedule)]
+      const g3 = parseGroup(
+        row, 11, 12, 13, 14,
+        group3IsDaysMissing ? 15 : null,
+        group3IsDaysMissing,
+        year,
+      );
+      if (g3) results.push(g3);
     }
   }
 
-  return results;
-}
-
-/** Normalise time formats: "1:30:00" → "1:30", "0:15:00" → "0:15", etc. */
-function normaliseTimeLate(raw: string | number | null | undefined): string {
-  if (raw === null || raw === undefined) return "0:00";
-  const s = String(raw).trim();
-  if (!s || s === "0" || s === "-") return "0:00";
-
-  // HH:MM:SS → HH:MM
-  const parts = s.split(":");
-  if (parts.length >= 2) {
-    const h = parseInt(parts[0] ?? "0", 10) || 0;
-    const m = parseInt(parts[1] ?? "0", 10) || 0;
-    return `${h}:${String(m).padStart(2, "0")}`;
-  }
-  return s;
-}
-
-function toInt(raw: string | number | null | undefined): number {
-  if (raw === null || raw === undefined) return 0;
-  const n = parseInt(String(raw), 10);
-  return isNaN(n) ? 0 : n;
-}
-
-function toIntOrUndefined(raw: string | number | null | undefined): number | undefined {
-  if (raw === null || raw === undefined) return undefined;
-  const n = parseInt(String(raw), 10);
-  return isNaN(n) ? undefined : n;
+  // De-duplicate: same staffName × month can appear in multiple groups across sheets
+  const seen = new Set<string>();
+  return results.filter((r) => {
+    const key = `${r.staffName}|${r.month}|${r.year}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 // ─── Upsert Dialog (create / edit one record) ────────────────────────────────
