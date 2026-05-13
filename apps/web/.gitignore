@@ -59,3 +59,4 @@ dev-dist
 
 .open-next
 tests/.auth/user.json
+tests/screenshots/
