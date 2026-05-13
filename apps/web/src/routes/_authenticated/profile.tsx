@@ -66,7 +66,7 @@ const selfServiceSchema = z.object({
 
 const LEAVE_STATUS_COLORS: Record<string, string> = {
   pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  approved: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  approved: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   rejected: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   cancelled: "bg-muted text-muted-foreground",
 };
@@ -77,7 +77,7 @@ const WORK_STATUS_COLORS: Record<string, string> = {
   in_progress: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300",
   blocked: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   review: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
-  done: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  done: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   cancelled: "bg-muted text-muted-foreground",
 };
 
@@ -492,7 +492,7 @@ function ProfilePage() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <HeartHandshake className="size-4 text-green-500" />
+                  <HeartHandshake className="size-4 text-blue-500" />
                   Self-Service Contact Details
                 </CardTitle>
               </CardHeader>
@@ -696,7 +696,7 @@ function ProfilePage() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Calendar className="size-4 text-green-500" />
+                  <Calendar className="size-4 text-blue-500" />
                   My Leave Requests
                 </CardTitle>
               </CardHeader>
@@ -820,7 +820,7 @@ function ProfilePage() {
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span>Entitlement: <span className="font-semibold text-foreground">{bal.entitlement}</span></span>
                           <span>Used: <span className="font-semibold text-foreground">{bal.used ?? 0}</span></span>
-                          <span className="text-green-600 dark:text-green-400 font-semibold">
+                          <span className="text-blue-600 dark:text-blue-400 font-semibold">
                             Balance: {(bal.entitlement ?? 0) + (bal.adjustment ?? 0) + (bal.carriedOver ?? 0) - (bal.used ?? 0)}
                           </span>
                         </div>
@@ -943,7 +943,7 @@ function ProfilePage() {
                             <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">{apr.percentageScore.toFixed(1)}%</span>
                           )}
                           <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium ${
-                            apr.status === "completed" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" :
+                            apr.status === "completed" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" :
                             apr.status === "approved" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" :
                             "bg-muted text-muted-foreground"
                           }`}>
@@ -1054,7 +1054,7 @@ function ProfilePage() {
                             <p className="text-sm truncate">{log.trainingName}</p>
                             <p className="text-xs text-muted-foreground">{log.date}</p>
                           </div>
-                          <span className={`text-xs shrink-0 ${log.assessmentCompleted ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                          <span className={`text-xs shrink-0 ${log.assessmentCompleted ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"}`}>
                             {log.assessmentCompleted ? "✓ Passed" : "No assessment"}
                           </span>
                         </div>
@@ -1078,7 +1078,7 @@ function ProfilePage() {
                             <p className="text-xs text-muted-foreground">Expires: {v.mustBeUsedBy}</p>
                           </div>
                           <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium shrink-0 ${
-                            v.status === "complete_pass" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" :
+                            v.status === "complete_pass" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" :
                             v.status === "expired" || v.status === "complete_fail" ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" :
                             "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
                           }`}>
@@ -1098,7 +1098,7 @@ function ProfilePage() {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Shield className="size-4 text-green-500" />
+                  <Shield className="size-4 text-blue-500" />
                   My PPE
                 </CardTitle>
               </CardHeader>
@@ -1124,7 +1124,7 @@ function ProfilePage() {
                           </p>
                         </div>
                         <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium shrink-0 ${
-                          iso.status === "issued" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" :
+                          iso.status === "issued" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" :
                           iso.status === "returned" ? "bg-muted text-muted-foreground" :
                           "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
                         }`}>
@@ -1171,7 +1171,7 @@ function ProfilePage() {
                             <span className="text-xs text-muted-foreground">{entry.privilegeLevel}</span>
                           )}
                           <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium ${
-                            entry.accountActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                            entry.accountActive ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
                           }`}>
                             {entry.accountActive ? "Active" : "Inactive"}
                           </span>
@@ -1203,7 +1203,7 @@ function ProfilePage() {
                 ) : (
                   <>
                     <div className="mb-3 flex items-center gap-2 text-sm">
-                      <span className="text-green-600 dark:text-green-400 font-semibold">
+                      <span className="text-blue-600 dark:text-blue-400 font-semibold">
                         {onboardingTaskList.filter((t) => t.isCompleted).length}
                       </span>
                       <span className="text-muted-foreground">of</span>
@@ -1214,7 +1214,7 @@ function ProfilePage() {
                       {onboardingTaskList.map((task) => (
                         <div key={task.id} className="flex items-center gap-3 px-3 py-2.5">
                           <span className={`shrink-0 size-4 rounded-full border-2 flex items-center justify-center text-xs ${
-                            task.isCompleted ? "bg-green-500 border-green-500 text-white" : "border-muted-foreground"
+                            task.isCompleted ? "bg-blue-500 border-blue-500 text-white" : "border-muted-foreground"
                           }`}>
                             {task.isCompleted ? "✓" : ""}
                           </span>
@@ -1262,7 +1262,7 @@ function ProfilePage() {
                           <p className="text-xs text-muted-foreground">Target: {plan.targetYear}</p>
                         </div>
                         <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium shrink-0 ${
-                          plan.status === "achieved" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" :
+                          plan.status === "achieved" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" :
                           plan.status === "pending" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" :
                           "bg-muted text-muted-foreground"
                         }`}>
@@ -1302,7 +1302,7 @@ function ProfilePage() {
                         <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium shrink-0 ${
                           shift.shiftType === "12hr Day" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" :
                           shift.shiftType === "12hr Night" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" :
-                          shift.shiftType === "Annual Leave" ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" :
+                          shift.shiftType === "Annual Leave" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" :
                           shift.shiftType === "Sick Leave" ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" :
                           "bg-muted text-muted-foreground"
                         }`}>

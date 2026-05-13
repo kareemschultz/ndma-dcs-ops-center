@@ -19,7 +19,7 @@ const statusConfig: Record<WorkStatus, { label: string; className: string }> = {
   in_progress: { label: "In Progress", className: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" },
   blocked: { label: "Blocked", className: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
   review: { label: "Review", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
-  done: { label: "Done", className: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+  done: { label: "Done", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
   cancelled: { label: "Cancelled", className: "bg-muted text-muted-foreground line-through" },
 };
 

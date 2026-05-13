@@ -60,8 +60,8 @@ const STATUS_CONFIG: Record<
 > = {
   active: {
     label: "Active",
-    className: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-    dotClass: "bg-green-500",
+    className: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+    dotClass: "bg-blue-500",
   },
   draft: {
     label: "Draft",
@@ -104,7 +104,7 @@ function ProgressBar({ value }: { value: number }) {
   const pct = Math.min(100, Math.max(0, value));
   const color =
     pct === 100
-      ? "bg-green-500"
+      ? "bg-blue-500"
       : pct >= 60
         ? "bg-blue-500"
         : pct >= 30
@@ -207,7 +207,7 @@ function CycleCard({ cycle }: { cycle: CycleRow }) {
             <Circle className="h-3 w-3" />
             {total} item{total !== 1 ? "s" : ""}
           </span>
-          <span className="flex items-center gap-1 text-green-600">
+          <span className="flex items-center gap-1 text-blue-600">
             <CheckCircle2 className="h-3 w-3" />
             {done} done
           </span>
@@ -448,7 +448,7 @@ function CyclesPage() {
           </Card>
           <Card className="p-4">
             <p className="text-xs text-muted-foreground">Active</p>
-            <p className="mt-1 text-2xl font-bold text-green-600">
+            <p className="mt-1 text-2xl font-bold text-blue-600">
               {activeCycles.length}
             </p>
           </Card>
@@ -511,7 +511,7 @@ function CyclesPage() {
             {activeCycles.length > 0 && (
               <section>
                 <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                  <span className="h-2 w-2 rounded-full bg-green-500" />
+                  <span className="h-2 w-2 rounded-full bg-blue-500" />
                   Active ({activeCycles.length})
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

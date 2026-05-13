@@ -42,9 +42,9 @@ export const Route = createFileRoute("/_authenticated/")({
 const READINESS_CONFIG = {
   green: {
     label: "All Systems Operational",
-    dot: "bg-green-500",
-    text: "text-green-600 dark:text-green-400",
-    ring: "ring-green-500/30",
+    dot: "bg-blue-500",
+    text: "text-blue-600 dark:text-blue-400",
+    ring: "ring-blue-500/30",
     icon: CheckCircle,
   },
   amber: {
@@ -149,8 +149,8 @@ function DashboardPage() {
       value: onCallCount,
       sub: "staff assigned on call",
       icon: CalendarClock,
-      color: "text-green-500",
-      bg: "bg-green-500/10",
+      color: "text-blue-500",
+      bg: "bg-blue-500/10",
       href: "/rota",
     },
     {
@@ -574,7 +574,7 @@ function DashboardPage() {
                         {!assignment ? (
                           <span className="text-xs text-muted-foreground italic">Unassigned</span>
                         ) : acked ? (
-                          <span className="flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
+                          <span className="flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400">
                             <CheckCircle2 className="size-3.5" /> Acknowledged
                           </span>
                         ) : (
@@ -676,7 +676,7 @@ function ReadinessRow({
       <span
         className={`flex items-center gap-1 font-medium ${
           ok
-            ? "text-green-600 dark:text-green-400"
+            ? "text-blue-600 dark:text-blue-400"
             : "text-red-600 dark:text-red-400"
         }`}
       >

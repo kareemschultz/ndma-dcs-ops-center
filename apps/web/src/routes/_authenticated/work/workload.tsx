@@ -57,10 +57,10 @@ const LOAD_CONFIG: Record<
 > = {
   low: {
     label: "Low",
-    bg: "bg-green-50 dark:bg-green-950/20",
-    text: "text-green-700 dark:text-green-300",
-    border: "border-green-200 dark:border-green-800",
-    bar: "bg-green-400",
+    bg: "bg-blue-50 dark:bg-blue-950/20",
+    text: "text-blue-700 dark:text-blue-300",
+    border: "border-blue-200 dark:border-blue-800",
+    bar: "bg-blue-400",
   },
   medium: {
     label: "Medium",
@@ -306,7 +306,7 @@ function WorkloadPage() {
           </Card>
           <Card className="p-4">
             <p className="text-xs text-muted-foreground">Overloaded</p>
-            <p className={`mt-1 text-2xl font-bold ${overloaded > 0 ? "text-red-600" : "text-green-600"}`}>
+            <p className={`mt-1 text-2xl font-bold ${overloaded > 0 ? "text-red-600" : "text-blue-600"}`}>
               {isLoading ? "—" : overloaded}
             </p>
           </Card>
@@ -394,7 +394,7 @@ function WorkloadPage() {
 
             {lowEntries.length > 0 && (
               <section>
-                <h2 className="mb-3 text-sm font-semibold text-green-600 uppercase tracking-wide">
+                <h2 className="mb-3 text-sm font-semibold text-blue-600 uppercase tracking-wide">
                   Low Load ({lowEntries.length})
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

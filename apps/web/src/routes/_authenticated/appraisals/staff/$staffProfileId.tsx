@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ClipboardCheck, Download, FileText, NotebookPen, Star } from "lucide-react";
 
@@ -66,7 +66,7 @@ function ScorePill({ score }: { score: number | null }) {
 function StatusBadge({ status }: { status: string }) {
   const tone =
     status === "approved" || status === "completed"
-      ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+      ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
       : status === "submitted"
         ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
         : status === "overdue"
@@ -80,6 +80,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function StaffAppraisalDetailPage() {
+  const navigate = useNavigate();
   const { staffProfileId } = Route.useParams();
 
   const { data, isLoading, isError } = useQuery(
@@ -160,7 +161,7 @@ function StaffAppraisalDetailPage() {
 
       <Main className="space-y-6">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" render={<Link to="/appraisals" />}>
+          <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/appraisals" })}>
             <ArrowLeft className="mr-1.5 size-3.5" />
             Back to Appraisals
           </Button>

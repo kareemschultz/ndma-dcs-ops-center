@@ -37,7 +37,7 @@ const PLATFORM_LABELS: Record<Platform, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  active: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  active: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   suspended: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
   disabled: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   pending_creation: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
@@ -47,7 +47,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 const REVIEW_STATUS_COLORS: Record<string, string> = {
   pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  approved: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  approved: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   revoked: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   escalated: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
 };
@@ -290,7 +290,7 @@ function AccountDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
-                  <Row label="VPN Enabled" value={<span className="text-green-600 font-medium">Yes</span>} />
+                  <Row label="VPN Enabled" value={<span className="text-blue-600 font-medium">Yes</span>} />
                   <Row label="VPN Group" value={account.vpnGroup ?? "—"} />
                   <Row label="VPN Profile" value={account.vpnProfile ?? "—"} />
                 </CardContent>

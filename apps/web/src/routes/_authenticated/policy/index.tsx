@@ -5,7 +5,7 @@ import { FileText, FolderOpen, ShieldCheck, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@ndma-dcs-staff-portal/ui/components/badge";
-import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
+import { Button, buttonVariants } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@ndma-dcs-staff-portal/ui/components/card";
 import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
 import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
@@ -284,10 +284,10 @@ function PolicyPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline">Updated {currentPolicy.lastUpdated}</Badge>
                         {currentPolicy.documentUrl && (
-                          <Button size="sm" variant="outline" render={<a href={currentPolicy.documentUrl} target="_blank" rel="noreferrer" />}>
+                          <a href={currentPolicy.documentUrl} target="_blank" rel="noreferrer" className={buttonVariants({ size: "sm", variant: "outline" })}>
                             <FileText className="mr-1.5 size-3.5" />
                             Open Document
-                          </Button>
+                          </a>
                         )}
                       </div>
                       <div className="rounded-xl border bg-muted/20 p-4 text-sm leading-6 whitespace-pre-wrap">
@@ -373,10 +373,10 @@ function PolicyPage() {
                     <CardContent className="space-y-3 text-sm">
                       <Badge variant="outline">{form.category}</Badge>
                       <p className="text-muted-foreground">{form.description ?? "No description provided."}</p>
-                      <Button size="sm" variant="outline" render={<a href={form.fileUrl} target="_blank" rel="noreferrer" />}>
+                      <a href={form.fileUrl} target="_blank" rel="noreferrer" className={buttonVariants({ size: "sm", variant: "outline" })}>
                         <FolderOpen className="mr-1.5 size-3.5" />
                         Download
-                      </Button>
+                      </a>
                     </CardContent>
                   </Card>
                 ))

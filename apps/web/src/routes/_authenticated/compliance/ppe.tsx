@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/compliance/ppe")({
 });
 
 const PPE_STATUSES = [
-  { value: "issued",     label: "Issued",      color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+  { value: "issued",     label: "Issued",      color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
   { value: "not_issued", label: "Not Issued",  color: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
   { value: "n_a",        label: "N/A",         color: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400" },
   { value: "lost",       label: "Lost",        color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },

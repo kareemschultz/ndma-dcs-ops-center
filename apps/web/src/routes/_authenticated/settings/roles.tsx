@@ -102,7 +102,7 @@ function RolesSettingsPage() {
                     return (
                       <TableCell key={role.key} className="text-center">
                         {hasRead ? (
-                          <span className="inline-flex items-center gap-0.5 text-xs text-green-600">
+                          <span className="inline-flex items-center gap-0.5 text-xs text-blue-600">
                             <Check className="size-3" />
                             {hasWrite ? "R/W" : "R"}
                           </span>

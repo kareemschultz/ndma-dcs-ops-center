@@ -41,6 +41,8 @@
     "db:generate": "turbo -F @ndma-dcs-staff-portal/db db:generate",
     "db:migrate": "turbo -F @ndma-dcs-staff-portal/db db:migrate",
     "db:seed:historical": "bun packages/db/src/seed-historical.ts",
+    "sot:extract": "bun scripts/extract-source-of-truth.ts",
+    "sot:extract:summary": "bun scripts/extract-source-of-truth.ts --summary",
     "db:start": "turbo -F @ndma-dcs-staff-portal/db db:start",
     "db:watch": "turbo -F @ndma-dcs-staff-portal/db db:watch",
     "db:stop": "turbo -F @ndma-dcs-staff-portal/db db:stop",

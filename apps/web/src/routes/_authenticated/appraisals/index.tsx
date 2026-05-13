@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode } from "react";
 import { useState } from "react";
@@ -119,9 +119,9 @@ const STATUS_COLORS: Record<AppraisalStatus, string> = {
   scheduled: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   in_progress: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
   submitted: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  approved: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  approved: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   rejected: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
-  completed: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  completed: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   overdue: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
 };
 
@@ -130,15 +130,15 @@ const KPI_STATUS_COLORS: Record<string, string> = {
   Pending_Approval: "#f59e0b",
   Approved_By_Manager: "#3b82f6",
   Processed_By_PA: "#8b5cf6",
-  Completed: "#22c55e",
+  Completed: "#3b82f6",
   Rejected: "#ef4444",
   Overdue: "#ef4444",
   Other: "#64748b",
 };
 
 const SCORE_BAND_COLORS: Record<string, string> = {
-  "90-100": "#16a34a",
-  "80-89": "#22c55e",
+  "90-100": "#2563eb",
+  "80-89": "#3b82f6",
   "70-79": "#f59e0b",
   "Below 70": "#ef4444",
   "No Score": "#94a3b8",
@@ -183,6 +183,7 @@ function StatCard({
 }
 
 function AppraisalsPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { team } = useTeamFilter();
   const [tab, setTab] = useState("records");
@@ -300,7 +301,7 @@ function AppraisalsPage() {
           <span className="text-sm font-medium">Appraisals</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
-          <Button variant="outline" size="sm" render={<Link to="/appraisals/inbox" />}>
+          <Button variant="outline" size="sm" onClick={() => navigate({ to: "/appraisals/inbox" })}>
             <Inbox className="mr-1.5 size-3.5" />
             Inbox
           </Button>
@@ -342,8 +343,8 @@ function AppraisalsPage() {
               <StatCard
                 title="Average Score"
                 value={kpis?.averageScore != null ? `${kpis.averageScore}%` : "—"}
-                icon={<TrendingUp className="size-4 text-green-600" />}
-                tone="bg-green-50 dark:bg-green-950/40"
+                icon={<TrendingUp className="size-4 text-blue-600" />}
+                tone="bg-blue-50 dark:bg-blue-950/40"
               />
               <StatCard
                 title="Completion Rate"
@@ -389,8 +390,8 @@ function AppraisalsPage() {
               <StatCard
                 title="Approved / Completed"
                 value={(totals.approvedCount + totals.completedCount).toString()}
-                icon={<TrendingUp className="size-4 text-green-600" />}
-                tone="bg-green-50 dark:bg-green-950/40"
+                icon={<TrendingUp className="size-4 text-blue-600" />}
+                tone="bg-blue-50 dark:bg-blue-950/40"
               />
               <StatCard
                 title="Submitted"
@@ -526,7 +527,7 @@ function AppraisalsPage() {
                         <Tooltip contentStyle={chartTheme.tooltipContent} />
                         <Legend iconType="circle" iconSize={8} />
                         <Bar dataKey="total" name="Total" fill="#cbd5e1" radius={[6, 6, 0, 0]} />
-                        <Bar dataKey="completed" name="Completed" fill="#22c55e" radius={[6, 6, 0, 0]} />
+                        <Bar dataKey="completed" name="Completed" fill="#3b82f6" radius={[6, 6, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -603,7 +604,7 @@ function AppraisalsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          render={<Link to="/appraisals/staff/$staffProfileId" params={{ staffProfileId: appraisal.staffProfileId }} />}
+                          onClick={() => navigate({ to: "/appraisals/staff/$staffProfileId", params: { staffProfileId: appraisal.staffProfileId } })}
                         >
                           View Staff
                         </Button>

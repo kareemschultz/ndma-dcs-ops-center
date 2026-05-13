@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/compliance/items")({
 
 function ComplianceStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    current: { label: "Current", cls: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+    current: { label: "Current", cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
     expiring_soon: { label: "Expiring Soon", cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
     expired: { label: "Expired", cls: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 font-semibold" },
     not_started: { label: "Not Started", cls: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" },
@@ -58,10 +58,10 @@ function ComplianceItemsPage() {
             ))}
           </div>
         ) : totalExpiring === 0 ? (
-          <div className="rounded-xl border border-green-200 bg-green-50 dark:bg-green-900/20 p-8 text-center">
-            <Shield className="size-8 text-green-600 mx-auto mb-2" />
-            <p className="font-medium text-green-700 dark:text-green-300">All compliance items are current</p>
-            <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+          <div className="rounded-xl border border-blue-200 bg-blue-50 dark:bg-blue-900/20 p-8 text-center">
+            <Shield className="size-8 text-blue-600 mx-auto mb-2" />
+            <p className="font-medium text-blue-700 dark:text-blue-300">All compliance items are current</p>
+            <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
               No training or PPE items expiring within the next 90 days.
             </p>
           </div>

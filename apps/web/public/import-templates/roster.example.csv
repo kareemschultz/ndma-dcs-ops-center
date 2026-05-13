@@ -1,0 +1,3 @@
+rosterType,staffEmail,staffId,department,year,period,shiftDate,shiftType,startTime,endTime,notes
+dcs_oncall,sachin.rampersaud@ndma.gov.gh,EMP-0001,DCS,2026,week_0317,2026-03-17,lead,,,Lead engineer week 12
+noc_shift,wynonna.watson@ndma.gov.gh,EMP-NOC-007,NOC,2026,m_03,2026-03-12,12hr Day,07:00,19:00,Standard day shift

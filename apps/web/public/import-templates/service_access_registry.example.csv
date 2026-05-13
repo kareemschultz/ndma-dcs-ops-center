@@ -1,0 +1,3 @@
+staffEmail,platformName,accountUsername,accountType,accountActive,privilegeLevel,groups,usernameSource,accountTypeSource,privilegeSource,groupsSource,notes
+alice.mensah@ndma.gov.gh,Fortigate,alice.mensah,sso,true,admin,FortiClient-VPN-Admins,sync_adapter,sync_adapter,manual,manual,
+bob.asante@ndma.gov.gh,Plum,basante,local,true,operator,plum-operators,manual,manual,manual,manual,

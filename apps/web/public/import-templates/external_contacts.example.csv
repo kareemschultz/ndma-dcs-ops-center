@@ -1,0 +1,3 @@
+company,fullName,role,email,phone,vpnAccess,notes
+Huawei GY,Liang Wei,Account Manager,liang.wei@huawei.com,+592-555-0100,false,Primary contact for OptiX support
+GTT,Mark Allicock,Field Engineer,mark.allicock@gtt.gy,+592-555-0200,true,On-site for fibre maintenance

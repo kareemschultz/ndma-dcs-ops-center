@@ -75,7 +75,7 @@ function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     active: {
       label: "Active",
-      cls: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+      cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
     },
     pending_removal: {
       label: "Pending Removal",
@@ -115,7 +115,7 @@ function StatusBadge({ status }: { status: string }) {
 function RiskBadge({ risk }: { risk?: string | null }) {
   if (!risk) return null;
   const map: Record<string, string> = {
-    low: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+    low: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
     medium: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
     high: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
     critical:
@@ -350,7 +350,7 @@ function MarkRemovedDialog({
             <Button
               type="submit"
               disabled={isPending || !notes.trim()}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {isPending ? "Marking..." : "Confirm Removal"}
             </Button>
@@ -739,7 +739,7 @@ function ActionButtons({
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
+          className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
           onClick={() => onMarkRemoved(change)}
           title="Mark as Removed"
         >

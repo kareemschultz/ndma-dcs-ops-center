@@ -35,7 +35,7 @@ function daysUntil(dateStr: string): number {
 
 function DaysRemainingBadge({ dateStr }: { dateStr: string }) {
   const days = daysUntil(dateStr);
-  let cls = "text-green-600 dark:text-green-400 font-medium";
+  let cls = "text-blue-600 dark:text-blue-400 font-medium";
   if (days < 30) cls = "text-red-600 dark:text-red-400 font-semibold";
   else if (days <= 60) cls = "text-amber-600 dark:text-amber-400 font-medium";
   return <span className={cls}>{days}d</span>;

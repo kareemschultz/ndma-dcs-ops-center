@@ -1,0 +1,3 @@
+recordKind,projectTitle,taskTitle,subTask,description,status,priority,assignedTo,departmentCode,dueDate,period,estimatedHours,externalSource,externalLink,removalDate,followUpDate,notes,year
+work_item,DCS Core Upgrade,Replace EOL switches,Phase 1 inventory,Inventory all switches at DCS-Core,in_progress,high,alice.mensah@ndma.gov.gh,DCS,2026-04-30,week_0317,12,,,2026-05-30,2026-04-30,Inventory complete by week 14,2026
+routine,Server Room Cleaning,Q2 cleaning,,Q2 quarterly server room cleaning,scheduled,medium,bob.asante@ndma.gov.gh,DCS,2026-06-30,routine,2,,,,2026-06-30,,2026

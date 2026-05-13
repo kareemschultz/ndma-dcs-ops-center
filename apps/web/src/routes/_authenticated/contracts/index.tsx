@@ -49,7 +49,7 @@ type RenewalStatus =
   | "not_renewing";
 
 const STATUS_COLORS: Record<ContractStatus, string> = {
-  active: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  active: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   expiring_soon: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
   expired: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   renewed: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
@@ -61,7 +61,7 @@ const RENEWAL_STATUS_COLORS: Record<RenewalStatus, string> = {
   due_soon: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
   letter_drafted: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   submitted_to_hr: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
-  renewed: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  renewed: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   not_renewing: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
 };
 

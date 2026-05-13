@@ -790,7 +790,7 @@ export const rotaRouter = {
     }),
 
   // Acknowledge an on-call assignment — staff confirms they received it
-  acknowledge: protectedProcedure
+  acknowledge: requireRole("rota", "update")
     .input(z.object({ assignmentId: z.string() }))
     .handler(async ({ input, context }) => {
       const assignment = await db.query.onCallAssignments.findFirst({

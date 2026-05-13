@@ -1,0 +1,3 @@
+staff_email,ipam_access,ipam_role,zabbix_access,zabbix_role,esight_access,esight_role,ivsneteco_access,ivsneteco_role,nce_fan_access,nce_fan_role,neteco_access,neteco_role,lte_grafana_access,lte_grafana_role,generator_grafana_access,generator_grafana_role,plum_access,plum_role,kibana_access,kibana_role,radius_access,radius_role,forticlient_access,forticlient_role,mifi_vpn_access
+alice.mensah@ndma.gov.gh,true,admin,true,operator,false,,true,viewer,false,,true,operator,true,viewer,false,,true,operator,true,viewer,true,operator,true,enabled,true
+bob.asante@ndma.gov.gh,true,operator,true,operator,true,operator,true,operator,true,viewer,true,operator,true,viewer,false,,true,operator,false,,true,viewer,true,enabled,true

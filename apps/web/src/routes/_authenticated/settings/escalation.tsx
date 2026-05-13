@@ -192,7 +192,7 @@ function PolicyCard({ policy }: { policy: PolicyWithSteps }) {
               <span
                 className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium ${
                   policy.isActive
-                    ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
                     : "bg-muted text-muted-foreground"
                 }`}
               >

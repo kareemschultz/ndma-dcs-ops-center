@@ -1,0 +1,3 @@
+staffEmail,platformName,accountUsername,accountType,accountActive,privilegeLevel,notes
+alice.mensah@ndma.gov.gh,IPAM,alice.mensah,local,true,admin,Full IPAM admin
+bob.asante@ndma.gov.gh,Zabbix,basante,sso,true,operator,Read-only after promotion to lead

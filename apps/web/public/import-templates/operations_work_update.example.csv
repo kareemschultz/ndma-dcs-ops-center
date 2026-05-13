@@ -1,0 +1,3 @@
+recordType,sheetName,year,period,taskAssigned,subTask,dateAssigned,details,updateStatus,deadlineOrOverdue,deadlineDate,weeksOverdue,engineer,sourceSystem,priority,scheduledDate,dueDate,folder,estimatedHours,followUpDate,notes
+work_item,Week 12,2026,week_0317,DCS Patch Window,Apply 2026.03 firmware updates,2026-03-17,12 routers + 8 switches,in_progress,2026-03-22,2026-03-22,0,alice.mensah@ndma.gov.gh,manual,high,2026-03-17,2026-03-22,DCS-Core,8,2026-03-25,Patch all enterprise routers
+routine,Routine,2026,routine,Q1 Server Room Cleaning,Vacuum + dust filter check,2026-03-30,Castellani server room,scheduled,2026-04-15,2026-03-30,0,bob.asante@ndma.gov.gh,manual,medium,2026-03-30,2026-03-30,DCS-Ops,2,,

@@ -75,9 +75,9 @@ const STATUS_STYLES: Record<AppraisalStatus, string> = {
   scheduled: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   in_progress: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
   submitted: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  approved: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  approved: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   rejected: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
-  completed: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  completed: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   overdue: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
 };
 
@@ -98,7 +98,7 @@ function ScoreBar({ score }: { score: number | null | undefined }) {
   }
   const color =
     score >= 80
-      ? "bg-green-500"
+      ? "bg-blue-500"
       : score >= 60
         ? "bg-amber-500"
         : "bg-red-500";
@@ -113,7 +113,7 @@ function ScoreBar({ score }: { score: number | null | undefined }) {
       <span
         className={`text-sm font-semibold tabular-nums ${
           score >= 80
-            ? "text-green-600 dark:text-green-400"
+            ? "text-blue-600 dark:text-blue-400"
             : score >= 60
               ? "text-amber-600 dark:text-amber-400"
               : "text-red-600 dark:text-red-400"
@@ -477,7 +477,7 @@ function AppraisalDetailPage() {
 
           {/* Banners */}
           {(status === "approved" || status === "completed") && (
-            <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 dark:bg-green-900/20 p-4 text-green-800 dark:text-green-300">
+            <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 dark:bg-blue-900/20 p-4 text-blue-800 dark:text-blue-300">
               <CheckCircle2 className="size-5 shrink-0" />
               <div>
                 <p className="font-semibold">Appraisal Approved</p>
@@ -717,7 +717,7 @@ function AppraisalDetailPage() {
             {canApproveReject && (
               <>
                 <Button
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={handleApprove}
                   disabled={approveMutation.isPending}
                 >
