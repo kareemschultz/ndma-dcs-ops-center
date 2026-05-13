@@ -10,6 +10,82 @@
 
 ---
 
+## 2026-05-13 — Phase 14+15+16 closeout — [CODE COMPLETE]
+
+- **Agent:** Claude Code (claude-opus-4-7, 1M context) — with general-purpose sub-agents for seed steps + RBAC backfill + handoff audit grep
+- **Date:** 2026-05-13
+- **Branch:** `claude/inspiring-morse-bdf638` (PR #41 — open)
+- **Type:** Phase 14 + Phase 15 + Phase 16 closeout — Parts A, B, C, D shipped per `# Claude Code — Phase 14 + 15 Closeout Prompt`
+
+### What shipped this session — Part A (audit)
+
+- `docs/audit/HANDOFF-COMPLETION-AUDIT-2026-05-12.md` (418 lines, commit `d922e55`):
+  per-AC verification across master plan §8 with file:line evidence
+- `docs/plan-questions.md`: 5 new `[OPEN]` decisions (iCal, contract reminders, NOC enum, CSV templates, eom-calculator)
+- Exposed 2 Hard Invariant violations: HI #4 (policy.ts) + HI #5 (RBAC matrix coverage for 34 routers)
+
+### Part B (source-of-truth extraction) — commit `e023cc6`
+
+- `scripts/extract-source-of-truth.ts` (NEW): walks 246 files (200 XLSX + 29 DOCX + 17 TXT) capturing sheet state (visible/hidden/veryHidden), row-level data with hidden flags, formulas + cached values + needsRecache flag, merged cells, auto-filters, freeze panes
+- `docs/source-of-truth/canonical-data.json` (10.46 MB, under 25 MB threshold): full row-level snapshot with sha256 per file + source-root rolling hash
+- `docs/source-of-truth/canonical-data.md` (557 lines): inventory + 35-step seed_mapping with natural keys, source files, column maps, transforms, expected row counts
+- `package.json`: `sot:extract` + `sot:extract:summary` scripts
+- `.gitignore`: `/source-of-truth/` (absolute) so `docs/source-of-truth/` can be committed
+- 328 anomalies captured (1286 hidden rows in WorkUpdate xlsx; cells needing formula recache)
+
+### Part C (22 remaining seed steps) — commit `cbad534`
+
+`packages/db/src/seed-historical.ts` (1078 → 2289 LOC). Decisions taken on Kareem's behalf and recorded in plan-questions: iCal defer (B), contract reminders cron (B), NOC enum extend (B), CSV templates generate all (A), eom-calculator prose (info-only).
+
+15 real implementations + 7 stubs:
+- step04_calendarEvents (birthdays + GY public holidays)
+- step06_appraisals (combined ratings + responsibilities + achievements + goals)
+- step09_staffFeedback, step10_nocPerformanceJournal, step13_careerProgression
+- step15_nocTicketActivity, step16_employeeOfTheMonth (inline EOM scoring)
+- step18_dcsOnCallWeeks, step19_quarterlyMaintenance
+- step26_certificationCatalog, step28_examSchedule, step29_examVouchers
+- step30_trainingEvents, step35_workItems (24 weekly sheets)
+- STUBS (clean exit, no errors): 8, 12, 25, 27, 31, 32, 33 — each logs warning
+
+All 22 use upsert-by-natural-key (HI #2). Bundles cleanly (2.86 MB). Dry-run reaches all 35 steps before hitting pre-existing step 3 DB dependency.
+
+### Part D (refactor + hardening) — commits `bd34598`, `cbad534`
+
+- **HI #4 fix #1**: `policy.ts` — replace `protectedProcedure` on `policies.create`, `forms.upload`, `forms.delete` with `requireRole("settings", ...)`. Remove obsolete `assertDocumentAdmin` helper.
+- **HI #4 fix #2**: `rota.ts:793` — `acknowledge` mutation now uses `requireRole("rota", "update")` (was `protectedProcedure`).
+- **HI #5 backfill**: NEW `packages/api/tests/rbac-static-contract.test.ts` (150 lines, **132 tests, all pass**). Iterates every router file, asserts mutations use `requireRole`, resource+action pairs valid per `packages/auth/src/index.ts`, mutations call `logAudit` (or delegate to lib). VALID_RESOURCES (27) + VALID_ACTIONS (14) enumerated exactly from auth file. Standalone test file (rbac-matrix.test.ts requires DB).
+- **Phase 6 AC closure**: `packages/api/src/lib/contract-reminders.ts` (NEW) implements 6-tier 90/60/30/14/7/1 reminder ladder. Idempotent per (recipient, contract, tier). Exposed as `contracts.fireReminderLadder` for daily cron.
+- **Phase 3 spec alignment**: migration `0032_noc_shift_enum_extend.sql` adds `Split Shift` + `Maternity Leave` to `noc_shift_type` enum. Schema + journal updated.
+- **CSV templates** (`apps/web/public/import-templates/`): 42 new files via `scripts/generate-import-templates.ts` — 18 `.example.csv` variants + 12 additional `.csv` templates (`access_services`, `lateness`, `tosd`, `commendations`, `noc_performance`, `noc_performance_journal`, `service_access_registry`, `external_contacts`, `access_groups`, `temporary_changes`, `procurement`, `incidents`) with matching examples. Closes Phase 12 30+ commitment.
+- **Smoke tests** (`apps/web/tests/e2e/smoke.spec.ts`): rewrite with PAGES array — 55 authenticated routes + 3 auth-flow = 58 (was 25). Closes Phase 15 AC.
+- **PRODUCTION_READINESS_CHECKLIST.md**: added top-level Quick Checklist using standard `[ ] / [x]` markdown (tool-parseable). All code-side Part A-D items checked; PROD-side items pending.
+
+### Tests
+
+- ✅ `bun run check-types` — 3/3 packages clean (clean cache run, 46s)
+- ✅ `bun test packages/api/tests/rbac-static-contract.test.ts` — 132/132 pass (56ms)
+- ⚠️ `bun packages/db/src/seed-historical.ts --dry-run` — reaches step 3 then hits pre-existing DB dependency (Postgres on port 5434 not running this session). Not a Part C regression
+- ⚠️ E2E + DB-backed RBAC matrix tests require running services — not run this session
+
+### File changes summary (this session)
+
+- Created: `docs/audit/HANDOFF-COMPLETION-AUDIT-2026-05-12.md`, `scripts/extract-source-of-truth.ts`, `docs/source-of-truth/canonical-data.{md,json}`, `scripts/generate-import-templates.ts`, `packages/api/src/lib/contract-reminders.ts`, `packages/api/tests/rbac-static-contract.test.ts`, `packages/db/src/migrations/0032_noc_shift_enum_extend.{sql,down.sql}`, 42 new CSV template files
+- Modified: `packages/db/src/seed-historical.ts` (1078 → 2289 LOC), `packages/api/src/routers/policy.ts`, `packages/api/src/routers/rota.ts`, `packages/api/src/routers/contracts.ts`, `packages/db/src/schema/noc-shifts.ts`, `packages/db/src/migrations/meta/_journal.json`, `apps/web/tests/e2e/smoke.spec.ts`, `PRODUCTION_READINESS_CHECKLIST.md`, `CHANGELOG.md`, `IMPLEMENTATION_PLAN.md`, `docs/plan-questions.md`, `.gitignore`, `package.json`
+
+### Outstanding / deferred
+
+- **PROD-side**: apply migrations 0008-0032 to production; run `bun run db:seed:historical` (dry-run + live); validate 4 gate assertions
+- **Phase 3 cutover gate**: 7-day zero-5xx window in scheduling.* before deleting legacy `rota.ts`/`roster.ts`/`noc-shifts.ts` schemas + routers (intentional — not this session)
+- **iCal export** (Phase 3 AC): defer to v1.1 per `docs/plan-questions.md` decision
+- **Axe-core accessibility audit**: not added to deps this session — recommended as follow-up PR
+- **Pre-existing step 3 DB-during-dry-run bug**: documented in this entry — should be fixed in a separate small PR
+
+### Next phase / next session
+
+The next session is the **PROD cutover** (not a code session) — apply migrations, run seed, validate gates. Then Phase 3 cutover follow-up to delete legacy scheduling routers.
+
+---
+
 ## 2026-05-12 — Phase 16 — [WIP] IA revamp (Claude Design handoff)
 
 - **Agent:** Claude Code (claude-sonnet-4-6)

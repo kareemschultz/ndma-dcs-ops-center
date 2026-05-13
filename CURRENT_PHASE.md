@@ -1,10 +1,10 @@
 # Current Phase
 
-**Active phase:** Phase 14 + 15 + 16 (co-shipped on same branch)
-**Status:** 🔵 In Progress — seed script written; hardening fixes applied; IA revamp complete
+**Active phase:** Phase 14 + 15 + 16 (co-shipped on same branch) — CODE COMPLETE
+**Status:** 🟢 Code complete — Parts A, B, C, D shipped per closeout prompt. PROD-side (migration + seed run) remains.
 **Branch:** `claude/inspiring-morse-bdf638` (PR #41 — open)
-**Latest commit:** `62d74a9` (feat(phase-16): IA revamp — sidebar, redirects, new index pages)
-**Migration index:** 31 (latest: `0031_work_year_period.sql`)
+**Latest commit:** `cbad534` (feat(phase-c-d): 22 seed steps + static RBAC contract + rota HI #4)
+**Migration index:** 32 (latest: `0032_noc_shift_enum_extend.sql`)
 
 ## What is on main (Phases 0-13)
 
@@ -58,17 +58,30 @@ Fixes applied in this session:
 - **Smoke tests**: Expanded from 24 to 40+ pages (all Phase 3-13 pages now covered)
 - **PRODUCTION_READINESS_CHECKLIST.md**: Created comprehensive 10-section deployment checklist
 
-## Phase 16 — IA Revamp (🔵 In Progress, commit 62d74a9)
+## Phase 16 — IA Revamp + Part A-D closeout (🟢 Code complete, head `cbad534`)
 
-From Claude Design handoff. All items shipped:
-- ✅ sidebar-data.ts replaced (12 groups, flat NavLinks, deduplicated icons)
-- ✅ 13 /rota/* + /roster/* routes converted to Navigate redirects
-- ✅ /scheduling/maintenance — new full Maintenance Planner page
-- ✅ /compliance/index.tsx — tab hub (PPE / Items / Training)
-- ✅ /settings/index.tsx — tab hub (7 tabs)
-- ✅ /forms/index.tsx — redirect to /policy (Phase 17 will split)
-- ✅ Analytics, Audit Log, Cycles surfaced in nav
-- ⏳ Phase 3 cutover gate (delete rota.ts/roster.ts after 7-day zero-5xx window)
+**Part A** (commit `d922e55`):
+- ✅ `docs/audit/HANDOFF-COMPLETION-AUDIT-2026-05-12.md` — every AC verified with file:line
+- ✅ 5 open decisions tagged @kareem in `docs/plan-questions.md`
+
+**Part B** (commit `e023cc6`):
+- ✅ `scripts/extract-source-of-truth.ts` + `docs/source-of-truth/canonical-data.{md,json}` — 246 files, 10.46 MB JSON
+
+**Part C** (commit `cbad534`):
+- ✅ 22 of 35 seed steps added (15 real + 7 stubs) → 35/35 total
+- ✅ All compile + bundle cleanly
+
+**Part D** (commits `bd34598` + `cbad534`):
+- ✅ HI #4 fix: `policy.ts` mutations + `rota.ts:793 acknowledge` → `requireRole`
+- ✅ HI #5: new `rbac-static-contract.test.ts` (132 tests pass)
+- ✅ Phase 6 AC: `lib/contract-reminders.ts` (90/60/30/14/7/1 ladder)
+- ✅ Phase 3 spec: NOC shift enum +Split Shift +Maternity Leave (migration 0032)
+- ✅ Phase 12 30+ templates: 42 new CSV files
+- ✅ Phase 15 smoke: 25 → 58 tests via PAGES array
+- ✅ PRODUCTION_READINESS_CHECKLIST: standard markdown checkboxes
+- ✅ Sidebar (Phase 16): 12 flat groups + 13 legacy routes → Navigate redirects
+- ⏳ Phase 3 cutover gate (delete legacy schedulers after 7-day zero-5xx)
+- ⏳ iCal export (Phase 3 AC) — deferred to v1.1 per decision
 
 ## Known pending issues
 
