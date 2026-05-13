@@ -4,6 +4,31 @@ All notable changes to DCS Ops Center are documented here.
 
 ---
 
+## [Phase 16 — IA revamp + Phase 14+15 closeout] — 2026-05-13
+
+### Added
+- **Design-handoff completion audit** (`docs/audit/HANDOFF-COMPLETION-AUDIT-2026-05-12.md`): cross-checks every master-plan §8 acceptance criterion against shipped code with file:line evidence. Identifies 9 carry-forward items + 5 open decision questions.
+- **Canonical source-of-truth extraction** (`scripts/extract-source-of-truth.ts` + `docs/source-of-truth/canonical-data.{md,json}`): one-time deterministic snapshot of all 246 source files (200 XLSX + 29 DOCX + 17 TXT). 10.46 MB JSON preserves hidden rows, formula+cached values, merged cells. 35-step seed_mapping committed. Run: `bun run sot:extract`.
+- **Contract reminder ladder** (`packages/api/src/lib/contract-reminders.ts`): 6-tier 90/60/30/14/7/1-day reminders for contract expiry. Idempotent. Exposed as `contracts.fireReminderLadder` for daily cron at 09:00 GYT. (Closes Phase 6 AC.)
+- **NOC shift enum extension** (migration 0032): adds `Split Shift` + `Maternity Leave` to `noc_shift_type` enum (Phase 3 spec alignment).
+- **30 new import templates** (`apps/web/public/import-templates/`): 18 `.example.csv` variants for existing templates + 12 additional templates (`access_services`, `lateness`, `tosd`, `commendations`, `noc_performance`, `noc_performance_journal`, `service_access_registry`, `external_contacts`, `access_groups`, `temporary_changes`, `procurement`, `incidents`) with matching `.example.csv` companions. (Closes Phase 12 30+ commitment.) Regenerator: `scripts/generate-import-templates.ts`.
+- **IA revamp** (Phase 16): replaced `sidebar-data.ts` with 12 flat nav groups (Claude Design handoff), deduplicated icons, surfaced orphaned `/analytics`, `/audit`, `/cycles` routes.
+- **4 new tab-hub pages**: `/scheduling/maintenance`, `/compliance` (index), `/settings` (index), `/forms` (→ /policy redirect).
+
+### Fixed
+- **Hard Invariant #4 violation** (`packages/api/src/routers/policy.ts`): replaced `protectedProcedure` on `policies.create`, `forms.upload`, `forms.delete` with `requireRole("settings", "create"/"delete")`. Removed obsolete `assertDocumentAdmin` helper.
+
+### Changed
+- **13 legacy `/rota/*` + `/roster/*` routes** converted to `<Navigate replace>` redirects pointing at `/scheduling/dcs-oncall` / `/scheduling/noc-shifts`. Legacy routers still mounted pending Phase 3 cutover gate.
+- **Smoke tests** (`apps/web/tests/e2e/smoke.spec.ts`): rewrite with PAGES array — 55 authenticated routes + 3 auth-flow tests = 58 total (was 25). All Phase 0-16 routes covered.
+- **`PRODUCTION_READINESS_CHECKLIST.md`**: added top-level Quick Checklist section with standard markdown `[ ] / [x]` checkboxes (tool-parseable). All code-side Part A-D items marked complete; PROD-side items remain pending.
+
+### Deferred (with @kareem decision recorded in `docs/plan-questions.md`)
+- **iCal export** for `/scheduling/*` (Phase 3 AC) → defer to v1.1 (Option B)
+- **eom-calculator.ts** file extraction → CLAUDE.md prose update only (inline implementation is fine)
+
+---
+
 ## [Phase 15 — Hardening + Phase 14 Seed Script] — 2026-05-08
 
 ### Added
