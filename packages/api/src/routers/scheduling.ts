@@ -53,7 +53,7 @@ export const schedulingRouter = {
             z.object({
               staffId: z.string().min(1),
               shiftDate: z.string(),
-              shiftType: z.enum(["12hr Day", "12hr Night", "Off", "Annual Leave", "Sick Leave"]),
+              shiftType: z.enum(["12hr Day", "12hr Night", "Split Shift", "Off", "Annual Leave", "Sick Leave", "Maternity Leave", "Training", "Custom"]),
             }),
           ),
         }),
@@ -100,7 +100,7 @@ export const schedulingRouter = {
       .input(
         z.object({
           id: z.number().int(),
-          shiftType: z.enum(["12hr Day", "12hr Night", "Off", "Annual Leave", "Sick Leave"]),
+          shiftType: z.enum(["12hr Day", "12hr Night", "Split Shift", "Off", "Annual Leave", "Sick Leave", "Maternity Leave", "Training", "Custom"]),
         }),
       )
       .handler(async ({ input, context }) => {
@@ -300,6 +300,26 @@ export const schedulingRouter = {
         });
 
         return upserted;
+      }),
+
+    delete: requireRole("shift", "delete")
+      .input(z.object({ id: z.string().min(1) }))
+      .handler(async ({ input, context }) => {
+        await db
+          .delete(quarterlyMaintenanceTasks)
+          .where(eq(quarterlyMaintenanceTasks.id, input.id));
+        await logAudit({
+          actorId: context.session.user.id,
+          actorName: context.session.user.name,
+          actorRole: context.userRole ?? undefined,
+          action: "scheduling.maintenance.delete",
+          module: "scheduling",
+          resourceType: "quarterly_maintenance_task",
+          resourceId: input.id,
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+          correlationId: context.requestId,
+        });
       }),
   },
 

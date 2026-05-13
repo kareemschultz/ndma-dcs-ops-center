@@ -513,6 +513,33 @@ export const leaveRouter = {
 
         return updated;
       }),
+
+    delete: requireRole("leave", "delete")
+      .input(z.object({ id: z.string().min(1) }))
+      .handler(async ({ input, context }) => {
+        const before = await db.query.leaveRequests.findFirst({
+          where: eq(leaveRequests.id, input.id),
+        });
+        if (!before) throw new ORPCError("NOT_FOUND");
+
+        await db.delete(leaveRequests).where(eq(leaveRequests.id, input.id));
+
+        await logAudit({
+          actorId: context.session.user.id,
+          actorName: context.session.user.name,
+          actorRole: context.userRole ?? undefined,
+          action: "leave_request.delete",
+          module: "leave",
+          resourceType: "leave_request",
+          resourceId: input.id,
+          beforeValue: before as Record<string, unknown>,
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+          correlationId: context.requestId,
+        });
+
+        return before;
+      }),
   },
 
   // ── Team calendar: approved leave for a date range ─────────────────────

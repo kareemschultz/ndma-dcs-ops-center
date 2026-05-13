@@ -20,6 +20,8 @@ export const nocShiftTypeEnum = pgEnum("noc_shift_type", [
   "Annual Leave",
   "Sick Leave",
   "Maternity Leave",
+  "Training",
+  "Custom",
 ]);
 
 export const nocShifts = pgTable(

@@ -18,6 +18,7 @@ import {
   CalendarDays,
   ClipboardList,
   Clock,
+  FileText,
   GraduationCap,
   KeyRound,
   LayoutDashboard,
@@ -25,6 +26,7 @@ import {
   Settings,
   ShoppingCart,
   Shield,
+  Timer,
   Users,
   Wrench,
 } from "lucide-react";
@@ -77,8 +79,8 @@ export const sidebarData: Omit<SidebarData, "user"> = {
       title: "Time & Attendance",
       items: [
         { title: "Attendance Logs", url: "/attendance",  icon: Clock },
-        { title: "Lateness Report", url: "/lateness",    icon: Clock },
-        { title: "Timesheets",      url: "/timesheets",  icon: Clock },
+        { title: "Lateness Report", url: "/lateness",    icon: Timer },
+        { title: "Timesheets",      url: "/timesheets",  icon: FileText },
       ],
     },
     {

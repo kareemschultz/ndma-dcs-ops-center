@@ -29,6 +29,16 @@ function formatTime(value?: string | null) {
   }
 }
 
+function minutesLate(clockIn?: string | null): number | null {
+  if (!clockIn) return null;
+  const parts = clockIn.split(":");
+  const h = parseInt(parts[0] ?? "0", 10);
+  const m = parseInt(parts[1] ?? "0", 10);
+  const totalMins = h * 60 + m;
+  const grace = 8 * 60 + 15; // 8:15
+  return totalMins > grace ? totalMins - grace : null;
+}
+
 function AttendancePage() {
   const [tab, setTab] = useState("lateness");
   const [sortKey, setSortKey] = useState<"late" | "days">("late");
@@ -161,6 +171,7 @@ function AttendancePage() {
                       <TableHead>Staff</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Clock In</TableHead>
+                      <TableHead>Late (mins)</TableHead>
                       <TableHead>Clock Out</TableHead>
                       <TableHead>Work Hours</TableHead>
                       <TableHead>Status</TableHead>
@@ -170,7 +181,7 @@ function AttendancePage() {
                     {logsLoading ? (
                       Array.from({ length: 6 }).map((_, i) => (
                         <TableRow key={i}>
-                          {Array.from({ length: 6 }).map((_, j) => (
+                          {Array.from({ length: 7 }).map((_, j) => (
                             <TableCell key={j}>
                               <Skeleton className="h-4 w-full" />
                             </TableCell>
@@ -179,25 +190,33 @@ function AttendancePage() {
                       ))
                     ) : !logs?.length ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                        <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                           No attendance logs found.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      logs.map((row) => (
+                      logs.map((row) => {
+                        const late = minutesLate(row.clockIn);
+                        return (
                         <TableRow key={row.id}>
                           <TableCell className="font-medium">
                             {row.staffProfile?.user?.name ?? "—"}
                           </TableCell>
                           <TableCell>{row.date ? format(parseISO(row.date), "dd MMM yyyy") : "—"}</TableCell>
                           <TableCell>{formatTime(row.clockIn)}</TableCell>
+                          <TableCell>
+                            {late !== null
+                              ? <span className="font-mono text-amber-600 dark:text-amber-400">{late} min</span>
+                              : <span className="text-muted-foreground">—</span>}
+                          </TableCell>
                           <TableCell>{formatTime(row.clockOut)}</TableCell>
                           <TableCell className="font-mono">{row.workHours ?? "—"}</TableCell>
                           <TableCell>
                             <Badge variant="outline">{row.status}</Badge>
                           </TableCell>
                         </TableRow>
-                      ))
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>
