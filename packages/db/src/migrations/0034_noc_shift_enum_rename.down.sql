@@ -1,0 +1,12 @@
+-- Down migration for 0034 is not reversible cleanly.
+--
+-- PostgreSQL supports RENAME VALUE (since PG 10) but does NOT support removing enum values.
+-- The renames ('12hr Day' -> 'Day Shift', '12hr Night' -> 'Night Shift', 'Split Shift' -> 'Swing Shift')
+-- could technically be reversed with RENAME VALUE, but 'Training Half Day' and 'Outreach' cannot be
+-- removed once added without recreating the enum type entirely (which requires no rows referencing them).
+--
+-- To roll back manually (only if no rows use 'Training Half Day' or 'Outreach'):
+--   ALTER TYPE noc_shift_type RENAME VALUE 'Day Shift' TO '12hr Day';
+--   ALTER TYPE noc_shift_type RENAME VALUE 'Night Shift' TO '12hr Night';
+--   ALTER TYPE noc_shift_type RENAME VALUE 'Swing Shift' TO 'Split Shift';
+--   -- 'Training Half Day' and 'Outreach' cannot be removed; recreate enum to eliminate them.

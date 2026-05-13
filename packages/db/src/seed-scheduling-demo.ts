@@ -80,18 +80,18 @@ async function seedDcsOnCall() {
 // ── NOC Shifts ───────────────────────────────────────────────────────────
 // 7-day rotating pattern per staff member
 const SHIFT_PATTERNS: Array<ReadonlyArray<string>> = [
-  ["12hr Day",   "12hr Day",   "12hr Night", "12hr Night", "Off",         "Off",         "Off"],
-  ["Off",        "Off",        "12hr Day",   "12hr Day",   "12hr Night",  "12hr Night",  "Off"],
-  ["12hr Night", "Off",        "Off",        "12hr Day",   "12hr Day",    "12hr Night",  "12hr Night"],
-  ["Off",        "12hr Night", "Off",        "Off",        "12hr Day",    "12hr Day",    "12hr Night"],
-  ["12hr Day",   "12hr Night", "12hr Night", "Off",        "Off",         "12hr Day",    "12hr Day"],
+  ["Day Shift",   "Day Shift",   "Night Shift", "Night Shift", "Off",          "Off",          "Off"],
+  ["Off",         "Off",         "Day Shift",   "Day Shift",   "Night Shift",  "Night Shift",  "Off"],
+  ["Night Shift", "Off",         "Off",         "Day Shift",   "Day Shift",    "Night Shift",  "Night Shift"],
+  ["Off",         "Night Shift", "Off",         "Off",         "Day Shift",    "Day Shift",    "Night Shift"],
+  ["Day Shift",   "Night Shift", "Night Shift", "Off",         "Off",          "Day Shift",    "Day Shift"],
 ];
 
 // Special overrides by staffId → date → shiftType
 const SPECIALS: Record<string, Record<string, string>> = {
   "sp-shemar":   { "2026-05-01": "Annual Leave", "2026-05-02": "Annual Leave", "2026-05-05": "Annual Leave" },
   "sp-bheesham": { "2026-04-20": "Sick Leave",    "2026-04-21": "Sick Leave" },
-  "sp-timothy":  { "2026-05-07": "Split Shift" },
+  "sp-timothy":  { "2026-05-07": "Swing Shift" },
 };
 
 async function seedNocShifts() {

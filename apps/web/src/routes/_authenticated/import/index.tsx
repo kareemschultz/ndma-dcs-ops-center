@@ -465,7 +465,7 @@ const IMPORT_TARGETS: ImportTarget[] = [
         "2026",
         "2026-04",
         "2026-04-01",
-        "12hr Day",
+        "Day Shift",
         "07:00",
         "19:00",
         "Monthly grid",

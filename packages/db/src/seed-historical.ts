@@ -24,6 +24,7 @@ import ExcelJS from "exceljs";
 
 import { db } from "./index";
 import {
+  type NocShiftType,
   appraisals,
   appraisalCycles,
   appraisalRatings,
@@ -651,8 +652,8 @@ async function step17_nocShifts() {
           if (!shiftRaw) continue;
 
           const shiftTypeMap: Record<string, string> = {
-            "D": "12hr Day", "S": "12hr Day", "N": "12hr Night",
-            "OFF": "Off", "AL": "Annual Leave", "ML": "Annual Leave",
+            "D": "Day Shift", "S": "Day Shift", "N": "Night Shift",
+            "OFF": "Off", "AL": "Annual Leave", "ML": "Maternity Leave",
             "SICK": "Sick Leave",
           };
           const shiftType = shiftTypeMap[shiftRaw];
@@ -666,7 +667,7 @@ async function step17_nocShifts() {
             await db.insert(nocShifts).values({
               staffId,
               shiftDate,
-              shiftType: shiftType as "12hr Day" | "12hr Night" | "Off" | "Annual Leave" | "Sick Leave",
+              shiftType: shiftType as NocShiftType,
             }).onConflictDoNothing();
           }
           upserted++;

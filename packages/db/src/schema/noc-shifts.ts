@@ -13,16 +13,20 @@ import {
 import { staffProfiles } from "./staff";
 
 export const nocShiftTypeEnum = pgEnum("noc_shift_type", [
-  "12hr Day",
-  "12hr Night",
-  "Split Shift",
+  "Day Shift",
+  "Night Shift",
+  "Swing Shift",
   "Off",
   "Annual Leave",
   "Sick Leave",
   "Maternity Leave",
   "Training",
+  "Training Half Day",
   "Custom",
+  "Outreach",
 ]);
+
+export type NocShiftType = (typeof nocShiftTypeEnum.enumValues)[number];
 
 export const nocShifts = pgTable(
   "noc_shifts",

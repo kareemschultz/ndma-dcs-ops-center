@@ -106,7 +106,19 @@ export const nocShiftsRouter = {
       z.object({
         staffId: z.string(),
         shiftDate: z.string(),
-        shiftType: z.enum(["12hr Day", "12hr Night", "Off", "Annual Leave", "Sick Leave"]),
+        shiftType: z.enum([
+          "Day Shift",
+          "Night Shift",
+          "Swing Shift",
+          "Off",
+          "Annual Leave",
+          "Sick Leave",
+          "Maternity Leave",
+          "Training",
+          "Training Half Day",
+          "Custom",
+          "Outreach",
+        ]),
         notes: z.string().optional(),
       }),
     )
