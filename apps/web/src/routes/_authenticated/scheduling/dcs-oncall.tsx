@@ -525,7 +525,7 @@ function DcsOnCallPage() {
           <div className="space-y-0.5">
             <h1 className="text-xl font-bold tracking-tight">DCS On-Call Roster</h1>
             <p className="text-sm text-muted-foreground">
-              4-role weekly rotation — Lead Engineer · ASN · Enterprise · CORE
+              4-role weekly rotation. Click any role chip to reassign, or use ✎ for full edit.
             </p>
           </div>
           <div className="flex items-center gap-2">

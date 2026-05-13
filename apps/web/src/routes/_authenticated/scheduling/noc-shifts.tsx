@@ -269,6 +269,11 @@ function ShiftChip({
         </PopoverTrigger>
 
         <PopoverContent className="w-52 p-2" side="bottom" align="center">
+          {hasNote && (
+            <div className="mb-2 rounded-md bg-muted/60 px-2 py-1.5 text-[10px] text-muted-foreground">
+              <span className="font-semibold">Note:</span> {notes}
+            </div>
+          )}
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Set Shift Type
           </p>
@@ -831,6 +836,18 @@ function NocShiftsPage() {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Today button — jumps back to current month */}
+            {(month !== now.getMonth() + 1 || year !== now.getFullYear()) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => { setMonth(now.getMonth() + 1); setYear(now.getFullYear()); }}
+              >
+                Today
+              </Button>
+            )}
           </div>
         </div>
 
