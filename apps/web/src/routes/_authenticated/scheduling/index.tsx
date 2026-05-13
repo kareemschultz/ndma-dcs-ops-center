@@ -11,10 +11,9 @@
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { format, getISOWeek, parseISO } from "date-fns";
+import { format, getISOWeek } from "date-fns";
 import { AlertCircle, CalendarCheck2, CalendarDays, CheckCircle2, Wrench } from "lucide-react";
 
-import { Badge } from "@ndma-dcs-staff-portal/ui/components/badge";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@ndma-dcs-staff-portal/ui/components/card";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
@@ -116,12 +115,12 @@ function SchedulingHubPage() {
         <SchedulingSubNav activeView="hub" />
 
         {/* Stats strip */}
-        <div className="flex divide-x border-b bg-muted/30 text-sm">
+        <div className="flex divide-x border-b bg-muted/30 text-sm overflow-x-auto">
           {[
-            { label: "DCS weeks scheduled", value: dcsLoading ? "—" : String(weeksScheduled), sub: `of 52 in ${currentYear}` },
+            { label: "DCS weeks scheduled", value: dcsLoading ? "—" : String(weeksScheduled), sub: `this year` },
             { label: "Day coverage", value: "100%", sub: "24/7 DCS on-call" },
             {
-              label: "NOC on shift today",
+              label: "NOC on shift now",
               value: nocLoading ? "—" : String((nocCounts["12hr Day"] ?? 0) + (nocCounts["12hr Night"] ?? 0)),
               sub: `${nocCounts["12hr Day"] ?? 0} day · ${nocCounts["12hr Night"] ?? 0} night`,
             },
@@ -131,9 +130,15 @@ function SchedulingHubPage() {
               sub: "tasks complete",
               warn: qDone < qTasks.length,
             },
+            {
+              label: "Pending swaps",
+              value: "—",
+              sub: "awaiting review",
+              warn: false,
+            },
           ].map((stat) => (
-            <div key={stat.label} className="flex flex-col px-6 py-3 first:pl-0">
-              <span className="text-xs uppercase tracking-wider text-muted-foreground">{stat.label}</span>
+            <div key={stat.label} className="flex flex-col px-5 py-3 first:pl-0 shrink-0">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground whitespace-nowrap">{stat.label}</span>
               <span className={["text-2xl font-semibold tabular-nums leading-tight", stat.warn ? "text-amber-600 dark:text-amber-400" : ""].join(" ")}>
                 {stat.value}
               </span>

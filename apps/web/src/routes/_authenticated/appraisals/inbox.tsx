@@ -16,7 +16,7 @@ import { toast } from "sonner";
 
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@ndma-dcs-staff-portal/ui/components/dialog";
 import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
@@ -64,6 +64,9 @@ function RejectDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Reject appraisal — {staffName}</DialogTitle>
+          <DialogDescription>
+            Provide a reason for rejection. This will be visible to the staff member and their reviewer.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <Label htmlFor="rejection-reason">Reason for rejection *</Label>
