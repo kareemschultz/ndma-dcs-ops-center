@@ -237,7 +237,12 @@ export function createAuth() {
       provider: "pg",
       schema: schema,
     }),
-    trustedOrigins: [env.CORS_ORIGIN],
+    // In dev CORS_ORIGIN may be "*" (allow all) or a comma-separated list of origins.
+    // Better Auth doesn't support literal "*" — omit the field to trust baseURL, or
+    // provide explicit origins parsed from the env var.
+    trustedOrigins: env.CORS_ORIGIN === "*"
+      ? undefined
+      : env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean),
 
     // Local email+password login MUST remain enabled as emergency admin fallback
     // even when LDAP is the primary auth method.

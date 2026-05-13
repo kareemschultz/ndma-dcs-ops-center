@@ -17,15 +17,23 @@ import { serveStatic } from "hono/bun";
 const app = new Hono();
 
 app.use(logger());
+// Parse comma-separated allowed origins, e.g. "http://localhost:3001,http://10.6.104.23:3001"
+// A single "*" means reflect any origin (dev convenience).
+const _allowedOrigins = env.CORS_ORIGIN === "*"
+  ? null
+  : env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean);
+
 app.use(
   "/*",
   cors({
-    origin: env.CORS_ORIGIN === "*"
-      ? (origin) => origin  // allow all in dev
-      : env.CORS_ORIGIN,
+    origin: (origin) => {
+      if (!origin) return _allowedOrigins?.[0] ?? origin;
+      if (_allowedOrigins === null) return origin; // reflect all — dev mode
+      return _allowedOrigins.includes(origin) ? origin : (_allowedOrigins[0] ?? origin);
+    },
     allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
-    credentials: env.CORS_ORIGIN !== "*",
+    allowHeaders: ["Content-Type", "Authorization", "Cookie"],
+    credentials: true, // required for cookie-based Better Auth sessions
   }),
 );
 
