@@ -1,0 +1,3 @@
+staffEmail,contractType,startDate,endDate,renewalStatus,appraisalPeriod,documentUrl,notes
+alice.mensah@ndma.gov.gh,full_time,2024-01-01,2026-12-31,renewing,h2_2026,/files/contracts/alice_2024.pdf,Renewal pending appraisal 2
+carol.persaud@ndma.gov.gh,contract,2026-01-01,2026-12-31,active,h1_2026,/files/contracts/carol_2026.pdf,

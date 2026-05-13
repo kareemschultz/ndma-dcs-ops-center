@@ -1,0 +1,3 @@
+staffEmail,date,incidentTitle,hoursWorked,notes
+alice.mensah@ndma.gov.gh,2025-04-20,Modem offline at DCS-North,3,Restored via remote IPAM reset
+bob.asante@ndma.gov.gh,2025-04-22,Power outage at Liliendaal,4,Generator switchover; logged in TOSD

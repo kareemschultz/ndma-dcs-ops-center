@@ -1,0 +1,3 @@
+staffEmail,taskName,category,isCompleted,completedAt,dueDate
+newhire@ndma.gov.gh,Issue laptop + monitor,it_equipment,true,2026-03-01,2026-03-05,
+newhire@ndma.gov.gh,Building access card,building_access,false,,2026-03-10,

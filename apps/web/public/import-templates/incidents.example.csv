@@ -1,0 +1,3 @@
+title,severity,status,reportedAt,resolvedAt,affectedServices,createdByEmail,leadResponderEmail,rootCauseSummary,notes
+Liliendaal core router crash,sev1,resolved,2026-04-05T03:42:00Z,2026-04-05T05:15:00Z,DCS-Core;Enterprise-VPN,alice.mensah@ndma.gov.gh,sachin.rampersaud@ndma.gov.gh,Memory exhaustion from BGP route churn,PIR ticket #INC-2026-0091
+Plum monitoring outage,sev3,investigating,2026-05-10T14:00:00Z,,Plum-Monitoring,wynonna.watson@ndma.gov.gh,bob.asante@ndma.gov.gh,,Suspect DNS issue at Plum side

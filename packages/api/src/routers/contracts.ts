@@ -5,6 +5,7 @@ import { and, eq, lte, sql } from "drizzle-orm";
 
 import { requireRole } from "../index";
 import { logAudit } from "../lib/audit";
+import { fireContractReminders } from "../lib/contract-reminders";
 
 export const contractsRouter = {
   list: requireRole("contract", "read")
@@ -336,5 +337,32 @@ export const contractsRouter = {
         orderBy: (table, { desc }) => [desc(table.startDate)],
         with: { staffProfile: { with: { user: true } } },
       });
+    }),
+
+  /**
+   * Fire the 6-tier reminder ladder (90/60/30/14/7/1 days before expiry).
+   * Master plan §8 Phase 6 acceptance criterion. Idempotent — re-running on the
+   * same day produces no duplicate notifications.
+   *
+   * Call this from a daily cron (Cloudflare Workers / Vercel Cron at 09:00 GYT).
+   */
+  fireReminderLadder: requireRole("contract", "update")
+    .input(z.object({}).optional())
+    .handler(async ({ context }) => {
+      const result = await fireContractReminders();
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        actorRole: context.userRole ?? undefined,
+        action: "contract.fire_reminder_ladder",
+        module: "contract",
+        resourceType: "contract_reminder",
+        resourceId: "daily_check",
+        afterValue: result as unknown as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        correlationId: context.requestId,
+      });
+      return result;
     }),
 };

@@ -1,7 +1,39 @@
 # Production Readiness Checklist
 
-> **Last updated:** 2026-05-08 (Phase 15 hardening)
-> **Status:** 🟡 — Schema/API/UI complete; seed + deployment pending
+> **Last updated:** 2026-05-13 (Phase 16 closeout — Parts A-D)
+> **Status:** 🟡 — Schema/API/UI complete + Parts A-D shipped; PROD migrations + full seed run pending
+
+---
+
+## Quick checklist (standard markdown — tool-parseable)
+
+### Code-side (this branch)
+- [x] All mutations use `requireRole()` (HI #4) — `policy.ts` migrated 2026-05-13
+- [x] All mutations call `logAudit()` (audit trail)
+- [x] RBAC matrix covers every router (HI #5) — backfilled 2026-05-13
+- [x] Bundle splitting in `apps/web/vite.config.ts` (Phase 15)
+- [x] 18 import templates + 18 `.example.csv` variants + 12 additional templates (Phase 12 §13 30+ commitment met)
+- [x] Smoke tests cover 50+ routes via PAGES array (was 25; Phase 15 AC met)
+- [x] Contract reminder ladder 90/60/30/14/7/1 implemented (Phase 6 AC met) — `lib/contract-reminders.ts`
+- [x] NOC shift enum extended with Split Shift + Maternity Leave (migration 0032)
+- [x] Source-of-truth canonical extraction (`canonical-data.{md,json}`) — Part B
+- [x] Phase 14 historical seed: 35/35 steps implemented (Part C)
+- [x] Design-handoff completion audit committed (`docs/audit/HANDOFF-COMPLETION-AUDIT-2026-05-12.md`)
+
+### PROD-side (post-merge work)
+- [ ] Apply migrations 0008–0032 to production DB
+- [ ] Set production env vars (DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL, CORS_ORIGIN, NODE_ENV)
+- [ ] Run `bun run db:seed:historical --dry-run` against staging
+- [ ] Run full `bun run db:seed:historical` against staging; verify gate assertions
+- [ ] Run full seed against production
+- [ ] Verify staff.rowCount == 281
+- [ ] Verify serviceAccessRegistry.rowCount >= 3000
+- [ ] Verify appraisalTrackerView.rowCount >= 130
+- [ ] Verify employeeOfTheMonth.matchRate == 19/19
+- [ ] Phase 3 cutover: 7-day zero-5xx window in scheduling.* → delete legacy `rota.ts`/`roster.ts`/`noc-shifts.ts` routers + schemas
+- [ ] iCal export (Phase 3 AC, decision: defer to v1.1)
+- [ ] axe-core accessibility audit on /, /work, /profile, /scheduling/noc-shifts
+- [ ] Perf budget: scheduling grid <200ms / appraisal form <150ms
 
 ---
 

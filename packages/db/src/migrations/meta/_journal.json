@@ -225,6 +225,13 @@
       "when": 1746748800000,
       "tag": "0031_work_year_period",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1747094400000,
+      "tag": "0032_noc_shift_enum_extend",
+      "breakpoints": true
     }
   ]
 }

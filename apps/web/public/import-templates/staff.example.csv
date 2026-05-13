@@ -1,0 +1,4 @@
+name,email,department,employmentType,phoneNumber,role,reportsTo,emergencyContactName,emergencyContactPhone,jobTitle,employeeId
+Alice Mensah,alice.mensah@ndma.gov.gh,Infrastructure,full_time,592-200-0001,Staff,sachin.rampersaud@ndma.gov.gh,Grace Mensah,592-200-1001,Systems Engineer,EMP-0101
+Bob Asante,bob.asante@ndma.gov.gh,Network Operations,full_time,592-200-0002,Team_Lead,ataybia.mclean@ndma.gov.gh,Peter Asante,592-200-1002,Senior Network Engineer,EMP-0102
+Carol Persaud,carol.persaud@ndma.gov.gh,Data Centre Services,contract,592-200-0003,Staff,sachin.rampersaud@ndma.gov.gh,David Persaud,592-200-1003,NOC Technician,EMP-0103

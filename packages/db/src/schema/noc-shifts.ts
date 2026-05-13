@@ -15,9 +15,11 @@ import { staffProfiles } from "./staff";
 export const nocShiftTypeEnum = pgEnum("noc_shift_type", [
   "12hr Day",
   "12hr Night",
+  "Split Shift",
   "Off",
   "Annual Leave",
   "Sick Leave",
+  "Maternity Leave",
 ]);
 
 export const nocShifts = pgTable(
