@@ -631,10 +631,10 @@ function getTargetAccent(targetId: ImportType) {
       };
     case "contracts":
       return {
-        shell: "from-emerald-500/10 via-teal-500/5 to-cyan-500/10",
-        border: "border-emerald-200/70 dark:border-emerald-900/60",
-        icon: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-        chip: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+        shell: "from-blue-500/10 via-cyan-500/5 to-indigo-500/10",
+        border: "border-blue-200/70 dark:border-blue-900/60",
+        icon: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+        chip: "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300",
       };
     case "work":
     case "operations_work_update":
@@ -1044,7 +1044,7 @@ function ImportPage() {
                 <span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-medium text-cyan-700 dark:bg-cyan-950/50 dark:text-cyan-300">
                   DCS / NOC separation
                 </span>
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
                   CSV templates included
                 </span>
               </div>
@@ -1066,8 +1066,8 @@ function ImportPage() {
                   Validate headers and rows before committing anything to the database.
                 </p>
               </div>
-              <div className="rounded-2xl border border-emerald-200/70 bg-white/80 p-4 shadow-sm dark:border-emerald-900/50 dark:bg-slate-950/70">
-                <p className="text-xs font-medium uppercase tracking-wide text-emerald-600 dark:text-emerald-300">
+              <div className="rounded-2xl border border-blue-200/70 bg-white/80 p-4 shadow-sm dark:border-blue-900/50 dark:bg-slate-950/70">
+                <p className="text-xs font-medium uppercase tracking-wide text-blue-600 dark:text-blue-300">
                   Source notes
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">

@@ -21,6 +21,7 @@ import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -742,6 +743,9 @@ function AppraisalDetailPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Reject Appraisal</DialogTitle>
+            <DialogDescription>
+              The staff member will be notified and can revise and resubmit.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <Label htmlFor="reject-reason">Reason for rejection</Label>
