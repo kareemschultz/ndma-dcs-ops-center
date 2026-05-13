@@ -86,7 +86,7 @@ function AttendancePage() {
         <Tabs value={tab} onValueChange={setTab} className="space-y-4">
           <TabsList variant="line" className="justify-start">
             <TabsTrigger value="lateness">Lateness Dashboard</TabsTrigger>
-            <TabsTrigger value="timesheets">Timesheets</TabsTrigger>
+            <TabsTrigger value="timesheets">Clock Logs</TabsTrigger>
           </TabsList>
 
           <TabsContent value="lateness" className="space-y-4">
