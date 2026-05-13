@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode } from "react";
 import { useState } from "react";
 import { differenceInDays, format, parseISO } from "date-fns";
-import { AlertCircle, CheckCircle2, Clock, ClipboardCheck, Info, Inbox, LayoutGrid, Send, ShieldCheck, TrendingUp } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, ClipboardCheck, Info, Inbox, LayoutGrid, Pencil, Plus, Send, ShieldCheck, TrendingUp } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -17,10 +17,28 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { toast } from "sonner";
 
 import { Badge } from "@ndma-dcs-staff-portal/ui/components/badge";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@ndma-dcs-staff-portal/ui/components/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@ndma-dcs-staff-portal/ui/components/dialog";
+import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
+import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@ndma-dcs-staff-portal/ui/components/select";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ndma-dcs-staff-portal/ui/components/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@ndma-dcs-staff-portal/ui/components/table";
@@ -30,7 +48,7 @@ import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { chartTheme } from "@/lib/chart-theme";
 import { useTeamFilter } from "@/lib/team-filter";
-import { orpc } from "@/utils/orpc";
+import { orpc, queryClient } from "@/utils/orpc";
 import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/_authenticated/appraisals/")({
@@ -390,6 +408,153 @@ const REVIEW_CHAIN = {
   pa: "Ataybia Williams",
 };
 
+// ── CreateAppraisalDialog ─────────────────────────────────────────────────────
+function CreateAppraisalDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { data: staffData } = useQuery(
+    orpc.staff.list.queryOptions({ input: { limit: 200, offset: 0 } }),
+  );
+  const { data: cyclesData } = useQuery(orpc.appraisalCycles.list.queryOptions());
+  const [form, setForm] = useState({
+    staffProfileId: "",
+    cycleId: "",
+    reviewerId: "",
+    periodStart: "",
+    periodEnd: "",
+    typeOfReview: "",
+    scheduledDate: "",
+    location: "",
+  });
+
+  const mutation = useMutation(
+    orpc.appraisals.create.mutationOptions({
+      onSuccess: async () => {
+        toast.success("Appraisal created successfully.");
+        await queryClient.invalidateQueries({ queryKey: orpc.appraisals.list.key() });
+        onClose();
+        setForm({ staffProfileId: "", cycleId: "", reviewerId: "", periodStart: "", periodEnd: "", typeOfReview: "", scheduledDate: "", location: "" });
+      },
+      onError: (e: Error) => toast.error(e.message),
+    }),
+  );
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.staffProfileId || !form.periodStart || !form.periodEnd) {
+      toast.error("Staff member, period start and period end are required.");
+      return;
+    }
+    mutation.mutate({
+      staffProfileId: form.staffProfileId,
+      cycleId: form.cycleId || undefined,
+      reviewerId: form.reviewerId || undefined,
+      periodStart: form.periodStart,
+      periodEnd: form.periodEnd,
+      typeOfReview: form.typeOfReview || undefined,
+      scheduledDate: form.scheduledDate || undefined,
+      location: form.location || undefined,
+    });
+  }
+
+  const openCycles = (cyclesData as Array<{ id: string; status: string; year: number; half: string }> | undefined)?.filter((c) => c.status === "open") ?? [];
+  const allCycles = (cyclesData as Array<{ id: string; status: string; year: number; half: string }> | undefined) ?? [];
+  const staffList = (Array.isArray(staffData) ? staffData : []) as Array<{ id: string; user?: { name?: string | null } | null }>;
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Create Appraisal</DialogTitle>
+          <DialogDescription>
+            Create a new appraisal record. The record starts in draft status.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 pt-1">
+          <div className="space-y-1.5">
+            <Label>Staff Member *</Label>
+            <Select value={form.staffProfileId} onValueChange={(v) => setForm((p) => ({ ...p, staffProfileId: v ?? "" }))}>
+              <SelectTrigger><SelectValue placeholder="Select staff member…" /></SelectTrigger>
+              <SelectContent>
+                {staffList.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.user?.name ?? s.id}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Period Start *</Label>
+              <Input type="date" value={form.periodStart} onChange={(e) => setForm((p) => ({ ...p, periodStart: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Period End *</Label>
+              <Input type="date" value={form.periodEnd} onChange={(e) => setForm((p) => ({ ...p, periodEnd: e.target.value }))} />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Appraisal Cycle</Label>
+            <Select value={form.cycleId} onValueChange={(v) => setForm((p) => ({ ...p, cycleId: v ?? "" }))}>
+              <SelectTrigger><SelectValue placeholder="None (standalone)" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {(openCycles.length > 0 ? openCycles : allCycles).map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.half} {c.year}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Reviewer / Supervisor</Label>
+            <Select value={form.reviewerId} onValueChange={(v) => setForm((p) => ({ ...p, reviewerId: v ?? "" }))}>
+              <SelectTrigger><SelectValue placeholder="Select reviewer…" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {staffList.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.user?.name ?? s.id}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Type of Review</Label>
+              <Select value={form.typeOfReview} onValueChange={(v) => setForm((p) => ({ ...p, typeOfReview: v ?? "" }))}>
+                <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Not specified</SelectItem>
+                  <SelectItem value="annual">Annual</SelectItem>
+                  <SelectItem value="mid_year">Mid-Year</SelectItem>
+                  <SelectItem value="probation">Probation</SelectItem>
+                  <SelectItem value="performance_improvement">Performance Improvement</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Scheduled Date</Label>
+              <Input type="date" value={form.scheduledDate} onChange={(e) => setForm((p) => ({ ...p, scheduledDate: e.target.value }))} />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Location</Label>
+            <Input placeholder="e.g. Conference Room A, Video Call" value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))} />
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending ? "Creating…" : "Create Appraisal"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function formatPeriod(appraisal: AppraisalListRow) {
   if (appraisal.period) return appraisal.period;
   if (appraisal.periodStart && appraisal.periodEnd) {
@@ -428,6 +593,7 @@ function AppraisalsPage() {
   const queryClient = useQueryClient();
   const { team } = useTeamFilter();
   const [tab, setTab] = useState("records");
+  const [showCreate, setShowCreate] = useState(false);
   const { data: session } = authClient.useSession();
 
   const { data: trackerRows, isLoading: trackerLoading } = useQuery(
@@ -556,6 +722,10 @@ function AppraisalsPage() {
             <Inbox className="mr-1.5 size-3.5" />
             Inbox
           </Button>
+          <Button size="sm" onClick={() => setShowCreate(true)}>
+            <Plus className="mr-1.5 size-3.5" />
+            New Appraisal
+          </Button>
           <ThemeSwitch />
         </div>
       </Header>
@@ -563,7 +733,7 @@ function AppraisalsPage() {
       <Main className="space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Centra Appraisals</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Appraisals</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Browse appraisal history by team, then open a staff detail view for the full evaluation trail.
             </p>
@@ -855,13 +1025,24 @@ function AppraisalsPage() {
                         {appraisal.reviewer?.user?.name ?? "—"}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate({ to: "/appraisals/staff/$staffProfileId", params: { staffProfileId: appraisal.staffProfileId } })}
-                        >
-                          View Staff
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7"
+                            title="Open appraisal detail"
+                            onClick={() => navigate({ to: "/appraisals/$appraisalId", params: { appraisalId: appraisal.id } })}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate({ to: "/appraisals/staff/$staffProfileId", params: { staffProfileId: appraisal.staffProfileId } })}
+                          >
+                            Staff
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -933,6 +1114,8 @@ function AppraisalsPage() {
           </TabsContent>
         </Tabs>
       </Main>
+
+      <CreateAppraisalDialog open={showCreate} onClose={() => setShowCreate(false)} />
     </>
   );
 }
