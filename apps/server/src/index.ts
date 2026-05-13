@@ -20,10 +20,12 @@ app.use(logger());
 app.use(
   "/*",
   cors({
-    origin: env.CORS_ORIGIN,
+    origin: env.CORS_ORIGIN === "*"
+      ? (origin) => origin  // allow all in dev
+      : env.CORS_ORIGIN,
     allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
+    credentials: env.CORS_ORIGIN !== "*",
   }),
 );
 

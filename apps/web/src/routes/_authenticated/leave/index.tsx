@@ -12,7 +12,8 @@ import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { CalendarOff, CheckCircle, Plus, XCircle } from "lucide-react";
+import { CalendarOff, CheckCircle, FileDown, Plus, XCircle } from "lucide-react";
+import { exportLeaveExcel } from "@/utils/excel-export";
 import { toast } from "sonner";
 
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
@@ -159,6 +160,15 @@ function LeavePage() {
           <span className="text-sm font-medium">Leave Management</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportLeaveExcel(data ?? [], `Leave_Requests_${new Date().toISOString().slice(0, 10)}.xlsx`)}
+            disabled={!data?.length}
+          >
+            <FileDown className="mr-1 size-4" />
+            Export Excel
+          </Button>
           <ThemeSwitch />
           {/* [FIX] useNavigate instead of <Link><Button> (Button has no asChild in Base UI) */}
           <Button size="sm" onClick={() => navigate({ to: "/leave/new" })}>

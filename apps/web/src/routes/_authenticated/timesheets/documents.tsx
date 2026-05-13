@@ -95,7 +95,13 @@ function CreateDocumentDialog({ open, onClose }: { open: boolean; onClose: () =>
           <div className="space-y-1.5">
             <Label htmlFor="tsd-staff">Staff Member</Label>
             <Select value={staffId} onValueChange={(v) => v != null && setValue("staffId", v)}>
-              <SelectTrigger id="tsd-staff"><SelectValue placeholder="Select staff" /></SelectTrigger>
+              <SelectTrigger id="tsd-staff">
+                <SelectValue>
+                  {staffId
+                    ? (() => { const s = staffList.find((x: { id: string; employeeId: string; user?: { name?: string } | null }) => x.id === staffId); return s?.user?.name ?? s?.employeeId ?? staffId; })()
+                    : "Select staff"}
+                </SelectValue>
+              </SelectTrigger>
               <SelectContent>
                 {staffList.map((s: { id: string; employeeId: string; user?: { name?: string } | null }) => (
                   <SelectItem key={s.id} value={s.id}>{s.user?.name ?? s.employeeId}</SelectItem>

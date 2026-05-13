@@ -3,7 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ShoppingCart, Plus, RefreshCw, CheckCircle, XCircle } from "lucide-react";
+import { ShoppingCart, Plus, RefreshCw, CheckCircle, XCircle, FileDown } from "lucide-react";
+import { exportProcurementExcel } from "@/utils/excel-export";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 import {
@@ -454,6 +455,15 @@ function ProcurementPage() {
         <div className="ms-auto flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => refetch()} title="Refresh">
             <RefreshCw className="size-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportProcurementExcel(allPRs ?? [], `Procurement_${new Date().toISOString().slice(0, 10)}.xlsx`)}
+            disabled={!allPRs?.length}
+          >
+            <FileDown className="size-4 mr-1" />
+            Export
           </Button>
           <ThemeSwitch />
           <Link to="/procurement/new">

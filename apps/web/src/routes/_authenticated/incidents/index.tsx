@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, Plus, RefreshCw } from "lucide-react";
+import { AlertTriangle, FileDown, Plus, RefreshCw } from "lucide-react";
+import { exportIncidentsExcel } from "@/utils/excel-export";
 import { format } from "date-fns";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
@@ -133,6 +134,15 @@ function IncidentsPage() {
         <div className="ms-auto flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => refetch()} title="Refresh">
             <RefreshCw className="size-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportIncidentsExcel(data ?? [], `Incidents_${new Date().toISOString().slice(0, 10)}.xlsx`)}
+            disabled={!data?.length}
+          >
+            <FileDown className="size-4 mr-1" />
+            Export
           </Button>
           <ThemeSwitch />
           <Link to="/incidents/new">

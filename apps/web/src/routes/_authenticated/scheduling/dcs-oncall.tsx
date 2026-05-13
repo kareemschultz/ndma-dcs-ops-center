@@ -133,7 +133,11 @@ function EditWeekDialog({ open, onOpenChange, week, staffList }: {
                 onValueChange={(v) => setForm((f) => ({ ...f, [key]: v === "_none" ? "" : v }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Unassigned" />
+                  <SelectValue>
+                    {form[key]
+                      ? (staffList.find((s) => s.id === form[key])?.user?.name ?? form[key])
+                      : "Unassigned"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="_none">Unassigned</SelectItem>

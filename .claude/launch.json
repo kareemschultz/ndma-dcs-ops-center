@@ -1,0 +1,36 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "API Server (Hono)",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "--hot", "src/index.ts"],
+      "cwd": "apps/server",
+      "port": 3000,
+      "env": "apps/server/.env"
+    },
+    {
+      "name": "Web App (Vite)",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "vite", "dev"],
+      "cwd": "apps/web",
+      "port": 3001,
+      "env": "apps/web/.env"
+    },
+    {
+      "name": "Docs (Next.js Fumadocs)",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "next", "dev", "--turbopack", "-p", "4000"],
+      "cwd": "apps/docs",
+      "port": 4000
+    },
+    {
+      "name": "All via Turbo",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": ".",
+      "port": null,
+      "note": "Starts all three apps concurrently. Preferred for full-stack testing."
+    }
+  ]
+}

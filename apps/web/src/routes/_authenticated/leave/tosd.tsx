@@ -154,7 +154,11 @@ function AddTosdDialog({
             <Label>Staff Member</Label>
             <Select value={form.staffId} onValueChange={(v) => setForm((f) => ({ ...f, staffId: v ?? "" }))}>
               <SelectTrigger>
-                <SelectValue placeholder="Select staff…" />
+                <SelectValue>
+                  {form.staffId
+                    ? (staffList.find(s => s.id === form.staffId)?.user?.name ?? staffList.find(s => s.id === form.staffId)?.employeeId ?? form.staffId)
+                    : "Select staff…"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {staffList.map((s) => (
@@ -288,7 +292,11 @@ function TosdPage() {
               onValueChange={(v) => setSelectedStaffId(v === "_all" ? "" : (v ?? ""))}
             >
               <SelectTrigger className="w-[220px]">
-                <SelectValue placeholder={staffLoading ? "Loading…" : "All staff"} />
+                <SelectValue>
+                  {selectedStaffId
+                    ? (staffList.find(s => s.id === selectedStaffId)?.user?.name ?? staffList.find(s => s.id === selectedStaffId)?.employeeId ?? selectedStaffId)
+                    : staffLoading ? "Loading…" : "All staff"}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="_all">All staff</SelectItem>

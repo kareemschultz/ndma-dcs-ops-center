@@ -11,7 +11,9 @@ import {
   XCircle,
   AlertCircle,
   ChevronRight,
+  FileDown,
 } from "lucide-react";
+import { exportAppraisalPDF } from "@/utils/pdf-export";
 import { toast } from "sonner";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Textarea } from "@ndma-dcs-staff-portal/ui/components/textarea";
@@ -459,6 +461,33 @@ function AppraisalDetailPage() {
           <span className="text-sm font-medium">Appraisal Detail</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (!appraisal) return;
+              const matrix = appraisal.ratingMatrix as Record<string, number> | null | undefined;
+              exportAppraisalPDF({
+                ...appraisal,
+                staffProfile: appraisal.staffProfile as Parameters<typeof exportAppraisalPDF>[0]["staffProfile"],
+                reviewer: appraisal.reviewer as Parameters<typeof exportAppraisalPDF>[0]["reviewer"],
+                cycle: appraisal.cycle as Parameters<typeof exportAppraisalPDF>[0]["cycle"],
+                ratings: matrix
+                  ? Object.entries(matrix).map(([category, score]) => ({ category, score }))
+                  : [],
+                achievements: Array.isArray(appraisal.achievements)
+                  ? (appraisal.achievements as string[]).map((text, seq) => ({ text, seq }))
+                  : [],
+                goals: Array.isArray(appraisal.goals)
+                  ? (appraisal.goals as string[]).map((text, seq) => ({ text, seq }))
+                  : [],
+              });
+            }}
+            disabled={!appraisal}
+          >
+            <FileDown className="size-4 mr-1.5" />
+            Export PDF
+          </Button>
           <ThemeSwitch />
         </div>
       </Header>

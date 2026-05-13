@@ -11,6 +11,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   Columns3,
+  FileDown,
   LayoutGrid,
   LayoutList,
   Loader2,
@@ -19,6 +20,7 @@ import {
   Timer,
   User,
 } from "lucide-react";
+import { exportWorkItemsExcel } from "@/utils/excel-export";
 import { Badge } from "@ndma-dcs-staff-portal/ui/components/badge";
 import {
   format,
@@ -900,6 +902,15 @@ function WorkPage() {
 
           <Button variant="ghost" size="icon" onClick={() => refetch()} title="Refresh">
             <RefreshCw className="size-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportWorkItemsExcel(data ?? [], `Work_Register_${new Date().toISOString().slice(0, 10)}.xlsx`)}
+            disabled={!data?.length}
+          >
+            <FileDown className="size-4 mr-1" />
+            Export
           </Button>
           <ThemeSwitch />
           <Link to="/work/new">

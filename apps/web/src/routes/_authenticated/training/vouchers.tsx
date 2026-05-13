@@ -280,7 +280,11 @@ export default function ExamVouchersPage() {
               <Label>Staff Member</Label>
               <Select value={assignStaffId} onValueChange={(v) => v != null && setAssignStaffId(v)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select staff…" />
+                  <SelectValue>
+                    {assignStaffId
+                      ? (staff?.find(s => s.id === assignStaffId)?.user?.name ?? staff?.find(s => s.id === assignStaffId)?.employeeId ?? assignStaffId)
+                      : "Select staff…"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {staff?.map((s) => (

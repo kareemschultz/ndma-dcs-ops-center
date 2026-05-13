@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode } from "react";
 import { useState } from "react";
 import { differenceInDays, format, parseISO } from "date-fns";
-import { AlertCircle, CheckCircle2, Clock, ClipboardCheck, Info, Inbox, LayoutGrid, Pencil, Plus, Send, ShieldCheck, TrendingUp } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, ClipboardCheck, FileDown, Info, Inbox, LayoutGrid, Pencil, Plus, Send, ShieldCheck, TrendingUp } from "lucide-react";
+import { exportAppraisalsExcel } from "@/utils/excel-export";
 import {
   Bar,
   BarChart,
@@ -472,7 +473,13 @@ function CreateAppraisalDialog({ open, onClose }: { open: boolean; onClose: () =
           <div className="space-y-1.5">
             <Label>Staff Member *</Label>
             <Select value={form.staffProfileId} onValueChange={(v) => setForm((p) => ({ ...p, staffProfileId: v ?? "" }))}>
-              <SelectTrigger><SelectValue placeholder="Select staff member…" /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue>
+                  {form.staffProfileId
+                    ? (staffList.find(s => s.id === form.staffProfileId)?.user?.name ?? form.staffProfileId)
+                    : "Select staff member…"}
+                </SelectValue>
+              </SelectTrigger>
               <SelectContent>
                 {staffList.map((s) => (
                   <SelectItem key={s.id} value={s.id}>{s.user?.name ?? s.id}</SelectItem>
@@ -508,7 +515,13 @@ function CreateAppraisalDialog({ open, onClose }: { open: boolean; onClose: () =
           <div className="space-y-1.5">
             <Label>Reviewer / Supervisor</Label>
             <Select value={form.reviewerId} onValueChange={(v) => setForm((p) => ({ ...p, reviewerId: v ?? "" }))}>
-              <SelectTrigger><SelectValue placeholder="Select reviewer…" /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue>
+                  {form.reviewerId
+                    ? (staffList.find(s => s.id === form.reviewerId)?.user?.name ?? form.reviewerId)
+                    : "Select reviewer…"}
+                </SelectValue>
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">None</SelectItem>
                 {staffList.map((s) => (
@@ -721,6 +734,15 @@ function AppraisalsPage() {
           <Button variant="outline" size="sm" onClick={() => navigate({ to: "/appraisals/inbox" })}>
             <Inbox className="mr-1.5 size-3.5" />
             Inbox
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportAppraisalsExcel(appraisals ?? [], `Appraisals_${new Date().toISOString().slice(0, 10)}.xlsx`)}
+            disabled={!appraisals?.length}
+          >
+            <FileDown className="mr-1.5 size-3.5" />
+            Export Excel
           </Button>
           <Button size="sm" onClick={() => setShowCreate(true)}>
             <Plus className="mr-1.5 size-3.5" />
