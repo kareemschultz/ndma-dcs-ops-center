@@ -65,6 +65,7 @@ import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { SchedulingSubNav } from "@/components/layout/scheduling-sub-nav";
 import { orpc } from "@/utils/orpc";
+import { getHoliday } from "@/utils/holidays";
 
 export const Route = createFileRoute("/_authenticated/scheduling/noc-shifts")({
   component: NocShiftsPage,
@@ -190,6 +191,7 @@ const STAFF_NAME_MAP: Record<string, string> = {
 };
 
 // Excel shift code → DB shift type
+// Handles both short codes (D/N/S) and full words found in the real NDMA Excel files.
 function parseExcelShiftCode(raw: unknown): ShiftType | null {
   if (raw === null || raw === undefined || raw === "" || raw === "-") return null;
   const s = String(raw).trim();
@@ -197,16 +199,33 @@ function parseExcelShiftCode(raw: unknown): ShiftType | null {
 
   const upper = s.toUpperCase();
 
+  // Short codes (primary format in the grid)
   if (upper === "D") return "Day Shift";
   if (upper === "N") return "Night Shift";
   if (upper === "S") return "Swing Shift";
   if (upper === "AL") return "Annual Leave";
   if (upper === "ML") return "Maternity Leave";
   if (upper === "T/D") return "Training Half Day";
-  if (upper === "T") return "Training";
-  if (upper === "OUT REACH" || upper === "OUTREACH" || upper === "OR") return "Outreach";
-  if (upper === "SICK" || upper === "SL") return "Sick Leave";
-  // Single letter spelling ANNUAL LEAVE
+  if (upper === "T" || upper === "TR") return "Training";
+  if (upper === "SL") return "Sick Leave";
+  if (upper === "OR") return "Outreach";
+
+  // Full-word / typo variants found in the actual Excel files
+  if (upper === "DAY SHIFT") return "Day Shift";
+  if (upper === "NIGHT SHIFT") return "Night Shift";
+  if (upper === "SWING SHIFT") return "Swing Shift";
+  if (upper === "ANNUAL LEAVE") return "Annual Leave";
+  if (upper === "SICK LEAVE") return "Sick Leave";
+  if (upper === "MATERNITY LEAVE") return "Maternity Leave";
+  if (upper === "TRAINING") return "Training";
+  if (upper === "TRAINING HALF DAY") return "Training Half Day";
+  // Outreach + common misspellings
+  if (upper === "OUTREACH" || upper === "OUT REACH" || upper === "OUT REEACH" || upper.startsWith("OUTR")) return "Outreach";
+  // "Sick" and "Reported sick/absent" variants
+  if (upper === "SICK" || upper.includes("SICK") || upper.includes("ABSENT")) return "Sick Leave";
+  // "Day Off" / "Off" → treated as blank (no shift record)
+  if (upper === "DAY OFF" || upper === "OFF") return null;
+  // Single letters spelling "ANNUAL LEAVE" across cells (A-N-N-U-A-L)
   if (["A", "U", "L", "E", "V"].includes(upper)) return "Annual Leave";
 
   return "Custom";
@@ -366,6 +385,7 @@ function NocShiftsPage() {
 
   // ── Mutations ────────────────────────────────────────────────────────────────
 
+  // Single-cell / small-batch save (upsert, used for interactive edits)
   const mutation = useMutation(
     orpc.scheduling.nocShifts.bulkSet.mutationOptions({
       onSuccess: () => {
@@ -373,6 +393,17 @@ function NocShiftsPage() {
         queryClient.invalidateQueries({ queryKey: orpc.scheduling.nocShifts.list.key() });
       },
       onError: (err: Error) => toast.error(err.message ?? "Failed to save"),
+    }),
+  );
+
+  // Full-month import (delete-then-insert for the affected staff in this month)
+  const importMonthMutation = useMutation(
+    orpc.scheduling.nocShifts.importMonth.mutationOptions({
+      onSuccess: ({ imported }) => {
+        toast.success(`Imported ${imported} shifts (old data for this month cleared first)`);
+        queryClient.invalidateQueries({ queryKey: orpc.scheduling.nocShifts.list.key() });
+      },
+      onError: (err: Error) => toast.error(err.message ?? "Import failed"),
     }),
   );
 
@@ -420,7 +451,9 @@ function NocShiftsPage() {
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
     const weekStart = dayOfWeek === 1 && i > 0;
     const isToday = date.toDateString() === now.toDateString();
-    return { day: i + 1, dow, weekStart, isWeekend, isToday };
+    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(i + 1).padStart(2, "0")}`;
+    const holiday = getHoliday(dateStr);
+    return { day: i + 1, dow, weekStart, isWeekend, isToday, holiday, dateStr };
   });
 
   // ── Navigation helpers ───────────────────────────────────────────────────────
@@ -568,8 +601,9 @@ function NocShiftsPage() {
         }
 
         // Rows 4+ (0-based index 4) = data rows; col 0 = staff name
-        const entries: { staffId: string; shiftDate: string; shiftType: ShiftType }[] = [];
-        let skipped = 0;
+        // Only read columns within the day range (colToDay already limits this)
+        const importRows: { staffId: string; day: number; shiftType: ShiftType }[] = [];
+        let skippedStaff = 0;
 
         for (let r = 4; r < rows.length; r++) {
           const row = rows[r];
@@ -577,57 +611,39 @@ function NocShiftsPage() {
           const rawName = String(row[0] ?? "").trim();
           if (!rawName) continue;
           const staffId = STAFF_NAME_MAP[rawName.toLowerCase()];
-          if (!staffId) { skipped++; continue; }
+          if (!staffId) { skippedStaff++; continue; }
 
           for (const [colStr, day] of Object.entries(colToDay)) {
             const col = Number(colStr);
             const cellVal = row[col];
             const shiftType = parseExcelShiftCode(cellVal);
-            if (!shiftType || shiftType === "Off") continue;
-
-            const monthStr = String(month).padStart(2, "0");
-            const dayStr = String(day).padStart(2, "0");
-            entries.push({
-              staffId,
-              shiftDate: `${year}-${monthStr}-${dayStr}`,
-              shiftType,
-            });
+            // Skip null (Off / blank) — no DB record needed
+            if (!shiftType) continue;
+            importRows.push({ staffId, day, shiftType });
           }
         }
 
-        if (entries.length === 0) {
+        if (importRows.length === 0) {
           toast.error("No recognisable shift entries found in file");
           return;
         }
 
-        // Batch into chunks of 50
-        const CHUNK = 50;
-        let done = 0;
-        const chunks: typeof entries[] = [];
-        for (let i = 0; i < entries.length; i += CHUNK) {
-          chunks.push(entries.slice(i, i + CHUNK));
-        }
-
-        function sendNext(idx: number) {
-          const chunk = chunks[idx];
-          if (!chunk) {
-            toast.success(`Imported ${done} shifts${skipped > 0 ? ` (${skipped} unknown staff skipped)` : ""}`);
-            queryClient.invalidateQueries({ queryKey: orpc.scheduling.nocShifts.list.key() });
-            return;
-          }
-          mutation.mutate(
-            { entries: chunk },
-            {
-              onSuccess: () => {
-                done += chunk.length;
-                sendNext(idx + 1);
-              },
-              onError: (err: Error) => toast.error(`Import error: ${err.message}`),
+        // Use importMonth (delete-then-insert for affected staff) to replace wrong seed data
+        const skippedMsg = skippedStaff > 0 ? ` · ${skippedStaff} unknown name(s) skipped` : "";
+        toast.loading(`Importing ${importRows.length} shifts — clearing old data first…`, { id: "import" });
+        importMonthMutation.mutate(
+          { year, month, rows: importRows },
+          {
+            onSuccess: ({ imported }) => {
+              toast.dismiss("import");
+              toast.success(`Imported ${imported} shifts${skippedMsg}`);
             },
-          );
-        }
-
-        sendNext(0);
+            onError: (err: Error) => {
+              toast.dismiss("import");
+              toast.error(`Import error: ${err.message}`);
+            },
+          },
+        );
       } catch (err) {
         toast.error(`Failed to parse file: ${err instanceof Error ? err.message : String(err)}`);
       }
@@ -906,15 +922,22 @@ function NocShiftsPage() {
                     Staff
                   </th>
                   {/* Day headers */}
-                  {days.map(({ day, dow, weekStart, isWeekend, isToday }) => (
+                  {days.map(({ day, dow, weekStart, isWeekend, isToday, holiday }) => (
                     <th
                       key={day}
+                      title={holiday ?? undefined}
                       className={[
                         "min-w-[36px] px-0 py-1.5 text-center font-medium",
                         weekStart ? "border-l border-l-border" : "",
-                        isWeekend ? "bg-muted/30" : "",
+                        holiday
+                          ? "bg-amber-50 dark:bg-amber-950/20"
+                          : isWeekend
+                          ? "bg-muted/30"
+                          : "",
                         isToday
                           ? "border-l-2 border-l-blue-500 bg-blue-50 text-blue-800 dark:bg-blue-950/30 dark:text-blue-200"
+                          : holiday
+                          ? "text-amber-700 dark:text-amber-400"
                           : "text-muted-foreground",
                       ]
                         .filter(Boolean)
@@ -926,6 +949,11 @@ function NocShiftsPage() {
                       >
                         {day}
                       </div>
+                      {holiday && (
+                        <div className="text-[7px] font-bold leading-none text-amber-600 dark:text-amber-400">
+                          PH
+                        </div>
+                      )}
                     </th>
                   ))}
                   {/* Summary header */}
@@ -962,15 +990,16 @@ function NocShiftsPage() {
                           {displayName}
                         </td>
                         {/* Shift cells */}
-                        {days.map(({ day, weekStart, isWeekend, isToday }) => {
+                        {days.map(({ day, weekStart, isWeekend, isToday, holiday }) => {
                           const entry = shiftMap[staffId]?.[day];
                           return (
                             <td
                               key={day}
+                              title={holiday ? holiday : undefined}
                               className={[
                                 "p-0.5",
                                 weekStart ? "border-l border-l-border" : "",
-                                isWeekend ? "bg-muted/20" : "",
+                                holiday ? "bg-amber-50/50 dark:bg-amber-950/10" : isWeekend ? "bg-muted/20" : "",
                                 isToday
                                   ? "border-l-2 border-l-blue-400/60 bg-blue-50/40 dark:bg-blue-950/10"
                                   : "",

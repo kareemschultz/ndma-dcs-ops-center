@@ -38,6 +38,7 @@ import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { SchedulingSubNav } from "@/components/layout/scheduling-sub-nav";
 import { orpc } from "@/utils/orpc";
+import { getHolidaysInRange } from "@/utils/holidays";
 
 export const Route = createFileRoute("/_authenticated/scheduling/dcs-oncall")({
   component: DcsOnCallPage,
@@ -617,10 +618,28 @@ function DcsOnCallPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
-                        {w.weekStartDate && w.weekEndDate
-                          ? `${format(parseISO(w.weekStartDate), "EEE d MMM")} – ${format(parseISO(w.weekEndDate), "EEE d MMM")}`
-                          : "—"}
+                      <TableCell>
+                        <div className="font-mono text-xs text-muted-foreground">
+                          {w.weekStartDate && w.weekEndDate
+                            ? `${format(parseISO(w.weekStartDate), "EEE d MMM")} – ${format(parseISO(w.weekEndDate), "EEE d MMM")}`
+                            : "—"}
+                        </div>
+                        {w.weekStartDate && w.weekEndDate && (() => {
+                          const holidays = getHolidaysInRange(w.weekStartDate, w.weekEndDate);
+                          return holidays.length > 0 ? (
+                            <div className="mt-0.5 flex flex-wrap gap-0.5">
+                              {holidays.map((h) => (
+                                <span
+                                  key={h.date}
+                                  title={h.name}
+                                  className="inline-flex items-center rounded px-1 py-0 text-[9px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                                >
+                                  🏳️ {h.name.split(" (")[0]}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null;
+                        })()}
                       </TableCell>
                       <TableCell>
                         <InlineRoleCell week={w} roleKey="leadEngineerId" staffList={staffList} onAssign={handleQuickAssign} />
