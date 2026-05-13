@@ -66,7 +66,7 @@ function TrainingOverviewPage() {
             { to: "/training/plan", icon: LayoutList, label: "Training Plan", color: "text-blue-600" },
             { to: "/training/exams", icon: Calendar, label: "Exam Schedule", color: "text-indigo-600" },
             { to: "/training/vouchers", icon: Ticket, label: "Vouchers", color: "text-amber-600" },
-            { to: "/training/events", icon: Users, label: "Events", color: "text-green-600" },
+            { to: "/training/events", icon: Users, label: "Events", color: "text-blue-600" },
             { to: "/training/in-house", icon: BookOpen, label: "In-House Log", color: "text-purple-600" },
             { to: "/training/catalog", icon: Tag, label: "Cert Catalog", color: "text-rose-600" },
           ].map((item) => (
@@ -128,7 +128,7 @@ function TrainingOverviewPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-base">
-                <Users className="mr-2 inline h-4 w-4 text-green-500" />
+                <Users className="mr-2 inline h-4 w-4 text-blue-500" />
                 Recent Training Events
               </CardTitle>
               <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/training/events" })}>
@@ -193,7 +193,7 @@ function TrainingOverviewPage() {
                         </p>
                       </div>
                       {l.assessmentCompleted && (
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <CheckCircle2 className="h-4 w-4 text-blue-500" />
                       )}
                     </li>
                   ))}

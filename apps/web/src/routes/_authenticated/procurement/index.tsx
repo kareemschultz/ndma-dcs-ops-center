@@ -45,10 +45,10 @@ const STATUS_COLORS: Record<PRStatus, string> = {
   draft: "bg-muted text-muted-foreground",
   submitted: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   under_review: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  approved: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  approved: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   rejected: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   ordered: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
-  received: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  received: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   cancelled: "bg-muted text-muted-foreground line-through",
 };
 
@@ -238,7 +238,7 @@ function PRDetailsDialog({
                       <span
                         className={`text-xs font-medium ${
                           a.decision === "approved"
-                            ? "text-green-600"
+                            ? "text-blue-600"
                             : a.decision === "rejected"
                             ? "text-red-600"
                             : "text-muted-foreground"
@@ -369,7 +369,7 @@ function PRTable({
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-green-600 hover:text-green-700 h-7"
+                          className="text-blue-600 hover:text-blue-700 h-7"
                           onClick={() => onApprove?.(pr.id)}
                         >
                           <CheckCircle className="size-4" />
@@ -482,7 +482,7 @@ function ProcurementPage() {
             <span className="text-amber-600">
               <strong>{stats.byStatus?.submitted ?? 0}</strong> pending approval
             </span>
-            <span className="text-green-600">
+            <span className="text-blue-600">
               <strong>{stats.byStatus?.approved ?? 0}</strong> approved
             </span>
             {stats.totalValue && Number(stats.totalValue) > 0 && (

@@ -731,7 +731,7 @@ function StepIndicator({ current }: { current: number }) {
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    completed: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+    completed: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
     partial: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
     failed: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
     running: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
@@ -851,7 +851,7 @@ function ImportHistory() {
                 <StatusBadge status={job.status} />
               </TableCell>
               <TableCell className="text-right text-sm">{job.totalRows ?? 0}</TableCell>
-              <TableCell className="text-right text-sm text-green-600 dark:text-green-400">
+              <TableCell className="text-right text-sm text-blue-600 dark:text-blue-400">
                 {job.successCount ?? 0}
               </TableCell>
               <TableCell className="text-right text-sm text-red-600 dark:text-red-400">
@@ -1271,7 +1271,7 @@ function ImportPage() {
                 <div className="flex items-center justify-between">
                   <h2 className="text-base font-semibold">Preview & Validate</h2>
                   <div className="flex items-center gap-3 text-sm">
-                    <span className="text-green-600 dark:text-green-400 font-medium">
+                    <span className="text-blue-600 dark:text-blue-400 font-medium">
                       {validCount} rows valid
                     </span>
                     {errorCount > 0 && (
@@ -1290,7 +1290,7 @@ function ImportPage() {
                 )}
 
                 {allValid && (
-                  <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/20 px-3 py-2 text-sm text-green-700 dark:text-green-400">
+                  <div className="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/20 px-3 py-2 text-sm text-blue-700 dark:text-blue-400">
                     <CheckCircle className="size-4 shrink-0" />
                     All {validCount} rows passed validation. Ready to import.
                   </div>
@@ -1325,7 +1325,7 @@ function ImportPage() {
                           ))}
                           <TableCell>
                             {row.errors.length === 0 ? (
-                              <span className="inline-flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                              <span className="inline-flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
                                 <CheckCircle className="size-3" />
                                 Valid
                               </span>
@@ -1393,7 +1393,7 @@ function ImportPage() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Valid rows</span>
-                        <span className="font-medium text-green-600 dark:text-green-400">
+                        <span className="font-medium text-blue-600 dark:text-blue-400">
                           {validCount}
                         </span>
                       </div>
@@ -1443,7 +1443,7 @@ function ImportPage() {
               <Card className="max-w-lg">
                 <CardContent className="py-10 text-center">
                   {importResult.status === "completed" ? (
-                    <CheckCircle className="size-12 text-green-500 mx-auto mb-4" />
+                    <CheckCircle className="size-12 text-blue-500 mx-auto mb-4" />
                   ) : importResult.status === "partial" ? (
                     <AlertCircle className="size-12 text-amber-500 mx-auto mb-4" />
                   ) : (
@@ -1461,7 +1461,7 @@ function ImportPage() {
 
                   <div className="text-sm text-muted-foreground mb-4 space-y-1">
                     <p>
-                      <span className="text-green-600 dark:text-green-400 font-semibold">
+                      <span className="text-blue-600 dark:text-blue-400 font-semibold">
                         {importResult.successCount}
                       </span>{" "}
                       rows imported successfully

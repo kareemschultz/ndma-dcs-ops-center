@@ -54,7 +54,7 @@ type CareerPlan = {
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    active: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+    active: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
     expiring_soon: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
     expired: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
     renewed: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
@@ -116,7 +116,7 @@ function CareerPlanRow({
 }) {
   const statusColors = {
     pending: "bg-muted text-muted-foreground",
-    achieved: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+    achieved: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
     missed: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   };
   return (

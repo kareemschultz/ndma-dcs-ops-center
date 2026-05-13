@@ -25,7 +25,7 @@ type TrainingStatus = "current" | "expiring_soon" | "expired" | "not_applicable"
 
 function ComplianceStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    current: { label: "Current", cls: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+    current: { label: "Current", cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
     expiring_soon: { label: "Expiring Soon", cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
     expired: { label: "Expired", cls: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 font-semibold" },
     not_started: { label: "Not Started", cls: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" },
@@ -69,7 +69,7 @@ function TrainingPage() {
             <span className="text-muted-foreground">
               <strong className="text-foreground">{data.length}</strong> records
             </span>
-            <span className="text-green-600">
+            <span className="text-blue-600">
               <strong>{data.filter((r) => r.status === "current").length}</strong> current
             </span>
             <span className="text-amber-600">

@@ -140,7 +140,7 @@ const STATUS_COLORS: Record<string, string> = {
   in_progress: "#3b82f6",
   blocked: "#ef4444",
   review: "#f59e0b",
-  done: "#22c55e",
+  done: "#3b82f6",
   cancelled: "#d1d5db",
 };
 
@@ -551,7 +551,7 @@ function WorkAnalyticsView({ items }: { items: WorkItem[] }) {
                   <th className="px-4 py-2 text-left font-medium">Engineer</th>
                   <th className="px-4 py-2 text-right font-medium">Open</th>
                   <th className="px-4 py-2 text-right font-medium text-red-600">Overdue</th>
-                  <th className="px-4 py-2 text-right font-medium text-green-600">Done</th>
+                  <th className="px-4 py-2 text-right font-medium text-blue-600">Done</th>
                 </tr>
               </thead>
               <tbody>
@@ -562,7 +562,7 @@ function WorkAnalyticsView({ items }: { items: WorkItem[] }) {
                     <td className={`px-4 py-2 text-right tabular-nums ${row.overdue > 0 ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
                       {row.overdue}
                     </td>
-                    <td className="px-4 py-2 text-right tabular-nums text-green-600">{row.done}</td>
+                    <td className="px-4 py-2 text-right tabular-nums text-blue-600">{row.done}</td>
                   </tr>
                 ))}
               </tbody>
@@ -678,7 +678,7 @@ function WorkCalendarView({ items }: { items: WorkItem[] }) {
                       title={item.title}
                       className={`truncate rounded-lg px-1 py-0.5 text-[10px] leading-tight ${
                         item.status === "done"
-                          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
                           : overdue
                             ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                             : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
@@ -710,7 +710,7 @@ function WorkCalendarView({ items }: { items: WorkItem[] }) {
           Overdue
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-2.5 w-2.5 rounded-lg bg-green-200" />
+          <span className="h-2.5 w-2.5 rounded-lg bg-blue-200" />
           Done
         </span>
       </div>
@@ -962,12 +962,12 @@ function WorkPage() {
           <Card>
             <CardHeader className="pb-1 pt-3 px-4">
               <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                <CheckCircle2 className="size-3 text-green-500" />
+                <CheckCircle2 className="size-3 text-blue-500" />
                 Done
               </CardTitle>
             </CardHeader>
             <CardContent className="pb-3 px-4">
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-blue-600">
                 {stats?.byStatus["done"] ?? "—"}
               </p>
             </CardContent>

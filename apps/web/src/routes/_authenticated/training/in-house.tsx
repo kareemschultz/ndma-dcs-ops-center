@@ -217,7 +217,7 @@ export default function InHouseTrainingLogPage() {
                           title={l.assessmentCompleted ? "Mark incomplete" : "Mark complete"}
                         >
                           {l.assessmentCompleted ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            <CheckCircle2 className="h-5 w-5 text-blue-500" />
                           ) : (
                             <Circle className="text-muted-foreground h-5 w-5" />
                           )}

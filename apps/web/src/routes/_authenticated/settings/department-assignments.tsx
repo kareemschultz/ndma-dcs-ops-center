@@ -224,7 +224,7 @@ function DepartmentAssignmentsPage() {
                       </TableCell>
                       <TableCell className="capitalize">{assignment.role.replace("_", " ")}</TableCell>
                       <TableCell>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${assignment.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-muted text-muted-foreground"}`}>
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${assignment.isActive ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" : "bg-muted text-muted-foreground"}`}>
                           {assignment.isActive ? "Active" : "Inactive"}
                         </span>
                       </TableCell>

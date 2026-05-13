@@ -37,7 +37,7 @@ const MODULE_OPTIONS = [
 function ModuleBadge({ module }: { module: string }) {
   const map: Record<string, string> = {
     work: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-    leave: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+    leave: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
     incidents: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
     staff: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
     procurement: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
@@ -68,7 +68,7 @@ function DiffViewer({ before, after }: { before?: unknown; after?: unknown }) {
       {after != null && (
         <div>
           <p className="text-muted-foreground mb-1">After</p>
-          <pre className="rounded-lg bg-green-50 dark:bg-green-900/20 p-2 overflow-auto max-h-32 text-green-700 dark:text-green-300">
+          <pre className="rounded-lg bg-blue-50 dark:bg-blue-900/20 p-2 overflow-auto max-h-32 text-blue-700 dark:text-blue-300">
             {JSON.stringify(after, null, 2)}
           </pre>
         </div>

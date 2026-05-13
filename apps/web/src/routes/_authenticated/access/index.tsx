@@ -85,17 +85,17 @@ const AUTH_SOURCE_COLORS: Record<AuthSource, string> = {
   saml: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
   oauth_oidc: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
   service_account: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  api_only: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  api_only: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
 };
 
 const SYNC_MODE_COLORS: Record<SyncMode, string> = {
   manual: "bg-muted text-muted-foreground",
-  synced: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  synced: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   hybrid: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
 };
 
 const STATUS_COLORS: Record<AccountStatus, string> = {
-  active: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  active: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   suspended: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
   disabled: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   pending_creation: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
@@ -118,7 +118,7 @@ const AFFILIATION_COLORS: Record<Affiliation, string> = {
 };
 
 const INTEGRATION_STATUS_COLORS: Record<string, string> = {
-  active: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  active: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   inactive: "bg-muted text-muted-foreground",
   error: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
@@ -156,7 +156,7 @@ const PLATFORMS: Record<PlatformType, { label: string; description: string; icon
 const CATEGORY_STYLES: Record<string, { border: string; bg: string; badge: string }> = {
   Network:    { border: "border-blue-200 dark:border-blue-800",   bg: "bg-blue-50 dark:bg-blue-950/30",    badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
   Identity:   { border: "border-indigo-200 dark:border-indigo-800", bg: "bg-indigo-50 dark:bg-indigo-950/30",  badge: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" },
-  Monitoring: { border: "border-green-200 dark:border-green-800",  bg: "bg-green-50 dark:bg-green-950/30",   badge: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+  Monitoring: { border: "border-blue-200 dark:border-blue-800",  bg: "bg-blue-50 dark:bg-blue-950/30",   badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
   Security:   { border: "border-red-200 dark:border-red-800",     bg: "bg-red-50 dark:bg-red-950/30",      badge: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
   Physical:   { border: "border-orange-200 dark:border-orange-800", bg: "bg-orange-50 dark:bg-orange-950/30",  badge: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300" },
   Other:      { border: "border-gray-200 dark:border-gray-700",   bg: "bg-gray-50 dark:bg-gray-900/30",    badge: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400" },
@@ -1194,7 +1194,7 @@ function PlatformAccountsPage() {
             {data && (
               <div className="mb-4 flex flex-wrap gap-4 text-sm">
                 <span><strong>{data.length}</strong> total</span>
-                <span className="text-green-600"><strong>{data.filter((a) => a.status === "active").length}</strong> active</span>
+                <span className="text-blue-600"><strong>{data.filter((a) => a.status === "active").length}</strong> active</span>
                 <span className="text-muted-foreground"><strong>{data.filter((a) => a.vpnEnabled).length}</strong> VPN enabled</span>
                 <span className="text-muted-foreground"><strong>{data.filter((a) => a.affiliationType !== "ndma_internal").length}</strong> external</span>
               </div>
@@ -1450,7 +1450,7 @@ function PlatformAccountsPage() {
                         </TableCell>
                         <TableCell className="font-mono text-xs text-muted-foreground">{group.externalId ?? "—"}</TableCell>
                         <TableCell>
-                          <span className={`inline-flex items-center rounded-lg px-1.5 py-0.5 text-xs font-medium ${group.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-muted text-muted-foreground"}`}>
+                          <span className={`inline-flex items-center rounded-lg px-1.5 py-0.5 text-xs font-medium ${group.isActive ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" : "bg-muted text-muted-foreground"}`}>
                             {group.isActive ? "Active" : "Inactive"}
                           </span>
                         </TableCell>
@@ -1512,7 +1512,7 @@ function PlatformAccountsPage() {
                         <TableCell><AffiliationBadge affiliation={contact.affiliationType} /></TableCell>
                         <TableCell className="text-sm">{(contact as unknown as Record<string, unknown> & { platformAccounts?: unknown[] }).platformAccounts?.length ?? 0}</TableCell>
                         <TableCell>
-                          <span className={`inline-flex items-center rounded-lg px-1.5 py-0.5 text-xs font-medium ${contact.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-muted text-muted-foreground"}`}>
+                          <span className={`inline-flex items-center rounded-lg px-1.5 py-0.5 text-xs font-medium ${contact.isActive ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" : "bg-muted text-muted-foreground"}`}>
                             {contact.isActive ? "Active" : "Inactive"}
                           </span>
                         </TableCell>
@@ -1547,7 +1547,7 @@ function PlatformAccountsPage() {
               Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)
             ) : !pendingReviews?.length ? (
               <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
-                <Shield className="size-8 mx-auto mb-3 opacity-40 text-green-500" />
+                <Shield className="size-8 mx-auto mb-3 opacity-40 text-blue-500" />
                 <p className="font-medium">All access reviews complete</p>
                 <p className="text-sm mt-1">No pending certifications.</p>
               </div>
@@ -1578,7 +1578,7 @@ function PlatformAccountsPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-7 text-xs text-green-600 hover:text-green-700"
+                          className="h-7 text-xs text-blue-600 hover:text-blue-700"
                           onClick={() => completeReviewMutation.mutate({ id: review.id, status: "approved" })}
                           disabled={completeReviewMutation.isPending}
                         >
@@ -1656,7 +1656,7 @@ function PlatformAccountsPage() {
                             </span>
                             {/* Sync badge */}
                             {integration.syncEnabled ? (
-                              <span className="inline-flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                              <span className="inline-flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
                                 <Activity className="size-3" />Auto-sync
                               </span>
                             ) : (

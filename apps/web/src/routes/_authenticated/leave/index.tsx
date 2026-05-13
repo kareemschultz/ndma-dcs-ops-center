@@ -34,7 +34,7 @@ type LeaveStatus = "pending" | "approved" | "rejected" | "cancelled";
 
 const STATUS_COLORS: Record<LeaveStatus, string> = {
   pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  approved: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  approved: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   rejected: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   cancelled: "bg-muted text-muted-foreground",
 };
@@ -301,7 +301,7 @@ function LeavePage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-7 text-green-600 hover:text-green-700"
+                            className="h-7 text-blue-600 hover:text-blue-700"
                             onClick={() => approveMutation.mutate({ id: req.id })}
                           >
                             <CheckCircle className="size-4" />

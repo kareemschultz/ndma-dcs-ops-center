@@ -49,7 +49,7 @@ const STATUS_OPTIONS = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  active: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  active: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   inactive: "bg-muted text-muted-foreground",
   on_leave: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   terminated: "bg-muted text-muted-foreground line-through",
@@ -516,7 +516,7 @@ function StaffPage() {
                       </TableCell>
                       <TableCell>
                         {s.isOnCallEligible ? (
-                          <span className="text-green-600 text-xs">Yes</span>
+                          <span className="text-blue-600 text-xs">Yes</span>
                         ) : (
                           <span className="text-muted-foreground text-xs">No</span>
                         )}

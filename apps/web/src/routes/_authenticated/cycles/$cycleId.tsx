@@ -61,7 +61,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   active: {
     label: "Active",
     className:
-      "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+      "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   },
   draft: {
     label: "Draft",
@@ -89,7 +89,7 @@ const WORK_ITEM_STATUS_COLORS: Record<string, string> = {
     "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
   blocked:
     "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-  done: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+  done: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
 };
 
 const PERIOD_LABELS: Record<string, string> = {
@@ -491,7 +491,7 @@ function CycleDetailPage() {
             <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
               <div
                 className={`h-full rounded-full ${
-                  completionPct === 100 ? "bg-green-500" : "bg-blue-500"
+                  completionPct === 100 ? "bg-blue-500" : "bg-blue-500"
                 }`}
                 style={{ width: `${completionPct}%` }}
               />

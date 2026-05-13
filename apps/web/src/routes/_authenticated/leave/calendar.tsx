@@ -38,7 +38,7 @@ export const Route = createFileRoute("/_authenticated/leave/calendar")({
 const CHIP_COLORS = [
   "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
   "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
-  "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+  "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300",
   "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
   "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300",
   "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300",
@@ -47,7 +47,7 @@ const CHIP_COLORS = [
 const DOT_COLORS = [
   "bg-blue-500",
   "bg-purple-500",
-  "bg-green-500",
+  "bg-teal-500",
   "bg-amber-500",
   "bg-rose-500",
   "bg-indigo-500",

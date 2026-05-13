@@ -117,7 +117,7 @@ function StatsBanner() {
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
       {[
         { label: "Total Rules", value: stats?.total ?? "—" },
-        { label: "Enabled", value: stats?.enabled ?? "—", color: "text-green-600" },
+        { label: "Enabled", value: stats?.enabled ?? "—", color: "text-blue-600" },
         { label: "Disabled", value: stats?.disabled ?? "—", color: "text-muted-foreground" },
         { label: "Fires (24h)", value: stats?.firesLast24h ?? "—" },
       ].map(({ label, value, color }) => (
@@ -541,7 +541,7 @@ function RuleCard({
               <span
                 className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                   rule.enabled
-                    ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
                     : "bg-muted text-muted-foreground"
                 }`}
               >
@@ -711,7 +711,7 @@ function RecentLogs({ ruleId }: { ruleId: string }) {
           className="flex items-center gap-2 text-xs text-muted-foreground"
         >
           {log.success ? (
-            <CheckCircle2 className="size-3 text-green-500 shrink-0" />
+            <CheckCircle2 className="size-3 text-blue-500 shrink-0" />
           ) : (
             <XCircle className="size-3 text-red-500 shrink-0" />
           )}

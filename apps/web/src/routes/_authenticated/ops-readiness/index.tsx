@@ -25,8 +25,8 @@ const TRAFFIC_LIGHT = {
   green: {
     label: "Operational",
     description: "All systems are go. No critical issues.",
-    color: "text-green-600",
-    bg: "bg-green-50 dark:bg-green-900/20 border-green-200",
+    color: "text-blue-600",
+    bg: "bg-blue-50 dark:bg-blue-900/20 border-blue-200",
     icon: CheckCircle,
   },
   amber: {
@@ -66,7 +66,7 @@ function ReadinessCheck({
         }`}
       >
         <Icon
-          className={`size-5 mt-0.5 shrink-0 ${ok ? "text-green-600" : "text-red-500"}`}
+          className={`size-5 mt-0.5 shrink-0 ${ok ? "text-blue-600" : "text-red-500"}`}
         />
         <div>
           <p className="text-sm font-medium">{label}</p>
@@ -74,7 +74,7 @@ function ReadinessCheck({
         </div>
         <div className="ms-auto">
           {ok ? (
-            <CheckCircle className="size-4 text-green-500" />
+            <CheckCircle className="size-4 text-blue-500" />
           ) : (
             <XCircle className="size-4 text-red-500" />
           )}

@@ -52,7 +52,7 @@ type EditProfileForm = {
 
 function StaffStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string }> = {
-    active: { label: "Active", className: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+    active: { label: "Active", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
     inactive: { label: "Inactive", className: "bg-muted text-muted-foreground" },
     on_leave: { label: "On Leave", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
     terminated: { label: "Terminated", className: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
@@ -77,7 +77,7 @@ function EmploymentTypeBadge({ type }: { type: string }) {
 
 function CareerPlanStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string }> = {
-    active: { label: "Active", className: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+    active: { label: "Active", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
     paused: { label: "Paused", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
     completed: { label: "Completed", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
   };
@@ -88,7 +88,7 @@ function CareerPlanStatusBadge({ status }: { status: string }) {
 function JournalEntryTypeBadge({ type }: { type: string }) {
   const map: Record<string, { label: string; className: string }> = {
     note: { label: "Note", className: "bg-muted text-muted-foreground" },
-    achievement: { label: "Achievement", className: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+    achievement: { label: "Achievement", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
     concern: { label: "Concern", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
     amendment: { label: "Amendment", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
   };
@@ -100,7 +100,7 @@ function PromotionRecommendationStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string }> = {
     draft: { label: "Draft", className: "bg-muted text-muted-foreground" },
     submitted: { label: "Submitted", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
-    approved: { label: "Approved", className: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+    approved: { label: "Approved", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
     rejected: { label: "Rejected", className: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
     withdrawn: { label: "Withdrawn", className: "bg-muted text-muted-foreground" },
   };
@@ -114,9 +114,9 @@ function AppraisalStatusBadge({ status }: { status: string }) {
     scheduled: { label: "Scheduled", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
     in_progress: { label: "In Progress", className: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" },
     submitted: { label: "Submitted", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
-    approved: { label: "Approved", className: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+    approved: { label: "Approved", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
     rejected: { label: "Rejected", className: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
-    completed: { label: "Completed", className: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+    completed: { label: "Completed", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
     overdue: { label: "Overdue", className: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
   };
   const cfg = map[status] ?? { label: status, className: "bg-muted text-muted-foreground" };
@@ -626,7 +626,7 @@ function AccessTab({ staffProfileId }: { staffProfileId: string }) {
                   <span
                     className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                       r.accountActive
-                        ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200"
+                        ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200"
                         : "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200"
                     }`}
                   >
@@ -792,7 +792,7 @@ function StaffProfilePage() {
                     )}
                     {profile.isOnCallEligible && (
                       <span className="flex items-center gap-1 rounded-full border px-3 py-1 text-xs">
-                        <Calendar className="size-3.5 text-green-500" />
+                        <Calendar className="size-3.5 text-blue-500" />
                         On-Call Eligible
                       </span>
                     )}

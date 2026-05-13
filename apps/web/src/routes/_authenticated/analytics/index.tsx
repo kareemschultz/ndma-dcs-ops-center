@@ -51,7 +51,7 @@ const CURRENT_YEAR = 2026;
 
 const C = {
   blue: "#3b82f6",
-  green: "#22c55e",
+  green: "#3b82f6",
   amber: "#f59e0b",
   red: "#ef4444",
   purple: "#8b5cf6",
@@ -698,7 +698,7 @@ function LeaveTab({
             <StatCard
               label="Approved"
               value={approvedCount}
-              colorClass="bg-green-500/10 text-green-700 dark:text-green-300"
+              colorClass="bg-blue-500/10 text-blue-700 dark:text-blue-300"
             />
             <StatCard
               label="Pending"

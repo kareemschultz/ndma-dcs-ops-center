@@ -35,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/reports/")({
 // ── Color palette ──────────────────────────────────────────────────────────
 
 const BLUE = "#3b82f6";
-const GREEN = "#22c55e";
+const GREEN = "#3b82f6";
 const AMBER = "#f59e0b";
 const RED = "#ef4444";
 const PURPLE = "#8b5cf6";
@@ -193,7 +193,7 @@ function WorkOverviewSection() {
             <KpiPill
               label="Done"
               value={data.byStatus?.done ?? 0}
-              color="bg-green-500/10 text-green-700 dark:text-green-300"
+              color="bg-blue-500/10 text-blue-700 dark:text-blue-300"
             />
           </div>
         )}
@@ -579,7 +579,7 @@ function IncidentSummarySection() {
                   value={count}
                   color={
                     status === "resolved" || status === "closed"
-                      ? "bg-green-500/10 text-green-700 dark:text-green-300"
+                      ? "bg-blue-500/10 text-blue-700 dark:text-blue-300"
                       : "bg-rose-500/10 text-rose-700 dark:text-rose-300"
                   }
                 />
@@ -600,7 +600,7 @@ const STAFF_STATUS_CONFIG: Record<
 > = {
   active: {
     label: "Active",
-    color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+    color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   },
   on_leave: {
     label: "On Leave",
@@ -681,7 +681,7 @@ function StaffByStatusSection() {
                 const pct = total > 0 ? Math.round((count / total) * 100) : 0;
                 // Extract a bg color for the bar from the config color
                 const barColors: Record<string, string> = {
-                  active: "bg-green-500",
+                  active: "bg-blue-500",
                   on_leave: "bg-red-500",
                   training: "bg-purple-500",
                   on_call: "bg-blue-500",
@@ -954,7 +954,7 @@ function AccountManagementSection() {
 
         {/* Clean bill — no issues */}
         {!isLoading && orphanedCount === 0 && staleCount === 0 && overdueReviewCount === 0 && openIssuesCount === 0 && (
-          <div className="flex items-center gap-2 rounded-xl bg-green-500/10 px-4 py-3 text-green-700 dark:text-green-300">
+          <div className="flex items-center gap-2 rounded-xl bg-blue-500/10 px-4 py-3 text-blue-700 dark:text-blue-300">
             <Shield className="size-4 shrink-0" />
             <span className="text-sm font-medium">No critical issues — account posture is healthy.</span>
           </div>
