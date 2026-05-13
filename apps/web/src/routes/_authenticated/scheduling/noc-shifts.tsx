@@ -2,8 +2,11 @@
 //
 // Features:
 //   • 11 shift types matching DB enum (Day Shift / Night Shift / Swing Shift / Off / AL / SL / ML / Training / Training Half Day / Custom / Outreach)
-//   • Click chip → cycles through types; hover reveals × clear button
-//   • Custom shift type → opens note dialog before saving
+//   • Click chip → opens Popover with all 11 shift types as buttons (direct pick, no cycling)
+//   • Hover chip → reveals × quick-clear button (set to Off without opening picker)
+//   • Custom / Outreach → opens note dialog before saving
+//   • Notes indicator dot on chip when a note exists; title tooltip shows the note text
+//   • My Shifts toggle to filter grid to logged-in user only
 //   • Month navigation: ← / → arrows + any-month dropdown
 //   • Staff name search filter (client-side)
 //   • Weekend column highlighting; today column blue highlight
@@ -52,6 +55,11 @@ import {
   DialogTitle,
 } from "@ndma-dcs-staff-portal/ui/components/dialog";
 import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@ndma-dcs-staff-portal/ui/components/popover";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -80,18 +88,6 @@ const SHIFT_TYPES = [
 
 type ShiftType = (typeof SHIFT_TYPES)[number];
 
-// Cycle order for click-to-cycle (null = clear to Off)
-const CYCLE_ORDER: (ShiftType | null)[] = [
-  "Day Shift",
-  "Night Shift",
-  "Swing Shift",
-  "Off",
-  "Annual Leave",
-  "Sick Leave",
-  "Training",
-  "Outreach",
-  null, // clear
-];
 
 interface ChipConfig {
   short: string;
@@ -178,12 +174,6 @@ function getDaysInMonth(year: number, month: number) {
   return new Date(year, month, 0).getDate();
 }
 
-function nextShift(current: ShiftType | undefined): ShiftType {
-  const idx = current ? CYCLE_ORDER.indexOf(current) : -1;
-  const next = CYCLE_ORDER[(idx + 1) % CYCLE_ORDER.length];
-  return next ?? "Off";
-}
-
 // ── Excel import: staff name → staffId mapping ────────────────────────────────
 
 const STAFF_NAME_MAP: Record<string, string> = {
@@ -222,22 +212,35 @@ function parseExcelShiftCode(raw: unknown): ShiftType | null {
   return "Custom";
 }
 
-// ── Shift cell chip ────────────────────────────────────────────────────────────
+// ── Shift cell chip with popover picker ───────────────────────────────────────
+//
+// Click the chip → Popover opens showing all 11 shift types as button grid.
+// Hover chip → reveals × quick-clear button (bypasses the picker).
+// Custom / Outreach → parent handles note dialog after onSelect is called.
 
 function ShiftChip({
   shift,
+  notes,
   pending,
-  onClick,
+  onSelect,
   onClear,
 }: {
   shift: ShiftType | undefined;
+  notes?: string | null;
   pending: boolean;
-  onClick: () => void;
+  onSelect: (type: ShiftType) => void;
   onClear: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
+  const [open, setOpen] = useState(false);
   const config = shift ? SHIFT_CHIP[shift] : SHIFT_CHIP["Off"];
   const isOff = !shift || shift === "Off";
+  const hasNote = !!notes;
+
+  function pick(type: ShiftType) {
+    setOpen(false);
+    onSelect(type);
+  }
 
   return (
     <div
@@ -245,19 +248,64 @@ function ShiftChip({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <button
-        onClick={onClick}
-        disabled={pending}
-        title={`${shift ?? "Off"} — click to change`}
-        className={[
-          "flex h-7 w-7 items-center justify-center rounded-md font-mono text-[10px] font-bold transition-opacity",
-          "hover:opacity-70 active:scale-95 disabled:opacity-50",
-          config.className,
-        ].join(" ")}
-      >
-        {config.short}
-      </button>
-      {hovered && !isOff && (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          disabled={pending}
+          title={notes ? `${shift}: ${notes}` : (shift ?? "Off")}
+          className={[
+            "relative flex h-7 w-7 items-center justify-center rounded-md font-mono text-[10px] font-bold transition-all",
+            "hover:opacity-80 hover:ring-1 hover:ring-current/40 active:scale-95 disabled:opacity-50",
+            open ? "ring-2 ring-current/50" : "",
+            config.className,
+          ].join(" ")}
+        >
+          {config.short}
+          {hasNote && (
+            <span
+              aria-hidden
+              className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full border border-background bg-current opacity-70"
+            />
+          )}
+        </PopoverTrigger>
+
+        <PopoverContent className="w-52 p-2" side="bottom" align="center">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Set Shift Type
+          </p>
+          <div className="grid grid-cols-3 gap-1">
+            {SHIFT_TYPES.map((t) => {
+              const c = SHIFT_CHIP[t];
+              const isCurrent = t === shift;
+              return (
+                <button
+                  key={t}
+                  onClick={() => pick(t)}
+                  className={[
+                    "flex flex-col items-center rounded-lg px-1 py-2 text-center transition-all",
+                    "hover:opacity-75 hover:scale-[1.06] active:scale-95",
+                    c.className,
+                    isCurrent ? "ring-2 ring-current ring-offset-1 opacity-90" : "",
+                  ].join(" ")}
+                >
+                  <span className="font-mono text-[11px] font-bold leading-none">{c.short}</span>
+                  <span className="mt-0.5 text-[8px] leading-tight opacity-80">{c.legendLabel}</span>
+                </button>
+              );
+            })}
+          </div>
+          {!isOff && (
+            <button
+              onClick={() => { setOpen(false); onClear(); }}
+              className="mt-2 w-full rounded-md px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:bg-muted"
+            >
+              ✕ Clear (set to Off)
+            </button>
+          )}
+        </PopoverContent>
+      </Popover>
+
+      {/* Quick-clear on hover — bypasses picker */}
+      {hovered && !open && !isOff && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -404,29 +452,21 @@ function NocShiftsPage() {
     });
   }
 
-  function handleCellClick(staffId: string, day: number) {
+  // Called when a shift type is chosen in the picker popover
+  function handleCellSelect(staffId: string, day: number, selectedType: ShiftType) {
     const currentShift = shiftMap[staffId]?.[day];
-    const current = currentShift?.type;
     const dateStr = makeDateStr(day);
 
-    // Clicking an existing Custom or Outreach cell → re-open the note dialog to edit the note
-    if (current === "Custom" || current === "Outreach") {
-      setPendingCustom({ staffId, date: dateStr, shiftType: current });
-      setCustomNote(currentShift?.notes ?? "");
+    // Custom or Outreach always opens the note dialog (pre-fill existing note if re-editing)
+    if (selectedType === "Custom" || selectedType === "Outreach") {
+      const existingNote = currentShift?.type === selectedType ? (currentShift?.notes ?? "") : "";
+      setPendingCustom({ staffId, date: dateStr, shiftType: selectedType });
+      setCustomNote(existingNote);
       setCustomDialogOpen(true);
       return;
     }
 
-    const newShift = nextShift(current);
-
-    if (newShift === "Custom" || newShift === "Outreach") {
-      setPendingCustom({ staffId, date: dateStr, shiftType: newShift });
-      setCustomNote("");
-      setCustomDialogOpen(true);
-      return;
-    }
-
-    saveShift(staffId, dateStr, newShift);
+    saveShift(staffId, dateStr, selectedType);
   }
 
   function handleClearCell(staffId: string, day: number) {
@@ -699,7 +739,7 @@ function NocShiftsPage() {
           <div className="space-y-0.5">
             <h1 className="text-xl font-bold tracking-tight">NOC Shift Grid</h1>
             <p className="text-sm text-muted-foreground">
-              Click any cell to cycle shift type. Hover a cell to reveal the clear button.
+              Click any cell to pick a shift type. Hover a cell for the quick-clear button.
             </p>
           </div>
 
@@ -923,8 +963,9 @@ function NocShiftsPage() {
                             >
                               <ShiftChip
                                 shift={entry?.type}
+                                notes={entry?.notes}
                                 pending={mutation.isPending}
-                                onClick={() => handleCellClick(staffId, day)}
+                                onSelect={(type) => handleCellSelect(staffId, day, type)}
                                 onClear={() => handleClearCell(staffId, day)}
                               />
                             </td>
