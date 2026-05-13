@@ -8,11 +8,12 @@
 //   • "No weeks" prompt updated to mention "Add Week"
 //   • Current week highlight (blue border + "Now" badge) preserved
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format, getISOWeek, parseISO } from "date-fns";
-import { CalendarCheck2, Pencil, Plus } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { CalendarCheck2, Pencil, Plus, User } from "lucide-react";
+import { useSession } from "@/lib/auth-client";
 import { toast } from "sonner";
 
 import { Badge } from "@ndma-dcs-staff-portal/ui/components/badge";
@@ -40,9 +41,9 @@ export const Route = createFileRoute("/_authenticated/scheduling/dcs-oncall")({
 });
 
 const CURRENT_YEAR = new Date().getFullYear();
-const CURRENT_WEEK = getISOWeek(new Date());
+const TODAY = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
 
-type StaffItem = { id: string; employeeId: string; user?: { name?: string | null } | null };
+type StaffItem = { id: string; employeeId: string; userId?: string | null; user?: { id?: string | null; name?: string | null } | null };
 
 type WeekRow = {
   id: string; year: number; weekNum: number;
@@ -352,6 +353,11 @@ function DcsOnCallPage() {
   const [year,        setYear]        = useState(CURRENT_YEAR);
   const [editingWeek, setEditingWeek] = useState<WeekRow | null>(null);
   const [addOpen,     setAddOpen]     = useState(false);
+  const [myOnlyMode,  setMyOnlyMode]  = useState(false);
+  const currentWeekRef = useRef<HTMLTableRowElement>(null);
+
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id;
 
   const { data: weeks, isLoading } = useQuery(
     orpc.scheduling.dcsOnCall.list.queryOptions({ input: { year } }),
@@ -359,10 +365,35 @@ function DcsOnCallPage() {
   const { data: staffData } = useQuery(
     orpc.staff.list.queryOptions({ input: { limit: 200, offset: 0 } }),
   );
-  const staffList: StaffItem[] = staffData ?? [];
+  const staffList: StaffItem[] = (staffData ?? []) as StaffItem[];
 
-  // All weeks shown by default — no windowing
-  const displayedWeeks = weeks ?? [];
+  // Find the logged-in user's staff profile ID by matching user.id
+  const myStaffId = staffList.find((s) => s.user?.id === currentUserId || s.userId === currentUserId)?.id ?? null;
+
+  // Determine current week by date range (not ISO week number)
+  const currentWeekNum = (weeks ?? []).find(
+    (w) => w.weekStartDate <= TODAY && TODAY <= w.weekEndDate
+  )?.weekNum ?? null;
+
+  // Auto-scroll to current week on load
+  useEffect(() => {
+    if (!isLoading && currentWeekRef.current) {
+      setTimeout(() => {
+        currentWeekRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+    }
+  }, [isLoading]);
+
+  // Filter: all weeks, or only weeks where the current user appears in any role
+  const allWeeks = weeks ?? [];
+  const displayedWeeks = myOnlyMode && myStaffId
+    ? allWeeks.filter((w) =>
+        w.leadEngineerId === myStaffId ||
+        w.asnSupportId   === myStaffId ||
+        w.enterpriseSupportId === myStaffId ||
+        w.coreSupportId  === myStaffId
+      )
+    : allWeeks;
 
   return (
     <>
@@ -387,6 +418,16 @@ function DcsOnCallPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {myStaffId && (
+              <Button
+                size="sm"
+                variant={myOnlyMode ? "default" : "outline"}
+                onClick={() => setMyOnlyMode((v) => !v)}
+              >
+                <User className="mr-1.5 size-3.5" />
+                {myOnlyMode ? "My On-Call" : "My On-Call"}
+              </Button>
+            )}
             <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue />
@@ -434,13 +475,24 @@ function DcsOnCallPage() {
                 </TableRow>
               ) : (
                 displayedWeeks.map((w) => {
-                  const isCurrent = w.weekNum === CURRENT_WEEK && w.year === CURRENT_YEAR;
+                  const isCurrent = w.weekNum === currentWeekNum && w.year === CURRENT_YEAR;
+                  // Highlight weeks where the current user is on-call
+                  const isMyWeek = myStaffId && (
+                    w.leadEngineerId === myStaffId ||
+                    w.asnSupportId   === myStaffId ||
+                    w.enterpriseSupportId === myStaffId ||
+                    w.coreSupportId  === myStaffId
+                  );
                   return (
                     <TableRow
                       key={w.id}
-                      className={isCurrent
-                        ? "relative bg-blue-50/60 shadow-[inset_3px_0_0_0_hsl(var(--primary))] dark:bg-blue-950/20"
-                        : undefined
+                      ref={isCurrent ? currentWeekRef : undefined}
+                      className={
+                        isCurrent
+                          ? "relative bg-blue-50/60 shadow-[inset_3px_0_0_0_hsl(var(--primary))] dark:bg-blue-950/20"
+                          : isMyWeek && !myOnlyMode
+                          ? "bg-indigo-50/40 dark:bg-indigo-950/10"
+                          : undefined
                       }
                     >
                       <TableCell>
@@ -448,6 +500,9 @@ function DcsOnCallPage() {
                           <span className="font-mono font-semibold">W{w.weekNum}</span>
                           {isCurrent && (
                             <Badge variant="default" className="px-1.5 py-0 text-[10px]">Now</Badge>
+                          )}
+                          {isMyWeek && !isCurrent && (
+                            <Badge variant="outline" className="px-1.5 py-0 text-[10px] border-indigo-400 text-indigo-600 dark:text-indigo-300">Me</Badge>
                           )}
                         </div>
                       </TableCell>

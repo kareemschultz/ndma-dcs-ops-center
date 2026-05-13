@@ -69,6 +69,7 @@ export const schedulingRouter = {
               staffId: z.string().min(1),
               shiftDate: z.string(),
               shiftType: z.enum(NOC_SHIFT_TYPES),
+              notes: z.string().optional().nullable(),
             }),
           ),
         }),
@@ -82,11 +83,13 @@ export const schedulingRouter = {
               staffId: entry.staffId,
               shiftDate: entry.shiftDate,
               shiftType: entry.shiftType,
+              notes: entry.notes ?? null,
             })
             .onConflictDoUpdate({
               target: [nocShifts.staffId, nocShifts.shiftDate],
               set: {
                 shiftType: entry.shiftType,
+                notes: entry.notes ?? null,
                 updatedAt: new Date(),
               },
             })

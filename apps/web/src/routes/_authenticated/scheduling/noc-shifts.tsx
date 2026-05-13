@@ -14,6 +14,7 @@
 import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "@/lib/auth-client";
 import { format, parseISO } from "date-fns";
 import {
   ArrowLeftRight,
@@ -23,6 +24,7 @@ import {
   Download,
   Search,
   Upload,
+  User,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -279,10 +281,14 @@ function NocShiftsPage() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [staffFilter, setStaffFilter] = useState("");
+  const [myShiftsMode, setMyShiftsMode] = useState(false);
+
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id;
 
   // Custom note dialog
   const [customDialogOpen, setCustomDialogOpen] = useState(false);
-  const [pendingCustom, setPendingCustom] = useState<{ staffId: string; date: string } | null>(null);
+  const [pendingCustom, setPendingCustom] = useState<{ staffId: string; date: string; shiftType: ShiftType } | null>(null);
   const [customNote, setCustomNote] = useState("");
 
   // Swap request dialog
@@ -336,11 +342,22 @@ function NocShiftsPage() {
 
   const allStaffIds = Object.keys(shiftMap);
 
-  const filteredStaffIds = staffFilter.trim()
-    ? allStaffIds.filter((id) =>
+  // Find current user's staff profile ID
+  const myStaffId = (staffData ?? []).find(
+    (sp: { id: string; userId?: string | null; user?: { id?: string | null } | null }) =>
+      sp.userId === currentUserId || sp.user?.id === currentUserId
+  )?.id ?? null;
+
+  const filteredStaffIds = (() => {
+    // "My Shifts" mode — show only the logged-in user's row
+    if (myShiftsMode && myStaffId) return allStaffIds.filter((id) => id === myStaffId);
+    // Name search filter
+    if (staffFilter.trim())
+      return allStaffIds.filter((id) =>
         (staffNames[id] ?? id).toLowerCase().includes(staffFilter.toLowerCase()),
-      )
-    : allStaffIds;
+      );
+    return allStaffIds;
+  })();
 
   const daysInMonth = getDaysInMonth(year, month);
   const days = Array.from({ length: daysInMonth }, (_, i) => {
@@ -381,19 +398,29 @@ function NocShiftsPage() {
     return `${year}-${monthStr}-${dayStr}`;
   }
 
-  function saveShift(staffId: string, dateStr: string, shiftType: ShiftType) {
+  function saveShift(staffId: string, dateStr: string, shiftType: ShiftType, notes?: string | null) {
     mutation.mutate({
-      entries: [{ staffId, shiftDate: dateStr, shiftType }],
+      entries: [{ staffId, shiftDate: dateStr, shiftType, notes: notes ?? null }],
     });
   }
 
   function handleCellClick(staffId: string, day: number) {
-    const current = shiftMap[staffId]?.[day]?.type;
-    const newShift = nextShift(current);
+    const currentShift = shiftMap[staffId]?.[day];
+    const current = currentShift?.type;
     const dateStr = makeDateStr(day);
 
-    if (newShift === "Custom") {
-      setPendingCustom({ staffId, date: dateStr });
+    // Clicking an existing Custom or Outreach cell → re-open the note dialog to edit the note
+    if (current === "Custom" || current === "Outreach") {
+      setPendingCustom({ staffId, date: dateStr, shiftType: current });
+      setCustomNote(currentShift?.notes ?? "");
+      setCustomDialogOpen(true);
+      return;
+    }
+
+    const newShift = nextShift(current);
+
+    if (newShift === "Custom" || newShift === "Outreach") {
+      setPendingCustom({ staffId, date: dateStr, shiftType: newShift });
       setCustomNote("");
       setCustomDialogOpen(true);
       return;
@@ -408,7 +435,7 @@ function NocShiftsPage() {
 
   function handleCustomConfirm() {
     if (!pendingCustom) return;
-    saveShift(pendingCustom.staffId, pendingCustom.date, "Custom");
+    saveShift(pendingCustom.staffId, pendingCustom.date, pendingCustom.shiftType, customNote.trim() || null);
     setCustomDialogOpen(false);
     setPendingCustom(null);
     setCustomNote("");
@@ -677,6 +704,19 @@ function NocShiftsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* My Shifts toggle — only shown when the user has a NOC staff profile */}
+            {myStaffId && allStaffIds.includes(myStaffId) && (
+              <Button
+                size="sm"
+                variant={myShiftsMode ? "default" : "outline"}
+                onClick={() => { setMyShiftsMode((v) => !v); setStaffFilter(""); }}
+                className="gap-1.5"
+              >
+                <User className="h-3.5 w-3.5" />
+                My Shifts
+              </Button>
+            )}
+
             {/* Actions */}
             <Button
               variant="outline"
@@ -849,10 +889,14 @@ function NocShiftsPage() {
                   </tr>
                 ) : (
                   filteredStaffIds.map((staffId) => {
+                    const isMyRow = staffId === myStaffId;
                     const sum = summarise(staffId);
                     const displayName = staffNames[staffId] ?? staffId;
                     return (
-                      <tr key={staffId} className="border-b last:border-0 hover:bg-muted/30">
+                      <tr
+                        key={staffId}
+                        className={`border-b last:border-0 hover:bg-muted/30 ${isMyRow && !myShiftsMode ? "shadow-[inset_3px_0_0_0_hsl(var(--primary))] bg-blue-50/30 dark:bg-blue-950/10" : ""}`}
+                      >
                         {/* Staff name — sticky, truncated with title for full name */}
                         <td
                           className="sticky left-0 z-10 w-44 min-w-[176px] max-w-[176px] truncate bg-background px-3 py-1 font-medium whitespace-nowrap"
@@ -921,23 +965,35 @@ function NocShiftsPage() {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Custom Shift Note</DialogTitle>
+            <DialogTitle>
+              {pendingCustom?.shiftType === "Outreach" ? "Outreach Details" : "Custom Shift Note"}
+            </DialogTitle>
             <DialogDescription>
-              Add a note describing this custom shift arrangement. The note will be saved with the
-              shift record.
+              {pendingCustom?.shiftType === "Outreach"
+                ? "Describe the outreach activity or location."
+                : "Describe this custom shift arrangement (e.g. standby from home, covering for absence)."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-2">
             <div className="grid gap-1.5">
-              <Label htmlFor="custom-note">Note / Description</Label>
+              <Label htmlFor="custom-note">
+                {pendingCustom?.shiftType === "Outreach" ? "Outreach description" : "Note / Description"}
+              </Label>
               <Textarea
                 id="custom-note"
-                placeholder="e.g. Standby from home, covering for absence…"
+                placeholder={
+                  pendingCustom?.shiftType === "Outreach"
+                    ? "e.g. Field visit to Ministry of Finance…"
+                    : "e.g. Standby from home, covering for absence…"
+                }
                 value={customNote}
                 onChange={(e) => setCustomNote(e.target.value)}
                 rows={3}
                 autoFocus
               />
+              <p className="text-xs text-muted-foreground">
+                This note appears on the shift chip in the grid. Leave blank to show only the shift type.
+              </p>
             </div>
           </div>
           <DialogFooter>
@@ -945,7 +1001,7 @@ function NocShiftsPage() {
               Cancel
             </Button>
             <Button onClick={handleCustomConfirm} disabled={mutation.isPending}>
-              Save Custom Shift
+              {mutation.isPending ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
