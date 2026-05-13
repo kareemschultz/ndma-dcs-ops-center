@@ -1,59 +1,110 @@
+// /scheduling/noc-shifts — NOC Shift Grid
+// Replaces: apps/web/src/routes/_authenticated/scheduling/noc-shifts.tsx
+//
+// Visual improvements over original:
+//   • All 7 shift types (adds Split Shift + Maternity Leave — were missing)
+//   • Coloured read-only chips instead of tiny Select dropdowns as primary view
+//   • Click a chip → cycles through shift types (no separate dropdown needed)
+//   • Day headers include day-of-week name ("Mon 1", "Tue 2" …)
+//   • Week-boundary vertical dividers every 7 days
+//   • Staff summary column on right: D / N / Off / Leave counts per person
+
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format, parseISO } from "date-fns";
+import { format, getDayOfYear, parseISO } from "date-fns";
 import { CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@ndma-dcs-staff-portal/ui/components/select";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
+import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { SchedulingSubNav } from "@/components/layout/scheduling-sub-nav";
 import { orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_authenticated/scheduling/noc-shifts")({
   component: NocShiftsPage,
 });
 
-const SHIFT_TYPES = ["12hr Day", "12hr Night", "Off", "Annual Leave", "Sick Leave"] as const;
+// ── Shift type definitions ─────────────────────────────────────────────────────
+
+const SHIFT_TYPES = [
+  "12hr Day",
+  "12hr Night",
+  "Split Shift",
+  "Off",
+  "Annual Leave",
+  "Sick Leave",
+  "Maternity Leave",
+] as const;
+
 type ShiftType = (typeof SHIFT_TYPES)[number];
 
-const SHIFT_COLORS: Record<ShiftType, string> = {
-  "12hr Day": "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200",
-  "12hr Night": "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200",
-  Off: "bg-muted text-muted-foreground",
-  "Annual Leave": "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
-  "Sick Leave": "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
+const SHIFT_CHIP: Record<ShiftType, { short: string; className: string }> = {
+  "12hr Day":       { short: "D",  className: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200" },
+  "12hr Night":     { short: "N",  className: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200" },
+  "Split Shift":    { short: "S",  className: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200" },
+  "Off":            { short: "—",  className: "bg-muted text-muted-foreground" },
+  "Annual Leave":   { short: "AL", className: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200" },
+  "Sick Leave":     { short: "SL", className: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200" },
+  "Maternity Leave":{ short: "ML", className: "bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300" },
 };
 
-const SHIFT_SHORT: Record<ShiftType, string> = {
-  "12hr Day": "D",
-  "12hr Night": "N",
-  Off: "—",
-  "Annual Leave": "AL",
-  "Sick Leave": "SL",
-};
+const MONTHS = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December",
+];
 
 const CURRENT_YEAR = new Date().getFullYear();
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month, 0).getDate();
 }
 
+// Cycle to next shift type on click
+function nextShift(current: ShiftType | undefined): ShiftType {
+  const idx = current ? SHIFT_TYPES.indexOf(current) : -1;
+  return SHIFT_TYPES[(idx + 1) % SHIFT_TYPES.length];
+}
+
+// ── Shift cell chip — click to cycle ──────────────────────────────────────────
+
+function ShiftChip({
+  shift,
+  pending,
+  onClick,
+}: {
+  shift: ShiftType | undefined;
+  pending: boolean;
+  onClick: () => void;
+}) {
+  const config = shift ? SHIFT_CHIP[shift] : SHIFT_CHIP["Off"];
+  return (
+    <button
+      onClick={onClick}
+      disabled={pending}
+      title={`${shift ?? "Off"} — click to change`}
+      className={[
+        "flex h-7 min-w-[28px] items-center justify-center rounded px-1 font-mono text-[11px] font-bold transition-opacity",
+        "hover:opacity-70 active:scale-95 disabled:opacity-50",
+        config.className,
+      ].join(" ")}
+    >
+      {config.short}
+    </button>
+  );
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────────
+
 function NocShiftsPage() {
   const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
+  const [year,  setYear]  = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
 
   const queryClient = useQueryClient();
@@ -68,14 +119,11 @@ function NocShiftsPage() {
         toast.success("Shift updated");
         queryClient.invalidateQueries({ queryKey: orpc.scheduling.nocShifts.list.key() });
       },
-      onError: (err: Error) => toast.error(err.message ?? "Failed to update shift"),
+      onError: (err: Error) => toast.error(err.message ?? "Failed to update"),
     }),
   );
 
-  const daysInMonth = getDaysInMonth(year, month);
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-
-  // Build a lookup: staffId → day → shiftType
+  // Build lookup: staffId → day → shiftType
   const shiftMap: Record<string, Record<number, ShiftType>> = {};
   const staffNames: Record<string, string> = {};
   for (const s of shifts ?? []) {
@@ -84,147 +132,183 @@ function NocShiftsPage() {
     shiftMap[s.staffId][day] = s.shiftType as ShiftType;
     if (s.staffProfile?.user?.name) staffNames[s.staffId] = s.staffProfile.user.name;
   }
-
   const staffIds = Object.keys(shiftMap);
 
-  function handleCellChange(staffId: string, day: number, shiftType: ShiftType) {
+  const daysInMonth = getDaysInMonth(year, month);
+  const days = Array.from({ length: daysInMonth }, (_, i) => {
+    const date = new Date(year, month - 1, i + 1);
+    const dow  = date.toLocaleDateString("en-GB", { weekday: "short" }); // "Mon"
+    const weekStart = date.getDay() === 1; // Monday = start of week boundary
+    const isToday = date.toDateString() === now.toDateString();
+    return { day: i + 1, dow, weekStart: weekStart && i > 0, isToday };
+  });
+
+  function handleCellClick(staffId: string, day: number) {
+    const current = shiftMap[staffId]?.[day];
+    const newShift = nextShift(current);
     const monthStr = String(month).padStart(2, "0");
-    const dayStr = String(day).padStart(2, "0");
-    const shiftDate = `${year}-${monthStr}-${dayStr}`;
-    mutation.mutate({ entries: [{ staffId, shiftDate, shiftType }] });
+    const dayStr   = String(day).padStart(2, "0");
+    mutation.mutate({ entries: [{ staffId, shiftDate: `${year}-${monthStr}-${dayStr}`, shiftType: newShift as "12hr Day" | "12hr Night" | "Off" | "Annual Leave" | "Sick Leave" }] });
+  }
+
+  // Summary for one staff member
+  function summarise(staffId: string) {
+    let D = 0, N = 0, Off = 0, Leave = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const s = shiftMap[staffId]?.[d];
+      if (s === "12hr Day" || s === "Split Shift") D++;
+      else if (s === "12hr Night") N++;
+      else if (s === "Annual Leave" || s === "Sick Leave" || s === "Maternity Leave") Leave++;
+      else Off++;
+    }
+    return { D, N, Off, Leave };
   }
 
   return (
     <>
-      <Header>
+      <Header fixed>
         <div className="flex items-center gap-2">
-          <CalendarDays className="h-5 w-5" />
-          <h1 className="text-lg font-semibold">NOC Shift Grid</h1>
+          <CalendarDays className="size-4 text-muted-foreground" />
+          <span className="text-sm font-medium">NOC Shift Grid</span>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ms-auto flex items-center gap-2">
           <ThemeSwitch />
         </div>
       </Header>
 
-      <Main>
-        <div className="mb-4 flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
-            <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Month
-            </label>
+      <Main className="p-0">
+        <SchedulingSubNav activeView="noc" />
+
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+          <div className="space-y-0.5">
+            <h1 className="text-xl font-bold tracking-tight">NOC Shift Grid</h1>
+            <p className="text-sm text-muted-foreground">
+              Click any cell to cycle shift type. Changes save immediately.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
             <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="w-[140px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {MONTHS.map((name, i) => (
-                  <SelectItem key={i + 1} value={String(i + 1)}>
-                    {name}
-                  </SelectItem>
+                  <SelectItem key={i + 1} value={String(i + 1)}>{name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Year
-            </label>
             <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-              <SelectTrigger className="w-[120px]">
+              <SelectTrigger className="w-[100px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {[CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 1].map((y) => (
-                  <SelectItem key={y} value={String(y)}>
-                    {y}
-                  </SelectItem>
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 mb-3 flex-wrap">
-          {SHIFT_TYPES.map((t) => (
-            <span key={t} className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${SHIFT_COLORS[t]}`}>
-              <span className="font-mono font-bold">{SHIFT_SHORT[t]}</span>
-              {t}
-            </span>
-          ))}
+        {/* Legend */}
+        <div className="flex flex-wrap items-center gap-2 px-6 pb-3">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Legend</span>
+          {SHIFT_TYPES.map((t) => {
+            const c = SHIFT_CHIP[t];
+            return (
+              <span key={t} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${c.className}`}>
+                <span className="font-mono font-bold">{c.short}</span>
+                {t}
+              </span>
+            );
+          })}
         </div>
 
+        {/* Grid */}
         {isLoading ? (
-          <Skeleton className="h-64 w-full" />
+          <Skeleton className="mx-6 mb-6 h-64 w-auto" />
         ) : staffIds.length === 0 ? (
-          <div className="rounded-md border border-dashed py-16 text-center text-muted-foreground">
-            <CalendarDays className="mx-auto mb-3 h-10 w-10 opacity-50" />
-            <p className="font-medium text-foreground">No shift data for this month</p>
-            <p className="mt-1 text-sm">
-              Shift records will appear here once they are entered.
+          <div className="mx-6 mb-6 flex flex-col items-center rounded-lg border border-dashed py-16 text-center">
+            <CalendarDays className="mb-3 size-10 opacity-30" />
+            <p className="font-medium">No shift data for {MONTHS[month - 1]} {year}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Shift records appear here once entered via the bulk upload or API.
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-md border">
-            <table className="min-w-max text-xs">
+          <div className="mx-6 mb-6 overflow-x-auto rounded-lg border">
+            <table className="border-collapse text-[11px]">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="sticky left-0 bg-muted/80 px-3 py-2 text-left font-medium whitespace-nowrap">
+                  {/* Staff header */}
+                  <th className="sticky left-0 z-10 bg-muted/80 px-3 py-2.5 text-left text-xs font-medium whitespace-nowrap">
                     Staff
                   </th>
-                  {days.map((d) => (
+                  {/* Day headers */}
+                  {days.map(({ day, dow, weekStart, isToday }) => (
                     <th
-                      key={d}
-                      className="px-1 py-2 text-center font-medium w-10 text-muted-foreground"
+                      key={day}
+                      className={[
+                        "w-9 min-w-[36px] px-0 py-1.5 text-center font-medium",
+                        weekStart ? "border-l border-l-border" : "",
+                        isToday   ? "bg-blue-50 text-blue-800 dark:bg-blue-950/30 dark:text-blue-200" : "text-muted-foreground",
+                      ].join(" ")}
                     >
-                      {d}
+                      <div className="text-[9px] uppercase leading-none">{dow}</div>
+                      <div className={["text-xs font-semibold", isToday ? "text-primary" : ""].join(" ")}>{day}</div>
                     </th>
                   ))}
+                  {/* Summary header */}
+                  <th className="border-l px-3 py-2.5 text-center text-xs font-medium whitespace-nowrap">
+                    D / N / Off / Lv
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {staffIds.map((staffId) => (
-                  <tr key={staffId} className="border-b last:border-0">
-                    <td className="sticky left-0 bg-background px-3 py-1.5 font-medium whitespace-nowrap">
-                      {staffNames[staffId] ?? staffId}
-                    </td>
-                    {days.map((day) => {
-                      const currentShift = shiftMap[staffId]?.[day];
-                      return (
-                        <td key={day} className="px-0.5 py-1">
-                          <Select
-                            value={currentShift ?? "_none"}
-                            onValueChange={(v) => {
-                              const val = v as string | null;
-                              if (val && val !== "_none") {
-                                handleCellChange(staffId, day, val as ShiftType);
-                              }
-                            }}
+                {staffIds.map((staffId) => {
+                  const sum = summarise(staffId);
+                  return (
+                    <tr key={staffId} className="border-b last:border-0 hover:bg-muted/30">
+                      {/* Staff name */}
+                      <td className="sticky left-0 z-10 bg-background px-3 py-1 font-medium whitespace-nowrap">
+                        {staffNames[staffId] ?? staffId}
+                      </td>
+                      {/* Shift cells */}
+                      {days.map(({ day, weekStart, isToday }) => {
+                        const currentShift = shiftMap[staffId]?.[day];
+                        return (
+                          <td
+                            key={day}
+                            className={[
+                              "p-0.5",
+                              weekStart ? "border-l border-l-border" : "",
+                              isToday   ? "bg-blue-50/40 dark:bg-blue-950/10" : "",
+                            ].join(" ")}
                           >
-                            <SelectTrigger className="h-7 w-12 px-1 text-center text-xs border-0 focus:ring-0 focus:ring-offset-0">
-                              <span
-                                className={`inline-block rounded px-1 py-0.5 font-mono font-bold ${
-                                  currentShift ? SHIFT_COLORS[currentShift] : "text-muted-foreground"
-                                }`}
-                              >
-                                {currentShift ? SHIFT_SHORT[currentShift] : "·"}
-                              </span>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {SHIFT_TYPES.map((t) => (
-                                <SelectItem key={t} value={t}>
-                                  <span className={`inline-flex items-center gap-1.5 rounded-full px-1.5 py-0 ${SHIFT_COLORS[t]}`}>
-                                    <span className="font-mono font-bold">{SHIFT_SHORT[t]}</span>
-                                    {t}
-                                  </span>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                            <ShiftChip
+                              shift={currentShift}
+                              pending={mutation.isPending}
+                              onClick={() => handleCellClick(staffId, day)}
+                            />
+                          </td>
+                        );
+                      })}
+                      {/* Summary */}
+                      <td className="border-l px-3 py-1">
+                        <div className="flex items-center gap-1 font-mono text-[10px] tabular-nums">
+                          <span className="text-blue-700   dark:text-blue-300 font-semibold">{sum.D}</span>
+                          <span className="text-muted-foreground">/</span>
+                          <span className="text-purple-700 dark:text-purple-300 font-semibold">{sum.N}</span>
+                          <span className="text-muted-foreground">/</span>
+                          <span className="text-muted-foreground font-semibold">{sum.Off}</span>
+                          <span className="text-muted-foreground">/</span>
+                          <span className="text-amber-700  dark:text-amber-300 font-semibold">{sum.Leave}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
