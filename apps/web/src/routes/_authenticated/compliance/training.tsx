@@ -15,6 +15,7 @@ import {
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { ComplianceSubNav } from "@/components/layout/compliance-sub-nav";
 import { orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_authenticated/compliance/training")({
@@ -56,6 +57,7 @@ function TrainingPage() {
         </div>
       </Header>
 
+      <ComplianceSubNav />
       <Main>
         <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight">Training Records</h1>

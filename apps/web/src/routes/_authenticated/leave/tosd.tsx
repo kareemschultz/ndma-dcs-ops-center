@@ -34,6 +34,7 @@ import {
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { LeaveSubNav } from "@/components/layout/leave-sub-nav";
 import { orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_authenticated/leave/tosd")({
@@ -275,6 +276,7 @@ function TosdPage() {
         </div>
       </Header>
 
+      <LeaveSubNav />
       <Main>
         <div className="mb-4 flex flex-wrap items-end gap-3">
           <div className="space-y-1">

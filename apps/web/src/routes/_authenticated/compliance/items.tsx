@@ -6,6 +6,7 @@ import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { ComplianceSubNav } from "@/components/layout/compliance-sub-nav";
 import { orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_authenticated/compliance/items")({
@@ -43,6 +44,7 @@ function ComplianceItemsPage() {
         </div>
       </Header>
 
+      <ComplianceSubNav />
       <Main>
         <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight">Compliance Overview</h1>
