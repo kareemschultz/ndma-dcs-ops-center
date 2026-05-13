@@ -155,3 +155,99 @@ The 2026-05-04 source-of-truth inspection confirmed two distinct entities with t
 **Action required:** Kareem decides A / B / C, and the chosen option ships in a Phase 5 follow-up PR before Phase 14 seed step 10 can run.
 
 **Resolution:** _pending_
+
+---
+
+## [OPEN] — iCal export for `/scheduling/*` (Phase 3 AC) — @kareem [DECISION]
+
+**Opened:** 2026-05-12 by Claude Code (Part A audit, claude-opus-4-7)
+**Context:** Master plan §6.3 + §8 Phase 3 acceptance criteria require iCal/`.ics` export so staff can subscribe to their on-call / shift schedule in Google Calendar. Grep across `packages/api/src/` returns 0 hits for `.ics` / `iCal` / `icalendar`. **Feature not shipped.** Phase 3 AC unmet.
+
+**Question:** Implement now (Part D scope) or defer to v1.1?
+
+**Options:**
+
+| # | Option | Effort | Notes |
+|---|---|---|---|
+| A | Implement in Part D | ~4 hours | Use `ical-generator` npm package; expose `/api/scheduling/ical/:staffId` Hono route; auth via per-user subscription token |
+| B | Defer to v1.1 | 0 | Mark Phase 3 AC as conditionally met; document gap in PRODUCTION_READINESS_CHECKLIST |
+
+**Recommendation:** Option B — staff don't subscribe to Google Calendar from the app today. Defer.
+
+**Resolution:** _pending_
+
+---
+
+## [OPEN] — 6-tier contract reminder ladder (Phase 6 AC) — @kareem [DECISION]
+
+**Opened:** 2026-05-12 by Claude Code (Part A audit)
+**Context:** Master plan §8 Phase 6 requires "Contract end date triggers auto-generate 6 scheduled reminders (90/60/30/14/7/1 day)". Current code has `renewalReminderDays.default(60)` only — single-tier reminder. The 6-tier cadence is **not implemented**.
+
+**Question:** Implement now (Part D scope) — and if so, as discrete `notifications` rows or as one cron job that fires per tier?
+
+**Options:**
+
+| # | Option | Notes |
+|---|---|---|
+| A | Implement in Part D — 6 discrete `notifications.created_at` rows at submission time, scheduled-for offsets | Most explicit; per-tier dismiss possible |
+| B | Implement in Part D — one cron job per day that evaluates contracts and creates a notification when today matches one of 90/60/30/14/7/1 days before `end_date` | Simpler; less DB |
+| C | Defer to v1.1 | Phase 6 AC explicitly unmet |
+
+**Recommendation:** Option B — operationally simpler, no scheduled-job backlog to manage.
+
+**Resolution:** _pending_
+
+---
+
+## [OPEN] — NOC shift enum drift (D/S/N/sick/off/al/ml vs current 5 title-case values) — @kareem [DECISION]
+
+**Opened:** 2026-05-12 by Claude Code (Part A audit)
+**Context:** `CLAUDE.md` and master plan §6.3 / §9.1 specify NOC shift types as 7 short-codes: `D / S / N / sick / off / al / ml` (Day / Split / Night / Sick / Off / Annual Leave / Maternity Leave). `packages/db/src/schema/noc-shifts.ts:15-21` actually has 5 title-case values: `"12hr Day"`, `"12hr Night"`, `"Off"`, `"Annual Leave"`, `"Sick Leave"`. **No Split shift (S), no Maternity Leave (ml).**
+
+**Question:** keep current (5 title-case) or migrate to spec (7 short-codes)?
+
+**Options:**
+
+| # | Option | Notes |
+|---|---|---|
+| A | Keep current — update spec text in master plan to match shipped code | Lowest risk. Title-case is more human-readable. But no S / ml support |
+| B | Migration to add `Split Shift` + `Maternity Leave` to enum (still title-case) | Adds missing types without enum-rename pain |
+| C | Full rename + migration to short-codes | Spec-faithful but invasive; UI labels would need re-rendering |
+
+**Recommendation:** Option B — add the two missing values, keep title-case for readability.
+
+**Resolution:** _pending_
+
+---
+
+## [OPEN] — CSV import templates: 18 of 30+ shipped — @kareem [DECISION]
+
+**Opened:** 2026-05-12 by Claude Code (Part A audit)
+**Context:** Master plan §13 enumerates ~30 import templates. `apps/web/public/import-templates/` has 18 (one per `import_type` enum value). No `.example.csv` variants exist for any of them. Phase 12 AC: "30+ CSV templates ... Each has both header-only + example-rows variants."
+
+**Question:** Generate missing 12 templates + 18 example variants in Part D?
+
+**Options:**
+
+| # | Option | Notes |
+|---|---|---|
+| A | Generate all in Part D — 30 file additions, no logic | ~30 min mechanical work |
+| B | Add only `.example.csv` variants for the existing 18 (defer the 12 missing templates as v1.1) | Partial spec compliance |
+| C | Defer all to v1.1 | Phase 12 AC remains unmet |
+
+**Recommendation:** Option A — pure CSV files, no router changes needed.
+
+**Resolution:** _pending_
+
+---
+
+## [OPEN] — `eom-calculator.ts` separation — @kareem [INFO]
+
+**Opened:** 2026-05-12 by Claude Code (Part A audit)
+**Context:** `CLAUDE.md` says "write only via `eom-calculator.ts` (Phase 5)" but the file does not exist as a separate module — `computeEOM` is inline in `packages/api/src/routers/noc-performance.ts:22`. Functionally identical; documentation drift.
+
+**Question:** Extract to `packages/api/src/lib/eom-calculator.ts` for testability, or update `CLAUDE.md` prose to match shipped code?
+
+**Recommendation:** Update `CLAUDE.md` prose. Inline is fine; no functional benefit to extraction unless we add unit tests (out of scope this session).
+
+**Resolution:** _pending_ (no blocker; cosmetic)
