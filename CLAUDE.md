@@ -211,6 +211,24 @@ correlationId: context.requestId,
 - For navigation buttons, prefer: `<Button onClick={() => navigate({ to: "/foo" })}>Go</Button>`
 - Or use a plain styled `<Link>` (TanStack Router) with Tailwind button-like classes.
 
+### External links — use `buttonVariants()` helper, NOT `Button render={<a>}`
+- `Button render={<a href="...">}` triggers "nativeButton: true" Base UI warning and may break in some browsers.
+- **CORRECT pattern for external links:**
+  ```tsx
+  import { buttonVariants } from "@ndma-dcs-staff-portal/ui/components/button";
+  <a href="https://example.com" target="_blank" rel="noopener noreferrer"
+     className={buttonVariants({ variant: "outline", size: "sm" })}>
+    Open
+  </a>
+  ```
+- This renders a real `<a>` tag styled like a Button without violating Base UI's component model.
+
+### Design — Primary color is blue/indigo (no green in the palette)
+- CSS variables in `globals.css` are already blue/indigo (`oklch(0.546 0.245 262.881)`).
+- **Never introduce `bg-green-*`, `text-green-*`, `border-green-*`, `ring-green-*` Tailwind classes.** Use blue equivalents.
+- **Chart hex colors:** use `#3b82f6` (blue-500) and `#2563eb` (blue-700) — NOT `#22c55e` / `#16a34a`.
+- Status mapping: `approved`/`completed`/`done`/`active`/`light_load`/`synced` → **blue**, not green.
+
 ### TanStack Router — `Link to=` must match registered routes
 - The `to` prop on `<Link>` is strictly typed against the generated `routeTree.gen.ts`.
 - **NEVER** use `to="/cycles/$cycleId"` if that route file doesn't exist yet — it will cause a TS error.

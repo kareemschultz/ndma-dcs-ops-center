@@ -33,9 +33,9 @@
 | 11 | Work register refactor | 🟢 Done | `phase/11-work-refactor` (merged) | Claude Code | a4a79e7 | 2026-05-06 |
 | 12 | Import module | 🟢 Done | `phase/12-import-templates` (merged) | Claude Code | fa19785 | 2026-05-06 |
 | 13 | Obsolete docs cleanup | 🟢 Done | `phase/13-cleanup` (merged) | Claude Code | ff46c25 | 2026-05-06 |
-| 14 | Final historical seed | 🟢 Code complete | `claude/inspiring-morse-bdf638` | Claude Code sonnet-4-6 + opus-4-7 | bd34598 + seed-agent | 2026-05-13 |
-| 15 | Hardening | 🟢 Code complete | `claude/inspiring-morse-bdf638` | Claude Code sonnet-4-6 + opus-4-7 | bd34598 + rbac-agent | 2026-05-13 |
-| 16 | IA revamp + Part A-D closeout | 🟢 Code complete | `claude/inspiring-morse-bdf638` | Claude Code sonnet-4-6 + opus-4-7 + Claude Design handoff | bd34598 | 2026-05-13 |
+| 14 | Final historical seed | 🟢 Done | `claude/inspiring-morse-bdf638` (merged PR #41) | Claude Code sonnet-4-6 + opus-4-7 | 54d0b09 | 2026-05-13 |
+| 15 | Hardening | 🟢 Done | `claude/inspiring-morse-bdf638` (merged PR #41) | Claude Code sonnet-4-6 + opus-4-7 | 54d0b09 | 2026-05-13 |
+| 16 | IA revamp + Part A-D closeout + Design | 🟢 Done | `claude/inspiring-morse-bdf638` (merged PR #41) | Claude Code opus-4-7 | 54d0b09 | 2026-05-13 |
 
 **Legend:** ⬜ Queued · 🟡 Not Started · 🔵 In Progress · 🟠 Blocked · 🟢 Done · 🔴 Reverted
 

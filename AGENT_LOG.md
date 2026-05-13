@@ -1029,3 +1029,67 @@ Claude Code (opus-4.5, orchestrated parallel execution with 5 sub-agents in isol
 - Phase 14: historical seed — 35 steps ingesting 200 XLSX + 29 DOCX
 - Phase 15: hardening — e2e coverage, perf audit, RBAC matrix 100%, axe-core a11y
 - Production migrations 0008-0031 still need to be applied (requires PROD DATABASE_URL)
+
+---
+
+## 2026-05-13 — Design sweep + e2e spec + PR #41 merge (all phases to Done)
+
+### Agent
+Claude Code (opus-4.7, 1M context — continuation of 2026-05-12 session)
+
+### Branch / gate commits
+- Design + e2e commit: `143ac38` (green→blue sweep across 43 source files)
+- Nav / a11y fix commit: `b39716c` (Base UI nativeButton warnings fixed)
+- Cleanup commit: `e104173` (screenshots gitignore, docs hash, NOC seed script)
+- **Merge commit (PR #41 → main):** `54d0b09`
+
+### Main state at end
+`54d0b09` — ALL phases 0-16 on main ✅
+
+### What was done
+
+**Green → Blue design sweep (Phase 16 / design handoff)**
+- 43 source files: all `bg-green-*`, `text-green-*`, `border-green-*`, `ring-green-*` replaced with blue equivalents
+- 4 chart files: hex `#22c55e` → `#3b82f6`, `#16a34a` → `#2563eb` (Recharts bar/pie fill props)
+- CSS variables (`globals.css`) were already blue/indigo — no changes needed
+- Key affected statuses: `approved`, `completed`, `active`, `light_load`, `done`, `api_only`, `synced`
+- Stragglers fixed manually: `profile.tsx` border, `training/plan.tsx` dark mode `completed` badge
+
+**Base UI navigation fixes**
+- `Button render={<Link>}` pattern replaced with `useNavigate()` + `onClick` in appraisals index/inbox/staff pages and scheduling index
+- External links replaced with `<a className={buttonVariants({})}>` pattern (policy page)
+- Removed `asChild` anti-pattern from all affected files
+- Added missing `<h1>` to NOC performance page (smoke test requirement)
+
+**Screenshot tour spec**
+- `apps/web/tests/e2e/screenshot-tour.spec.ts`: 22 pages, uses stored auth state
+- Fixed URL bug: `/directory` → `/staff` (correct TanStack Router path)
+- `tests/screenshots/` added to `.gitignore` (output artifacts)
+
+**PR #41 merged** (21 commits, 5474 additions, 4086 deletions)
+- Phases 14 (historical seed), 15 (hardening / RBAC static contract), 16 (IA revamp / design) all fully merged into main
+- `startup-migrations.sql` in Hono server on startup
+- Watchtower auto-update in `docker-compose.prod.yml`
+- 35 seed steps in `packages/db/src/seed-historical.ts`
+- `packages/api/tests/rbac-static-contract.test.ts` — 150-row RBAC coverage test
+- `scripts/extract-source-of-truth.ts` + `scripts/generate-import-templates.ts`
+- `docs/source-of-truth/canonical-data.{md,json}`
+- `docs/audit/HANDOFF-COMPLETION-AUDIT-2026-05-12.md`
+- All sidebar, routing, and page-level UI improvements from design handoff
+
+### Tests
+- e2e smoke: 59 tests (56 page smoke + 3 auth) passing
+- typecheck: passed on branch before merge
+- RBAC static contract: 150 rows, CI gate
+
+### Known issues / follow-up
+- Historical seed requires `PROD_DATABASE_URL` to run against production data; stubs in place for dev
+- NOC shift grid (`/scheduling/noc-shifts`) and DCS on-call (`/scheduling/dcs-oncall`) show empty until seed runs with prod creds
+- `seed-noc-staff.ts` at repo root: helper script to seed dev DB with 12 NOC staff; run manually
+- Migration 0032 (NOC shift enum extension) — apply with `bun run db:migrate` when PROD creds available
+- 3 import handlers still stub: `platform_accounts`, `attendance`, `callouts` (documented in Phase 12)
+
+### Next-phase handoff
+- No active phases. All 16 phases complete on main.
+- Next work: production deployment — apply migrations 0008-0032, run `bun run db:seed:historical` against prod
+- See `PRODUCTION_READINESS_CHECKLIST.md` for deployment checklist
