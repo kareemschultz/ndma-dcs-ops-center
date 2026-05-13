@@ -24,6 +24,9 @@ import {
 import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
 import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
 import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@ndma-dcs-staff-portal/ui/components/popover";
+import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@ndma-dcs-staff-portal/ui/components/select";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
@@ -81,7 +84,7 @@ function StaffChip({ name }: { name: string | null }) {
   );
 }
 
-// ── Role fields shared by both dialogs ─────────────────────────────────────────
+// ── Role fields shared by both dialogs + inline cell ──────────────────────────
 
 type RoleFormKeys = "leadEngineerId" | "asnSupportId" | "enterpriseSupportId" | "coreSupportId";
 
@@ -91,6 +94,86 @@ const ROLE_FIELDS: Array<{ key: RoleFormKeys; label: string }> = [
   { key: "enterpriseSupportId", label: "Enterprise Support" },
   { key: "coreSupportId",       label: "CORE Support" },
 ];
+
+// ── Inline role cell — click chip to pop open staff picker ────────────────────
+
+function InlineRoleCell({
+  week,
+  roleKey,
+  staffList,
+  onAssign,
+}: {
+  week: WeekRow;
+  roleKey: RoleFormKeys;
+  staffList: StaffItem[];
+  onAssign: (weekId: string, roleKey: RoleFormKeys, staffId: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const currentStaffId = week[roleKey] as string | null;
+  const currentStaff = staffList.find((s) => s.id === currentStaffId);
+  const currentName = currentStaff?.user?.name ?? null;
+
+  function assign(staffId: string | null) {
+    setOpen(false);
+    onAssign(week.id, roleKey, staffId);
+  }
+
+  const roleLabel = ROLE_FIELDS.find((r) => r.key === roleKey)?.label ?? roleKey;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        className={[
+          "inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+          currentName
+            ? "bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-200 dark:hover:bg-blue-900/60"
+            : "italic text-muted-foreground hover:text-foreground",
+        ].join(" ")}
+        title="Click to reassign"
+      >
+        {currentName ? (
+          <>
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-200 text-[10px] font-bold dark:bg-blue-800">
+              {initials(currentName)}
+            </span>
+            {currentName}
+          </>
+        ) : (
+          "Unassigned"
+        )}
+      </PopoverTrigger>
+      <PopoverContent className="w-52 p-2" side="bottom" align="start">
+        <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {roleLabel}
+        </p>
+        <div className="max-h-52 space-y-0.5 overflow-y-auto">
+          <button
+            onClick={() => assign(null)}
+            className={[
+              "w-full rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted",
+              !currentStaffId ? "font-semibold" : "text-muted-foreground",
+            ].join(" ")}
+          >
+            Unassigned
+          </button>
+          {staffList.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => assign(s.id)}
+              className={[
+                "w-full rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted",
+                s.id === currentStaffId ? "font-semibold bg-muted/60" : "",
+              ].join(" ")}
+            >
+              {s.user?.name ?? s.employeeId}
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 // ── Add Week Dialog ────────────────────────────────────────────────────────────
 
@@ -358,6 +441,34 @@ function DcsOnCallPage() {
 
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
+  const queryClient = useQueryClient();
+
+  // Quick single-role update (bypasses full Edit dialog)
+  const quickUpdateMutation = useMutation(
+    orpc.scheduling.dcsOnCall.upsertWeek.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: orpc.scheduling.dcsOnCall.list.key() });
+        toast.success("Updated");
+      },
+      onError: (err: Error) => toast.error(err.message ?? "Failed to update"),
+    }),
+  );
+
+  function handleQuickAssign(weekId: string, roleKey: RoleFormKeys, staffId: string | null) {
+    const week = (weeks ?? []).find((w) => w.id === weekId);
+    if (!week) return;
+    quickUpdateMutation.mutate({
+      year: week.year,
+      weekNum: week.weekNum,
+      weekStartDate: week.weekStartDate,
+      weekEndDate: week.weekEndDate,
+      leadEngineerId:      roleKey === "leadEngineerId"      ? staffId : (week.leadEngineerId      ?? null),
+      asnSupportId:        roleKey === "asnSupportId"        ? staffId : (week.asnSupportId        ?? null),
+      enterpriseSupportId: roleKey === "enterpriseSupportId" ? staffId : (week.enterpriseSupportId ?? null),
+      coreSupportId:       roleKey === "coreSupportId"       ? staffId : (week.coreSupportId       ?? null),
+      notes: week.notes ?? null,
+    });
+  }
 
   const { data: weeks, isLoading } = useQuery(
     orpc.scheduling.dcsOnCall.list.queryOptions({ input: { year } }),
@@ -511,10 +622,18 @@ function DcsOnCallPage() {
                           ? `${format(parseISO(w.weekStartDate), "EEE d MMM")} – ${format(parseISO(w.weekEndDate), "EEE d MMM")}`
                           : "—"}
                       </TableCell>
-                      <TableCell><StaffChip name={staffName(w.leadEngineer)} /></TableCell>
-                      <TableCell><StaffChip name={staffName(w.asnSupport)} /></TableCell>
-                      <TableCell><StaffChip name={staffName(w.enterpriseSupport)} /></TableCell>
-                      <TableCell><StaffChip name={staffName(w.coreSupport)} /></TableCell>
+                      <TableCell>
+                        <InlineRoleCell week={w} roleKey="leadEngineerId" staffList={staffList} onAssign={handleQuickAssign} />
+                      </TableCell>
+                      <TableCell>
+                        <InlineRoleCell week={w} roleKey="asnSupportId" staffList={staffList} onAssign={handleQuickAssign} />
+                      </TableCell>
+                      <TableCell>
+                        <InlineRoleCell week={w} roleKey="enterpriseSupportId" staffList={staffList} onAssign={handleQuickAssign} />
+                      </TableCell>
+                      <TableCell>
+                        <InlineRoleCell week={w} roleKey="coreSupportId" staffList={staffList} onAssign={handleQuickAssign} />
+                      </TableCell>
                       <TableCell>
                         <Button
                           variant="ghost" size="icon"
