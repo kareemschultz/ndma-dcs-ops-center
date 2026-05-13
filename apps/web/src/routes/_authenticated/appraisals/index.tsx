@@ -2,8 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode } from "react";
 import { useState } from "react";
-import { format } from "date-fns";
-import { ClipboardCheck, Inbox, LayoutGrid, Send, ShieldCheck, TrendingUp } from "lucide-react";
+import { differenceInDays, format, parseISO } from "date-fns";
+import { AlertCircle, CheckCircle2, Clock, ClipboardCheck, Info, Inbox, LayoutGrid, Send, ShieldCheck, TrendingUp } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -31,6 +31,7 @@ import { ThemeSwitch } from "@/components/theme-switch";
 import { chartTheme } from "@/lib/chart-theme";
 import { useTeamFilter } from "@/lib/team-filter";
 import { orpc } from "@/utils/orpc";
+import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/_authenticated/appraisals/")({
   component: AppraisalsPage,
@@ -144,6 +145,246 @@ const SCORE_BAND_COLORS: Record<string, string> = {
   "No Score": "#94a3b8",
 };
 
+// ── ScoreBar ──────────────────────────────────────────────────────────────────
+function ScoreBar({ score }: { score: number | null | undefined }) {
+  if (score == null) return <span className="text-muted-foreground">—</span>;
+  const pct = Math.min(score, 100);
+  return (
+    <div className="space-y-0.5">
+      <span className="tabular-nums font-semibold">{score}%</span>
+      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
+        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+// ── CycleBanner ───────────────────────────────────────────────────────────────
+function CycleBanner() {
+  const { data: cycles } = useQuery(orpc.appraisalCycles.list.queryOptions());
+  const openCycle = (cycles as Array<{ status: string; year: number; half: string; closedAt?: string | null }> | undefined)?.find(
+    (c) => c.status === "open",
+  );
+  if (!openCycle) return null;
+  const daysLeft = openCycle.closedAt
+    ? differenceInDays(new Date(openCycle.closedAt), new Date())
+    : null;
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+      <Info className="size-4 shrink-0" />
+      <span className="flex-1">
+        <strong>
+          {openCycle.half} {openCycle.year} appraisal cycle is open.
+        </strong>
+        {daysLeft != null && daysLeft > 3 && (
+          <span className="ml-1 text-blue-600 dark:text-blue-400">Closes in {daysLeft} days.</span>
+        )}
+        {daysLeft != null && daysLeft <= 3 && (
+          <span className="ml-1 font-bold text-red-600 dark:text-red-400"> Closing imminently!</span>
+        )}
+      </span>
+    </div>
+  );
+}
+
+// ── UrgencyBadge ──────────────────────────────────────────────────────────────
+function UrgencyBadge({ submittedAt }: { submittedAt: string | null | undefined }) {
+  if (!submittedAt) return null;
+  const days = differenceInDays(new Date(), new Date(submittedAt));
+  if (days > 14)
+    return (
+      <span className="inline-flex items-center gap-1 rounded-md bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700 dark:bg-red-900/40 dark:text-red-300">
+        <AlertCircle className="size-3" /> Overdue {days}d
+      </span>
+    );
+  if (days > 7)
+    return (
+      <span className="rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+        Waiting {days}d
+      </span>
+    );
+  return null;
+}
+
+// ── FollowupsTab ──────────────────────────────────────────────────────────────
+type FollowupRow = {
+  id: string;
+  appraisalId: string;
+  type: "three_month" | "six_month" | "custom";
+  status: "pending" | "done";
+  dueDate?: string | null;
+  completedAt?: string | null;
+  appraisal?: {
+    year?: number | null;
+    period?: string | null;
+    staffProfile?: { user?: { name?: string | null } | null } | null;
+    reviewer?: { user?: { name?: string | null } | null } | null;
+  } | null;
+};
+
+function followupUrgency(row: FollowupRow): "overdue" | "soon" | "upcoming" | "done" {
+  if (row.status === "done") return "done";
+  if (!row.dueDate) return "upcoming";
+  const days = differenceInDays(parseISO(row.dueDate), new Date());
+  if (days < 0) return "overdue";
+  if (days <= 7) return "soon";
+  return "upcoming";
+}
+
+const URGENCY_STYLE = {
+  overdue: { badge: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300", label: "Overdue", icon: AlertCircle },
+  soon: { badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300", label: "Due soon", icon: Clock },
+  upcoming: { badge: "bg-muted text-muted-foreground", label: "Upcoming", icon: Clock },
+  done: { badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300", label: "Done", icon: CheckCircle2 },
+};
+
+function FollowupsTab() {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery(
+    orpc.appraisals.listFollowups.queryOptions({ input: {} }),
+  );
+  const markDone = useMutation(
+    orpc.appraisals.completeFollowup.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: orpc.appraisals.listFollowups.key() });
+      },
+    }),
+  );
+
+  const rows = (data ?? []) as FollowupRow[];
+  const pending = rows.filter((r) => r.status === "pending");
+  const completed = rows.filter((r) => r.status === "done");
+
+  if (isLoading) return <Skeleton className="h-48 w-full" />;
+
+  return (
+    <div className="space-y-6">
+      {/* Summary strip */}
+      <div className="flex flex-wrap gap-3">
+        {[
+          { label: "Overdue", count: rows.filter((r) => followupUrgency(r) === "overdue").length, cls: "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/20" },
+          { label: "Due ≤7 days", count: rows.filter((r) => followupUrgency(r) === "soon").length, cls: "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/20" },
+          { label: "Upcoming", count: rows.filter((r) => followupUrgency(r) === "upcoming").length, cls: "border-border bg-muted/30" },
+          { label: "Completed", count: rows.filter((r) => followupUrgency(r) === "done").length, cls: "border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/20" },
+        ].map((s) => (
+          <div key={s.label} className={`flex flex-col rounded-xl border px-5 py-2.5 ${s.cls}`}>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</span>
+            <span className="text-xl font-bold tabular-nums">{s.count}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Pending */}
+      {pending.length === 0 ? (
+        <div className="flex flex-col items-center rounded-lg border border-dashed py-10 text-center">
+          <CheckCircle2 className="mb-2 size-8 opacity-30" />
+          <p className="font-medium">All follow-ups complete</p>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Staff Member</TableHead>
+                <TableHead>Reviewer</TableHead>
+                <TableHead>Period</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Due Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-28" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pending.map((row) => {
+                const urgency = followupUrgency(row);
+                const { badge, label, icon: UrgIcon } = URGENCY_STYLE[urgency];
+                const daysText = row.dueDate
+                  ? (() => {
+                      const d = differenceInDays(parseISO(row.dueDate), new Date());
+                      return d < 0 ? `${Math.abs(d)}d overdue` : d === 0 ? "Today" : `${d}d`;
+                    })()
+                  : null;
+                return (
+                  <TableRow key={row.id}>
+                    <TableCell className="font-medium">
+                      {row.appraisal?.staffProfile?.user?.name ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {row.appraisal?.reviewer?.user?.name ?? "—"}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {row.appraisal?.period ?? (row.appraisal?.year != null ? String(row.appraisal.year) : "—")}
+                    </TableCell>
+                    <TableCell>
+                      <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium">
+                        {row.type === "three_month" ? "3-month" : row.type === "six_month" ? "6-month" : "Custom"}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {row.dueDate ? (
+                        <div className="space-y-0.5">
+                          <div className="font-mono text-xs">{format(parseISO(row.dueDate), "d MMM yyyy")}</div>
+                          {daysText && (
+                            <div className={`text-[10px] font-medium ${urgency === "overdue" ? "text-red-600 dark:text-red-400" : urgency === "soon" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}>
+                              {daysText}
+                            </div>
+                          )}
+                        </div>
+                      ) : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ${badge}`}>
+                        <UrgIcon className="size-3" />
+                        {label}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => markDone.mutate({ id: row.id })}
+                        disabled={markDone.isPending}
+                      >
+                        Mark done
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {/* Completed */}
+      {completed.length > 0 && (
+        <details className="group">
+          <summary className="cursor-pointer list-none text-sm text-muted-foreground hover:text-foreground">
+            ▸ Show {completed.length} completed
+          </summary>
+          <div className="mt-2 overflow-hidden rounded-lg border">
+            <Table>
+              <TableBody>
+                {completed.map((row) => {
+                  const { badge, label } = URGENCY_STYLE[followupUrgency(row)];
+                  return (
+                    <TableRow key={row.id} className="opacity-60">
+                      <TableCell className="font-medium">{row.appraisal?.staffProfile?.user?.name ?? "—"}</TableCell>
+                      <TableCell className="font-mono text-xs">{row.type === "three_month" ? "3-month" : row.type === "six_month" ? "6-month" : "Custom"}</TableCell>
+                      <TableCell>{row.completedAt ? format(parseISO(row.completedAt as string), "d MMM yyyy") : "—"}</TableCell>
+                      <TableCell><span className={`rounded-md px-2 py-0.5 text-xs font-medium ${badge}`}>{label}</span></TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
+
 const REVIEW_CHAIN = {
   manager: "Sachin Ramsuran",
   pa: "Ataybia Williams",
@@ -187,6 +428,7 @@ function AppraisalsPage() {
   const queryClient = useQueryClient();
   const { team } = useTeamFilter();
   const [tab, setTab] = useState("records");
+  const { data: session } = authClient.useSession();
 
   const { data: trackerRows, isLoading: trackerLoading } = useQuery(
     orpc.appraisals.tracker.list.queryOptions({
@@ -213,6 +455,15 @@ function AppraisalsPage() {
       input: { team: team === "All" ? undefined : team },
     }),
   );
+  const { data: followups } = useQuery(
+    orpc.appraisals.listFollowups.queryOptions({ input: {} }),
+  );
+  const followupStats = {
+    overdue: (followups ?? []).filter((f) => {
+      const row = f as FollowupRow;
+      return row.status === "pending" && row.dueDate != null && new Date(row.dueDate) < new Date();
+    }).length,
+  };
 
   const submitWorkflow = useMutation(
     orpc.appraisals.workflow.submit.mutationOptions({
@@ -318,7 +569,7 @@ function AppraisalsPage() {
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
-                Manager: {REVIEW_CHAIN.manager}
+                Manager: {session?.user?.name ?? REVIEW_CHAIN.manager}
               </Badge>
               <Badge variant="outline" className="border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300">
                 PA: {REVIEW_CHAIN.pa}
@@ -326,6 +577,8 @@ function AppraisalsPage() {
             </div>
           </div>
         </div>
+
+        <CycleBanner />
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
           {kpiLoading ? (
@@ -459,6 +712,9 @@ function AppraisalsPage() {
             <TabsTrigger value="insights">KPI Insights</TabsTrigger>
             <TabsTrigger value="records">Records</TabsTrigger>
             <TabsTrigger value="pipeline">Approval Pipeline</TabsTrigger>
+            <TabsTrigger value="followups">
+              Follow-ups{followupStats.overdue > 0 ? ` (${followupStats.overdue} overdue)` : ""}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="insights">
@@ -583,10 +839,8 @@ function AppraisalsPage() {
                       </TableCell>
                       <TableCell>{appraisal.year ?? "—"}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{formatPeriod(appraisal)}</TableCell>
-                      <TableCell className="font-mono">
-                        {appraisal.totalScore != null
-                          ? `${appraisal.totalScore}%`
-                          : "—"}
+                      <TableCell>
+                        <ScoreBar score={appraisal.totalScore} />
                       </TableCell>
                       <TableCell>
                         <span
@@ -635,7 +889,10 @@ function AppraisalsPage() {
                     <div key={row.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
                       <div>
                         <p className="font-medium">{row.staffProfile?.user?.name ?? "—"}</p>
-                        <p className="text-sm text-muted-foreground">{formatPeriod(row)} · {row.status}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className="text-sm text-muted-foreground">{formatPeriod(row)} · {row.status}</p>
+                          <UrgencyBadge submittedAt={(row as AppraisalListRow & { submittedAt?: string | null }).submittedAt} />
+                        </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {(row.status === "Draft" || row.status === "draft") && (
@@ -660,6 +917,17 @@ function AppraisalsPage() {
                     </div>
                   ))
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="followups">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Appraisal Follow-ups</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <FollowupsTab />
               </CardContent>
             </Card>
           </TabsContent>

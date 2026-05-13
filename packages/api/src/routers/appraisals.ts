@@ -1699,4 +1699,92 @@ export const appraisalsRouter = {
         ratings,
       };
     }),
+
+  listFollowups: requireRole("appraisal", "read")
+    .input(
+      z.object({
+        team: z.enum(["DCS", "NOC"]).optional(),
+        cycleId: z.string().optional(),
+        staffProfileId: z.string().optional(),
+      }),
+    )
+    .handler(async ({ input, context }) => {
+      const role = context.userRole ?? "";
+      const appraisalConditions: ReturnType<typeof eq>[] = [];
+
+      if (input.staffProfileId) {
+        appraisalConditions.push(eq(appraisals.staffProfileId, input.staffProfileId));
+      } else if (role !== "admin" && role !== "hrAdminOps") {
+        const managed = await getManagedStaffIds(context);
+        const caller = await getCallerStaffProfile(context);
+        const staffScope = new Set(managed);
+        if (caller?.id) staffScope.add(caller.id);
+        if (staffScope.size > 0) {
+          appraisalConditions.push(inArray(appraisals.staffProfileId, [...staffScope]));
+        }
+      }
+      if (input.cycleId) appraisalConditions.push(eq(appraisals.cycleId, input.cycleId));
+
+      // Resolve qualifying appraisal IDs
+      let appraisalIds: string[] | undefined;
+      if (appraisalConditions.length > 0) {
+        const appraisalRows = await db
+          .select({ id: appraisals.id })
+          .from(appraisals)
+          .where(and(...appraisalConditions));
+        appraisalIds = appraisalRows.map((r) => r.id);
+        if (appraisalIds.length === 0) return [];
+      }
+
+      const rows = await db.query.appraisalFollowups.findMany({
+        where: appraisalIds
+          ? inArray(appraisalFollowups.appraisalId, appraisalIds)
+          : undefined,
+        with: {
+          appraisal: {
+            with: {
+              staffProfile: { with: { user: true } },
+              reviewer: { with: { user: true } },
+            },
+          },
+        },
+        orderBy: [asc(appraisalFollowups.dueDate)],
+      });
+
+      return rows.map((row) => ({
+        ...row,
+        type: row.followUpType,
+        status: (row.completedAt ? "done" : "pending") as "done" | "pending",
+      }));
+    }),
+
+  completeFollowup: requireRole("appraisal", "update")
+    .input(z.object({ id: z.string().min(1) }))
+    .handler(async ({ input, context }) => {
+      const [updated] = await db
+        .update(appraisalFollowups)
+        .set({
+          completedAt: new Date(),
+          completedById: context.session.user.id,
+        })
+        .where(eq(appraisalFollowups.id, input.id))
+        .returning();
+      if (!updated) throw new ORPCError("NOT_FOUND");
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        actorRole: context.userRole ?? undefined,
+        action: "appraisal.followup.complete",
+        module: "staff",
+        resourceType: "appraisal_followup",
+        resourceId: input.id,
+        afterValue: updated as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        correlationId: context.requestId,
+      });
+
+      return updated;
+    }),
 };

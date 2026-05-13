@@ -36,6 +36,7 @@ import { Textarea } from "@ndma-dcs-staff-portal/ui/components/textarea";
 
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { TrainingSubNav } from "@/components/layout/training-sub-nav";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
 
@@ -102,6 +103,7 @@ export default function ExamSchedulePage() {
         </div>
       </Header>
 
+      <TrainingSubNav active="/training/exams" />
       <Main>
         <div className="mb-4 flex flex-wrap items-center gap-3">
           {(["all", "Enrolled", "In Progress", "Completed", "Failed"] as const).map((s) => (

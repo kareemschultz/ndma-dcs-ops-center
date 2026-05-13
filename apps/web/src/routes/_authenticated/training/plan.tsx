@@ -33,6 +33,7 @@ import {
 
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { TrainingSubNav } from "@/components/layout/training-sub-nav";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
 
@@ -156,6 +157,7 @@ export default function TrainingPlanPage() {
         </div>
       </Header>
 
+      <TrainingSubNav active="/training/plan" />
       <Main>
         <Card>
           <CardHeader>

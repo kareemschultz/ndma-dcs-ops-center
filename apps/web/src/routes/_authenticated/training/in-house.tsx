@@ -37,6 +37,7 @@ import { Textarea } from "@ndma-dcs-staff-portal/ui/components/textarea";
 
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { TrainingSubNav } from "@/components/layout/training-sub-nav";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
 
@@ -136,6 +137,7 @@ export default function InHouseTrainingLogPage() {
         </div>
       </Header>
 
+      <TrainingSubNav active="/training/in-house" />
       <Main>
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <Select value={String(year)} onValueChange={(v) => v != null && setYear(Number(v))}>

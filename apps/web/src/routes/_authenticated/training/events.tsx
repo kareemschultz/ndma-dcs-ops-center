@@ -28,6 +28,7 @@ import { Textarea } from "@ndma-dcs-staff-portal/ui/components/textarea";
 
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { TrainingSubNav } from "@/components/layout/training-sub-nav";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
 
@@ -120,6 +121,7 @@ export default function TrainingEventsPage() {
         </div>
       </Header>
 
+      <TrainingSubNav active="/training/events" />
       <Main>
         <Card>
           <CardHeader>

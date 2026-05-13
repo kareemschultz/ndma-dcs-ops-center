@@ -11,11 +11,15 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BarChart2, BookOpen, Plus, RefreshCw, Trophy } from "lucide-react";
+import { Award, BarChart2, BookOpen, Plus, RefreshCw, Trophy } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@ndma-dcs-staff-portal/ui/components/badge";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+} from "@ndma-dcs-staff-portal/ui/components/dialog";
+import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@ndma-dcs-staff-portal/ui/components/select";
@@ -24,6 +28,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@ndma-dcs-staff-portal/ui/components/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ndma-dcs-staff-portal/ui/components/tabs";
+import { Textarea } from "@ndma-dcs-staff-portal/ui/components/textarea";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -340,6 +345,158 @@ function JournalTab({ year, month }: { year: number; month: number }) {
   );
 }
 
+// ── Commendations Tab ──────────────────────────────────────────────────────────
+
+type CommendationRow = {
+  id: string;
+  staffProfileId: string;
+  year: number;
+  month: number;
+  narrative: string;
+  staff?: { user?: { name?: string | null } | null } | null;
+};
+
+function commendationInitials(name?: string | null) {
+  if (!name) return "?";
+  return name.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
+}
+
+function CreateCommendationDialog({
+  open, onOpenChange, year, month,
+  staffList,
+}: {
+  open: boolean; onOpenChange: (v: boolean) => void;
+  year: number; month: number;
+  staffList: Array<{ id: string; user?: { name?: string | null } | null }>;
+}) {
+  const queryClient = useQueryClient();
+  const [staffId, setStaffId] = useState("");
+  const [narrative, setNarrative] = useState("");
+
+  const mutation = useMutation(
+    orpc.commendations.create.mutationOptions({
+      onSuccess: () => {
+        toast.success("Commendation recorded");
+        queryClient.invalidateQueries({ queryKey: orpc.commendations.list.key() });
+        onOpenChange(false);
+        setStaffId(""); setNarrative("");
+      },
+      onError: (e: Error) => toast.error(e.message),
+    }),
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Record Commendation — {MONTHS[month - 1]} {year}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>Staff member *</Label>
+            <Select value={staffId} onValueChange={(v) => setStaffId(v ?? "")}>
+              <SelectTrigger><SelectValue placeholder="Select staff…" /></SelectTrigger>
+              <SelectContent>
+                {staffList.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.user?.name ?? s.id}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="commendation-narrative">Narrative *</Label>
+            <Textarea
+              id="commendation-narrative"
+              value={narrative}
+              onChange={(e) => setNarrative(e.target.value)}
+              placeholder="Describe what the staff member did that deserves recognition…"
+              rows={4}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={mutation.isPending}>Cancel</Button>
+          <Button
+            disabled={!staffId || !narrative.trim() || mutation.isPending}
+            onClick={() => mutation.mutate({
+              staffProfileId: staffId,
+              year,
+              month,
+              narrative: narrative.trim(),
+            })}
+          >
+            {mutation.isPending ? "Saving…" : "Record commendation"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CommendationsTab({ year, month }: { year: number; month: number }) {
+  const [createOpen, setCreateOpen] = useState(false);
+
+  // list accepts year filter; we filter by month client-side
+  const { data, isLoading } = useQuery(
+    orpc.commendations.list.queryOptions({ input: { year } }),
+  );
+  const { data: staffData } = useQuery(
+    orpc.staff.list.queryOptions({ input: { limit: 200, offset: 0 } }),
+  );
+
+  const allRows = (data ?? []) as CommendationRow[];
+  const rows = allRows.filter((r) => r.month === month);
+  const staffList = (staffData ?? []) as Array<{ id: string; user?: { name?: string | null } | null }>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Positive recognition for {MONTHS[month - 1]} {year}. Separate from the mistake-matrix journal.
+        </p>
+        <Button size="sm" onClick={() => setCreateOpen(true)}>
+          <Plus className="mr-1 size-4" /> Record commendation
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <Skeleton className="h-48 w-full" />
+      ) : rows.length === 0 ? (
+        <div className="flex flex-col items-center rounded-lg border border-dashed py-12 text-center">
+          <Award className="mb-3 size-8 opacity-30" />
+          <p className="font-medium">No commendations for {MONTHS[month - 1]} {year}</p>
+          <p className="mt-1 text-sm text-muted-foreground">Record outstanding performance above.</p>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {rows.map((row) => (
+            <div key={row.id} className="rounded-xl border bg-blue-50/40 p-4 dark:bg-blue-950/10">
+              <div className="mb-3 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                  {commendationInitials(row.staff?.user?.name)}
+                </div>
+                <div>
+                  <div className="font-semibold">{row.staff?.user?.name ?? row.staffProfileId}</div>
+                  <div className="text-xs text-muted-foreground">{MONTHS[row.month - 1]} {row.year}</div>
+                </div>
+              </div>
+              <p className="text-sm leading-relaxed text-muted-foreground">{row.narrative}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <CreateCommendationDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        year={year}
+        month={month}
+        staffList={staffList}
+      />
+    </div>
+  );
+}
+
 // ── Main page ──────────────────────────────────────────────────────────────────
 
 function NocPerformancePage() {
@@ -387,10 +544,11 @@ function NocPerformancePage() {
         <Tabs defaultValue="metrics">
           <TabsList className="w-full justify-start border-b bg-transparent p-0 h-auto">
             {[
-              { value: "metrics", label: "Metrics" },
-              { value: "tickets", label: "Ticket Activity" },
-              { value: "eom",     label: "Employee of the Month" },
-              { value: "journal", label: "Performance Journal" },
+              { value: "metrics",      label: "Metrics" },
+              { value: "tickets",      label: "Ticket Activity" },
+              { value: "eom",          label: "Employee of the Month" },
+              { value: "journal",      label: "Performance Journal" },
+              { value: "commendations",label: "Commendations" },
             ].map((t) => (
               <TabsTrigger
                 key={t.value}
@@ -409,7 +567,8 @@ function NocPerformancePage() {
             </div>
           </TabsContent>
           <TabsContent value="eom"      className="pt-4"><EomTab      year={year} month={month} /></TabsContent>
-          <TabsContent value="journal"  className="pt-4"><JournalTab  year={year} month={month} /></TabsContent>
+          <TabsContent value="journal"       className="pt-4"><JournalTab       year={year} month={month} /></TabsContent>
+          <TabsContent value="commendations" className="pt-4"><CommendationsTab year={year} month={month} /></TabsContent>
         </Tabs>
       </Main>
     </>

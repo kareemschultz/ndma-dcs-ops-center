@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   BookOpen,
   Calendar,
-  CheckCircle2,
   GraduationCap,
   LayoutList,
   Tag,
@@ -11,230 +10,176 @@ import {
   Users,
 } from "lucide-react";
 
-import { Badge } from "@ndma-dcs-staff-portal/ui/components/badge";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@ndma-dcs-staff-portal/ui/components/card";
-import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
-
+import { Card, CardContent } from "@ndma-dcs-staff-portal/ui/components/card";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { TrainingSubNav } from "@/components/layout/training-sub-nav";
 import { orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_authenticated/training/")({
   component: TrainingOverviewPage,
 });
 
+const TILES = [
+  { to: "/training/plan",     Icon: LayoutList, label: "Training Plan",  color: "text-blue-600" },
+  { to: "/training/exams",    Icon: Calendar,   label: "Exam Schedule",  color: "text-indigo-600" },
+  { to: "/training/vouchers", Icon: Ticket,     label: "Vouchers",       color: "text-amber-600" },
+  { to: "/training/events",   Icon: Users,      label: "Events",         color: "text-blue-600" },
+  { to: "/training/in-house", Icon: BookOpen,   label: "In-House Log",   color: "text-purple-600" },
+  { to: "/training/catalog",  Icon: Tag,        label: "Cert Catalog",   color: "text-rose-600" },
+] as const;
+
 function TrainingOverviewPage() {
   const navigate = useNavigate();
-  const { data: vouchers, isLoading: vouchersLoading } = useQuery(
-    orpc.examVouchers.list.queryOptions({ input: { expiringWithinDays: 30 } }),
+
+  const { data: vouchers, isLoading: vLoading } = useQuery(
+    orpc.examVouchers.list.queryOptions({ input: { expiringWithinDays: 60 } }),
   );
-  const { data: events, isLoading: eventsLoading } = useQuery(
+  const { data: events, isLoading: eLoading } = useQuery(
     orpc.trainingEvents.list.queryOptions({ input: { limit: 5 } }),
-  );
-  const { data: inHouseLog, isLoading: logLoading } = useQuery(
-    orpc.inHouseLog.list.queryOptions({ input: { limit: 5 } }),
   );
   const { data: catalog } = useQuery(orpc.certCatalog.list.queryOptions());
 
-  const expiringVouchers =
-    vouchers?.filter((v) => v.status === "unused" || v.status === "assigned") ?? [];
+  // Vouchers already filtered to expiring ≤60 days; further split to ≤30
+  const activeVouchers = (vouchers ?? []).filter(
+    (v) => v.status === "unused" || v.status === "assigned",
+  );
+  const expiring30 = activeVouchers.filter((v) => {
+    if (!v.mustBeUsedBy) return false;
+    const d = Math.floor((new Date(v.mustBeUsedBy).getTime() - Date.now()) / 86_400_000);
+    return d <= 30;
+  });
+  const upcomingEvents = (events ?? []).filter((e) => new Date(e.startDate) >= new Date());
 
   return (
     <>
-      <Header>
+      <Header fixed>
         <div className="flex items-center gap-2">
-          <GraduationCap className="h-5 w-5" />
-          <h1 className="text-xl font-semibold">Training &amp; Development</h1>
+          <GraduationCap className="size-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Training &amp; Development</span>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ms-auto flex items-center gap-2">
           <ThemeSwitch />
         </div>
       </Header>
 
-      <Main>
-        <div className="mb-6">
-          <p className="text-muted-foreground text-sm">
-            Overview of training plans, exam schedules, vouchers, events, and in-house logs.
-          </p>
-        </div>
+      <Main className="p-0">
+        <TrainingSubNav active="/training" />
 
-        {/* Quick-nav tiles */}
-        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        {/* Summary strip */}
+        <div className="flex divide-x border-b bg-muted/30">
           {[
-            { to: "/training/plan", icon: LayoutList, label: "Training Plan", color: "text-blue-600" },
-            { to: "/training/exams", icon: Calendar, label: "Exam Schedule", color: "text-indigo-600" },
-            { to: "/training/vouchers", icon: Ticket, label: "Vouchers", color: "text-amber-600" },
-            { to: "/training/events", icon: Users, label: "Events", color: "text-blue-600" },
-            { to: "/training/in-house", icon: BookOpen, label: "In-House Log", color: "text-purple-600" },
-            { to: "/training/catalog", icon: Tag, label: "Cert Catalog", color: "text-rose-600" },
-          ].map((item) => (
-            <Link key={item.to} to={item.to as string}>
-              <Card className="hover:border-primary/50 cursor-pointer transition-colors">
-                <CardContent className="flex flex-col items-center gap-2 p-4">
-                  <item.icon className={`h-7 w-7 ${item.color}`} />
-                  <span className="text-center text-xs font-medium">{item.label}</span>
-                </CardContent>
-              </Card>
-            </Link>
+            {
+              label: "Vouchers expiring ≤30 days",
+              value: vLoading ? "…" : String(expiring30.length),
+              cls: expiring30.length > 0 ? "text-red-600 dark:text-red-400" : "",
+            },
+            {
+              label: "Upcoming events",
+              value: eLoading ? "…" : String(upcomingEvents.length),
+              cls: "text-blue-600 dark:text-blue-400",
+            },
+            {
+              label: "Certifications in catalog",
+              value: catalog ? String(catalog.length) : "—",
+              cls: "",
+            },
+          ].map((s) => (
+            <div key={s.label} className="flex flex-col px-5 py-2.5 first:pl-6">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</span>
+              <span className={`text-xl font-bold tabular-nums leading-tight ${s.cls}`}>{s.value}</span>
+            </div>
           ))}
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Expiring Vouchers */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base">
-                <Ticket className="mr-2 inline h-4 w-4 text-amber-500" />
-                Vouchers Expiring in 30 Days
-              </CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/training/vouchers" })}>
-                View all
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {vouchersLoading ? (
-                <div className="space-y-2">
-                  {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-8 w-full" />
-                  ))}
-                </div>
-              ) : expiringVouchers.length === 0 ? (
-                <p className="text-muted-foreground py-4 text-center text-sm">
-                  No vouchers expiring soon
-                </p>
-              ) : (
-                <ul className="divide-border divide-y text-sm">
-                  {expiringVouchers.slice(0, 5).map((v) => (
-                    <li key={v.id} className="flex items-center justify-between py-2">
-                      <div>
-                        <p className="font-medium">{v.productName}</p>
-                        <p className="text-muted-foreground text-xs">
-                          #{v.voucherNumber} · expires {v.mustBeUsedBy}
-                        </p>
-                      </div>
-                      <Badge variant={v.status === "unused" ? "destructive" : "secondary"}>
-                        {v.status}
-                      </Badge>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+        <div className="space-y-8 p-6">
+          {/* Quick-nav tiles */}
+          <div>
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Sections</h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              {TILES.map((item) => (
+                <Link key={item.to} to={item.to as string}>
+                  <Card className="cursor-pointer transition-colors hover:border-primary/50">
+                    <CardContent className="flex flex-col items-center gap-2 p-4">
+                      <item.Icon className={`size-7 ${item.color}`} />
+                      <span className="text-center text-xs font-medium">{item.label}</span>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
 
-          {/* Recent Events */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base">
-                <Users className="mr-2 inline h-4 w-4 text-blue-500" />
-                Recent Training Events
-              </CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/training/events" })}>
-                View all
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {eventsLoading ? (
-                <div className="space-y-2">
-                  {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-8 w-full" />
-                  ))}
+          {/* Vouchers expiring soon alert */}
+          {expiring30.length > 0 && (
+            <div className="rounded-xl border border-red-200 bg-red-50/60 p-4 dark:border-red-900 dark:bg-red-950/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-red-800 dark:text-red-200">
+                    {expiring30.length} exam voucher{expiring30.length > 1 ? "s" : ""} expiring within 30 days
+                  </h3>
+                  <p className="mt-0.5 text-sm text-red-700 dark:text-red-300">
+                    Unused vouchers will be lost — assign or schedule exams now.
+                  </p>
                 </div>
-              ) : !events?.length ? (
-                <p className="text-muted-foreground py-4 text-center text-sm">No events recorded</p>
-              ) : (
-                <ul className="divide-border divide-y text-sm">
-                  {events.slice(0, 5).map((e) => (
-                    <li key={e.id} className="flex items-center justify-between py-2">
-                      <div>
-                        <p className="font-medium">{e.institution}</p>
-                        <p className="text-muted-foreground text-xs">
-                          {e.startDate} · {e.participants?.length ?? 0} participants
-                        </p>
-                      </div>
-                      <span className="text-muted-foreground text-xs">${e.totalCost}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+                <Button variant="outline" size="sm" onClick={() => navigate({ to: "/training/vouchers" })}>
+                  View vouchers →
+                </Button>
+              </div>
+              <ul className="mt-3 space-y-1">
+                {expiring30.slice(0, 3).map((v) => (
+                  <li key={v.id} className="flex items-center justify-between text-sm">
+                    <span className="font-medium">
+                      {v.assignedStaff?.user?.name ?? "Unassigned"} — {v.productName}
+                    </span>
+                    <span className="font-mono text-xs text-red-600 dark:text-red-400">
+                      exp.{" "}
+                      {v.mustBeUsedBy
+                        ? new Date(v.mustBeUsedBy).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+                        : "—"}
+                    </span>
+                  </li>
+                ))}
+                {expiring30.length > 3 && (
+                  <li className="text-xs text-muted-foreground">+{expiring30.length - 3} more…</li>
+                )}
+              </ul>
+            </div>
+          )}
 
-          {/* In-House Log */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base">
-                <BookOpen className="mr-2 inline h-4 w-4 text-purple-500" />
-                Recent In-House Sessions
-              </CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/training/in-house" })}>
-                View all
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {logLoading ? (
-                <div className="space-y-2">
-                  {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-8 w-full" />
-                  ))}
-                </div>
-              ) : !inHouseLog?.length ? (
-                <p className="text-muted-foreground py-4 text-center text-sm">No sessions recorded</p>
-              ) : (
-                <ul className="divide-border divide-y text-sm">
-                  {inHouseLog.slice(0, 5).map((l) => (
-                    <li key={l.id} className="flex items-center justify-between py-2">
-                      <div>
-                        <p className="font-medium">{l.trainingName}</p>
-                        <p className="text-muted-foreground text-xs">
-                          {l.staffProfile?.user?.name} · {l.date}
-                        </p>
+          {/* Upcoming events */}
+          {upcomingEvents.length > 0 && (
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-sm font-semibold">Upcoming Training Events</h2>
+                <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/training/events" })}>
+                  View all
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {upcomingEvents.slice(0, 4).map((e) => (
+                  <div key={e.id} className="flex items-center gap-3 rounded-lg border p-3">
+                    <Calendar className="size-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-medium">{e.institution}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {e.description} · {e.location ?? "TBD"}
                       </div>
-                      {l.assessmentCompleted && (
-                        <CheckCircle2 className="h-4 w-4 text-blue-500" />
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Cert Catalog Preview */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base">
-                <Tag className="mr-2 inline h-4 w-4 text-rose-500" />
-                Certification Catalog
-              </CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/training/catalog" })}>
-                View all
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {!catalog?.length ? (
-                <p className="text-muted-foreground py-4 text-center text-sm">
-                  No certifications catalogued
-                </p>
-              ) : (
-                <ul className="divide-border divide-y text-sm">
-                  {catalog.slice(0, 5).map((c) => (
-                    <li key={c.id} className="flex items-center justify-between py-2">
-                      <div>
-                        <p className="font-medium">{c.recommendedCert}</p>
-                        <p className="text-muted-foreground text-xs">
-                          {c.trainingArea} · {c.vendor ?? "—"}
-                        </p>
-                      </div>
-                      {c.level && <Badge variant="outline">{c.level}</Badge>}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+                    </div>
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {new Date(e.startDate).toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </Main>
     </>
