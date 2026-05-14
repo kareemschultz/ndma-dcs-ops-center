@@ -235,7 +235,7 @@ export function createAuth() {
       provider: "pg",
       schema: schema,
     }),
-    trustedOrigins: [env.CORS_ORIGIN],
+    trustedOrigins: env.CORS_ORIGIN.split(",").map((o) => o.trim()),
 
     // Local email+password login MUST remain enabled as emergency admin fallback
     // even when LDAP is the primary auth method.

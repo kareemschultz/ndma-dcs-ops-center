@@ -2,6 +2,7 @@ import { createContext } from "@ndma-dcs-staff-portal/api/context";
 import { appRouter } from "@ndma-dcs-staff-portal/api/routers/index";
 import { startSyncScheduler } from "@ndma-dcs-staff-portal/api/lib/sync/scheduler";
 import { auth } from "@ndma-dcs-staff-portal/auth";
+import { runMigrations } from "@ndma-dcs-staff-portal/db";
 import { env } from "@ndma-dcs-staff-portal/env/server";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
@@ -19,7 +20,10 @@ app.use(logger());
 app.use(
   "/*",
   cors({
-    origin: env.CORS_ORIGIN,
+    origin: (origin) => {
+      const allowed = env.CORS_ORIGIN.split(",").map((o) => o.trim());
+      return allowed.includes(origin) ? origin : allowed[0];
+    },
     allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -107,6 +111,19 @@ if (process.env.NODE_ENV === "production") {
 app.get("/", (c) => {
   return c.text("OK");
 });
+
+// ── Startup migrations ────────────────────────────────────────────────────
+// Run any pending DB migrations before serving traffic. Safe to run on every
+// startup — drizzle's migrate() is idempotent and skips already-applied files.
+if (process.env.NODE_ENV === "production") {
+  try {
+    await runMigrations();
+    console.log("[startup] migrations OK");
+  } catch (err) {
+    console.error("[startup] migration failed — aborting", err);
+    process.exit(1);
+  }
+}
 
 // ── Sync scheduler ────────────────────────────────────────────────────────
 // Fires on startup and then every 5 minutes, running sync jobs for any

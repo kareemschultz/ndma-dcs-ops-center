@@ -14,5 +14,10 @@ export default defineConfig({
   },
   server: {
     port: 3001,
+    host: true,
+    proxy: {
+      "/rpc": { target: "http://localhost:3000", changeOrigin: true },
+      "/api": { target: "http://localhost:3000", changeOrigin: true },
+    },
   },
 });

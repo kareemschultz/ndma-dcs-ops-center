@@ -33,6 +33,7 @@ import { Route as AuthenticatedImportIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedHrIndexRouteImport } from './routes/_authenticated/hr/index'
 import { Route as AuthenticatedCyclesIndexRouteImport } from './routes/_authenticated/cycles/index'
 import { Route as AuthenticatedContractsIndexRouteImport } from './routes/_authenticated/contracts/index'
+import { Route as AuthenticatedComplianceIndexRouteImport } from './routes/_authenticated/compliance/index'
 import { Route as AuthenticatedChangesIndexRouteImport } from './routes/_authenticated/changes/index'
 import { Route as AuthenticatedCareerProgressionIndexRouteImport } from './routes/_authenticated/career-progression/index'
 import { Route as AuthenticatedAuditIndexRouteImport } from './routes/_authenticated/audit/index'
@@ -69,6 +70,7 @@ import { Route as AuthenticatedIncidentsNewRouteImport } from './routes/_authent
 import { Route as AuthenticatedIncidentsIncidentIdRouteImport } from './routes/_authenticated/incidents/$incidentId'
 import { Route as AuthenticatedHrPpeRouteImport } from './routes/_authenticated/hr/ppe'
 import { Route as AuthenticatedCyclesCycleIdRouteImport } from './routes/_authenticated/cycles/$cycleId'
+import { Route as AuthenticatedContractsContractIdRouteImport } from './routes/_authenticated/contracts/$contractId'
 import { Route as AuthenticatedComplianceTrainingRouteImport } from './routes/_authenticated/compliance/training'
 import { Route as AuthenticatedCompliancePpeRouteImport } from './routes/_authenticated/compliance/ppe'
 import { Route as AuthenticatedComplianceItemsRouteImport } from './routes/_authenticated/compliance/items'
@@ -217,6 +219,12 @@ const AuthenticatedContractsIndexRoute =
   AuthenticatedContractsIndexRouteImport.update({
     id: '/contracts/',
     path: '/contracts/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedComplianceIndexRoute =
+  AuthenticatedComplianceIndexRouteImport.update({
+    id: '/compliance/',
+    path: '/compliance/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedChangesIndexRoute =
@@ -429,6 +437,12 @@ const AuthenticatedCyclesCycleIdRoute =
     path: '/cycles/$cycleId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedContractsContractIdRoute =
+  AuthenticatedContractsContractIdRouteImport.update({
+    id: '/contracts/$contractId',
+    path: '/contracts/$contractId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedComplianceTrainingRoute =
   AuthenticatedComplianceTrainingRouteImport.update({
     id: '/compliance/training',
@@ -533,6 +547,7 @@ export interface FileRoutesByFullPath {
   '/compliance/items': typeof AuthenticatedComplianceItemsRoute
   '/compliance/ppe': typeof AuthenticatedCompliancePpeRoute
   '/compliance/training': typeof AuthenticatedComplianceTrainingRoute
+  '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/cycles/$cycleId': typeof AuthenticatedCyclesCycleIdRoute
   '/hr/ppe': typeof AuthenticatedHrPpeRoute
   '/incidents/$incidentId': typeof AuthenticatedIncidentsIncidentIdRoute
@@ -569,6 +584,7 @@ export interface FileRoutesByFullPath {
   '/audit/': typeof AuthenticatedAuditIndexRoute
   '/career-progression/': typeof AuthenticatedCareerProgressionIndexRoute
   '/changes/': typeof AuthenticatedChangesIndexRoute
+  '/compliance/': typeof AuthenticatedComplianceIndexRoute
   '/contracts/': typeof AuthenticatedContractsIndexRoute
   '/cycles/': typeof AuthenticatedCyclesIndexRoute
   '/hr/': typeof AuthenticatedHrIndexRoute
@@ -609,6 +625,7 @@ export interface FileRoutesByTo {
   '/compliance/items': typeof AuthenticatedComplianceItemsRoute
   '/compliance/ppe': typeof AuthenticatedCompliancePpeRoute
   '/compliance/training': typeof AuthenticatedComplianceTrainingRoute
+  '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/cycles/$cycleId': typeof AuthenticatedCyclesCycleIdRoute
   '/hr/ppe': typeof AuthenticatedHrPpeRoute
   '/incidents/$incidentId': typeof AuthenticatedIncidentsIncidentIdRoute
@@ -645,6 +662,7 @@ export interface FileRoutesByTo {
   '/audit': typeof AuthenticatedAuditIndexRoute
   '/career-progression': typeof AuthenticatedCareerProgressionIndexRoute
   '/changes': typeof AuthenticatedChangesIndexRoute
+  '/compliance': typeof AuthenticatedComplianceIndexRoute
   '/contracts': typeof AuthenticatedContractsIndexRoute
   '/cycles': typeof AuthenticatedCyclesIndexRoute
   '/hr': typeof AuthenticatedHrIndexRoute
@@ -687,6 +705,7 @@ export interface FileRoutesById {
   '/_authenticated/compliance/items': typeof AuthenticatedComplianceItemsRoute
   '/_authenticated/compliance/ppe': typeof AuthenticatedCompliancePpeRoute
   '/_authenticated/compliance/training': typeof AuthenticatedComplianceTrainingRoute
+  '/_authenticated/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/_authenticated/cycles/$cycleId': typeof AuthenticatedCyclesCycleIdRoute
   '/_authenticated/hr/ppe': typeof AuthenticatedHrPpeRoute
   '/_authenticated/incidents/$incidentId': typeof AuthenticatedIncidentsIncidentIdRoute
@@ -723,6 +742,7 @@ export interface FileRoutesById {
   '/_authenticated/audit/': typeof AuthenticatedAuditIndexRoute
   '/_authenticated/career-progression/': typeof AuthenticatedCareerProgressionIndexRoute
   '/_authenticated/changes/': typeof AuthenticatedChangesIndexRoute
+  '/_authenticated/compliance/': typeof AuthenticatedComplianceIndexRoute
   '/_authenticated/contracts/': typeof AuthenticatedContractsIndexRoute
   '/_authenticated/cycles/': typeof AuthenticatedCyclesIndexRoute
   '/_authenticated/hr/': typeof AuthenticatedHrIndexRoute
@@ -765,6 +785,7 @@ export interface FileRouteTypes {
     | '/compliance/items'
     | '/compliance/ppe'
     | '/compliance/training'
+    | '/contracts/$contractId'
     | '/cycles/$cycleId'
     | '/hr/ppe'
     | '/incidents/$incidentId'
@@ -801,6 +822,7 @@ export interface FileRouteTypes {
     | '/audit/'
     | '/career-progression/'
     | '/changes/'
+    | '/compliance/'
     | '/contracts/'
     | '/cycles/'
     | '/hr/'
@@ -841,6 +863,7 @@ export interface FileRouteTypes {
     | '/compliance/items'
     | '/compliance/ppe'
     | '/compliance/training'
+    | '/contracts/$contractId'
     | '/cycles/$cycleId'
     | '/hr/ppe'
     | '/incidents/$incidentId'
@@ -877,6 +900,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/career-progression'
     | '/changes'
+    | '/compliance'
     | '/contracts'
     | '/cycles'
     | '/hr'
@@ -918,6 +942,7 @@ export interface FileRouteTypes {
     | '/_authenticated/compliance/items'
     | '/_authenticated/compliance/ppe'
     | '/_authenticated/compliance/training'
+    | '/_authenticated/contracts/$contractId'
     | '/_authenticated/cycles/$cycleId'
     | '/_authenticated/hr/ppe'
     | '/_authenticated/incidents/$incidentId'
@@ -954,6 +979,7 @@ export interface FileRouteTypes {
     | '/_authenticated/audit/'
     | '/_authenticated/career-progression/'
     | '/_authenticated/changes/'
+    | '/_authenticated/compliance/'
     | '/_authenticated/contracts/'
     | '/_authenticated/cycles/'
     | '/_authenticated/hr/'
@@ -1154,6 +1180,13 @@ declare module '@tanstack/react-router' {
       path: '/contracts'
       fullPath: '/contracts/'
       preLoaderRoute: typeof AuthenticatedContractsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/compliance/': {
+      id: '/_authenticated/compliance/'
+      path: '/compliance'
+      fullPath: '/compliance/'
+      preLoaderRoute: typeof AuthenticatedComplianceIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/changes/': {
@@ -1408,6 +1441,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCyclesCycleIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/contracts/$contractId': {
+      id: '/_authenticated/contracts/$contractId'
+      path: '/contracts/$contractId'
+      fullPath: '/contracts/$contractId'
+      preLoaderRoute: typeof AuthenticatedContractsContractIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/compliance/training': {
       id: '/_authenticated/compliance/training'
       path: '/compliance/training'
@@ -1544,6 +1584,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedComplianceItemsRoute: typeof AuthenticatedComplianceItemsRoute
   AuthenticatedCompliancePpeRoute: typeof AuthenticatedCompliancePpeRoute
   AuthenticatedComplianceTrainingRoute: typeof AuthenticatedComplianceTrainingRoute
+  AuthenticatedContractsContractIdRoute: typeof AuthenticatedContractsContractIdRoute
   AuthenticatedCyclesCycleIdRoute: typeof AuthenticatedCyclesCycleIdRoute
   AuthenticatedHrPpeRoute: typeof AuthenticatedHrPpeRoute
   AuthenticatedIncidentsIncidentIdRoute: typeof AuthenticatedIncidentsIncidentIdRoute
@@ -1580,6 +1621,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAuditIndexRoute: typeof AuthenticatedAuditIndexRoute
   AuthenticatedCareerProgressionIndexRoute: typeof AuthenticatedCareerProgressionIndexRoute
   AuthenticatedChangesIndexRoute: typeof AuthenticatedChangesIndexRoute
+  AuthenticatedComplianceIndexRoute: typeof AuthenticatedComplianceIndexRoute
   AuthenticatedContractsIndexRoute: typeof AuthenticatedContractsIndexRoute
   AuthenticatedCyclesIndexRoute: typeof AuthenticatedCyclesIndexRoute
   AuthenticatedHrIndexRoute: typeof AuthenticatedHrIndexRoute
@@ -1621,6 +1663,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedComplianceItemsRoute: AuthenticatedComplianceItemsRoute,
   AuthenticatedCompliancePpeRoute: AuthenticatedCompliancePpeRoute,
   AuthenticatedComplianceTrainingRoute: AuthenticatedComplianceTrainingRoute,
+  AuthenticatedContractsContractIdRoute: AuthenticatedContractsContractIdRoute,
   AuthenticatedCyclesCycleIdRoute: AuthenticatedCyclesCycleIdRoute,
   AuthenticatedHrPpeRoute: AuthenticatedHrPpeRoute,
   AuthenticatedIncidentsIncidentIdRoute: AuthenticatedIncidentsIncidentIdRoute,
@@ -1659,6 +1702,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCareerProgressionIndexRoute:
     AuthenticatedCareerProgressionIndexRoute,
   AuthenticatedChangesIndexRoute: AuthenticatedChangesIndexRoute,
+  AuthenticatedComplianceIndexRoute: AuthenticatedComplianceIndexRoute,
   AuthenticatedContractsIndexRoute: AuthenticatedContractsIndexRoute,
   AuthenticatedCyclesIndexRoute: AuthenticatedCyclesIndexRoute,
   AuthenticatedHrIndexRoute: AuthenticatedHrIndexRoute,
