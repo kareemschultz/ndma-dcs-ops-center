@@ -9,18 +9,23 @@
 //  • Filter by status + team
 //  • Reject dialog with required reason field
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
+  AlertTriangle,
+  ArrowRight,
+  Check,
   ChevronDown,
   ChevronRight,
+  CircleAlert,
   ClipboardList,
+  Clock,
   Pencil,
   Plus,
-  Trash2,
   X,
+  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -93,99 +98,6 @@ const ENTRY_CATEGORIES = [
   "Other",
 ] as const;
 
-const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-] as const;
-
-const CURRENT_YEAR = new Date().getFullYear();
-const YEAR_OPTIONS = [CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 1];
-
-function pad2(n: number) {
-  return String(n).padStart(2, "0");
-}
-
-function monthBounds(year: number, monthIndex: number): {
-  periodStart: string;
-  periodEnd: string;
-} {
-  const lastDay = new Date(year, monthIndex + 1, 0).getDate();
-  return {
-    periodStart: `${year}-${pad2(monthIndex + 1)}-01`,
-    periodEnd: `${year}-${pad2(monthIndex + 1)}-${pad2(lastDay)}`,
-  };
-}
-
-function parsePeriodToMonth(start: string): { year: number; monthIndex: number } {
-  const [y, m] = start.split("-").map(Number);
-  if (!y || !m) {
-    const now = new Date();
-    return { year: now.getFullYear(), monthIndex: now.getMonth() };
-  }
-  return { year: y, monthIndex: m - 1 };
-}
-
-function MonthYearPicker({
-  year,
-  monthIndex,
-  onChange,
-}: {
-  year: number;
-  monthIndex: number;
-  onChange: (year: number, monthIndex: number) => void;
-}) {
-  return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <div className="space-y-1.5">
-        <Label>Year</Label>
-        <Select
-          value={String(year)}
-          onValueChange={(v) => onChange(Number(v), monthIndex)}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {YEAR_OPTIONS.map((y) => (
-              <SelectItem key={y} value={String(y)}>
-                {y}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-1.5">
-        <Label>Month</Label>
-        <Select
-          value={String(monthIndex)}
-          onValueChange={(v) => onChange(year, Number(v))}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {MONTHS.map((m, idx) => (
-              <SelectItem key={m} value={String(idx)}>
-                {m}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-  );
-}
-
 // ─── Create Timesheet Dialog ──────────────────────────────────────────────────
 
 function CreateTimesheetDialog({
@@ -199,29 +111,12 @@ function CreateTimesheetDialog({
   const { data: staff } = useQuery(
     orpc.staff.list.queryOptions({ input: { limit: 200, offset: 0 } }),
   );
-
-  const now = new Date();
-  const [staffProfileId, setStaffProfileId] = useState("");
-  const [year, setYear] = useState(now.getFullYear());
-  const [monthIndex, setMonthIndex] = useState(now.getMonth());
-  const [title, setTitle] = useState(`${MONTHS[now.getMonth()]} ${now.getFullYear()}`);
-  const [titleEdited, setTitleEdited] = useState(false);
-
-  function handleMonthYearChange(nextYear: number, nextMonthIndex: number) {
-    setYear(nextYear);
-    setMonthIndex(nextMonthIndex);
-    if (!titleEdited) {
-      setTitle(`${MONTHS[nextMonthIndex]} ${nextYear}`);
-    }
-  }
-
-  function resetForm() {
-    setStaffProfileId("");
-    setYear(now.getFullYear());
-    setMonthIndex(now.getMonth());
-    setTitle(`${MONTHS[now.getMonth()]} ${now.getFullYear()}`);
-    setTitleEdited(false);
-  }
+  const [form, setForm] = useState({
+    staffProfileId: "",
+    title: "",
+    periodStart: "",
+    periodEnd: "",
+  });
 
   const mutation = useMutation(
     orpc.timesheets.create.mutationOptions({
@@ -231,7 +126,7 @@ function CreateTimesheetDialog({
           queryKey: orpc.timesheets.list.key(),
         });
         onOpenChange(false);
-        resetForm();
+        setForm({ staffProfileId: "", title: "", periodStart: "", periodEnd: "" });
       },
       onError: (error: Error) =>
         toast.error(error.message ?? "Failed to create timesheet"),
@@ -239,16 +134,20 @@ function CreateTimesheetDialog({
   );
 
   function submit() {
-    if (!staffProfileId || !title) {
-      toast.error("Staff member and title are required.");
+    if (
+      !form.staffProfileId ||
+      !form.title ||
+      !form.periodStart ||
+      !form.periodEnd
+    ) {
+      toast.error("All fields are required.");
       return;
     }
-    const { periodStart, periodEnd } = monthBounds(year, monthIndex);
     mutation.mutate({
-      staffProfileId,
-      title,
-      periodStart,
-      periodEnd,
+      staffProfileId: form.staffProfileId,
+      title: form.title,
+      periodStart: form.periodStart,
+      periodEnd: form.periodEnd,
     });
   }
 
@@ -258,7 +157,7 @@ function CreateTimesheetDialog({
         <DialogHeader>
           <DialogTitle>New Timesheet</DialogTitle>
           <DialogDescription>
-            Create a monthly timesheet for a staff member.
+            Create a timesheet record for a staff member.
           </DialogDescription>
         </DialogHeader>
 
@@ -266,8 +165,10 @@ function CreateTimesheetDialog({
           <div className="space-y-1.5">
             <Label>Staff Member</Label>
             <Select
-              value={staffProfileId}
-              onValueChange={(v) => setStaffProfileId(v ?? "")}
+              value={form.staffProfileId}
+              onValueChange={(v) =>
+                setForm((c) => ({ ...c, staffProfileId: v ?? "" }))
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select staff member" />
@@ -282,26 +183,41 @@ function CreateTimesheetDialog({
             </Select>
           </div>
 
-          <MonthYearPicker
-            year={year}
-            monthIndex={monthIndex}
-            onChange={handleMonthYearChange}
-          />
-
           <div className="space-y-1.5">
             <Label htmlFor="ts-title">Title</Label>
             <Input
               id="ts-title"
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                setTitleEdited(true);
-              }}
-              placeholder={`${MONTHS[monthIndex]} ${year}`}
+              value={form.title}
+              onChange={(e) =>
+                setForm((c) => ({ ...c, title: e.target.value }))
+              }
+              placeholder="e.g. April Operations"
             />
-            <p className="text-xs text-muted-foreground">
-              Auto-generated from month/year. Customize if needed.
-            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="ts-start">Period Start</Label>
+              <Input
+                id="ts-start"
+                type="date"
+                value={form.periodStart}
+                onChange={(e) =>
+                  setForm((c) => ({ ...c, periodStart: e.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ts-end">Period End</Label>
+              <Input
+                id="ts-end"
+                type="date"
+                value={form.periodEnd}
+                onChange={(e) =>
+                  setForm((c) => ({ ...c, periodEnd: e.target.value }))
+                }
+              />
+            </div>
           </div>
         </div>
 
@@ -332,21 +248,11 @@ function EditTimesheetDialog({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
-  const initial = parsePeriodToMonth(timesheet.periodStart);
-  const [year, setYear] = useState(initial.year);
-  const [monthIndex, setMonthIndex] = useState(initial.monthIndex);
-  const [title, setTitle] = useState(timesheet.title);
-  const [titleEdited, setTitleEdited] = useState(
-    timesheet.title !== `${MONTHS[initial.monthIndex]} ${initial.year}`,
-  );
-
-  function handleMonthYearChange(nextYear: number, nextMonthIndex: number) {
-    setYear(nextYear);
-    setMonthIndex(nextMonthIndex);
-    if (!titleEdited) {
-      setTitle(`${MONTHS[nextMonthIndex]} ${nextYear}`);
-    }
-  }
+  const [form, setForm] = useState({
+    title: timesheet.title,
+    periodStart: timesheet.periodStart,
+    periodEnd: timesheet.periodEnd,
+  });
 
   const mutation = useMutation(
     orpc.timesheets.update.mutationOptions({
@@ -361,20 +267,6 @@ function EditTimesheetDialog({
     }),
   );
 
-  function submit() {
-    if (!title) {
-      toast.error("Title is required.");
-      return;
-    }
-    const { periodStart, periodEnd } = monthBounds(year, monthIndex);
-    mutation.mutate({
-      id: timesheet.id,
-      title,
-      periodStart,
-      periodEnd,
-    });
-  }
-
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="sm:max-w-lg">
@@ -386,23 +278,37 @@ function EditTimesheetDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          <MonthYearPicker
-            year={year}
-            monthIndex={monthIndex}
-            onChange={handleMonthYearChange}
-          />
-
           <div className="space-y-1.5">
             <Label htmlFor="edit-title">Title</Label>
             <Input
               id="edit-title"
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                setTitleEdited(true);
-              }}
-              placeholder={`${MONTHS[monthIndex]} ${year}`}
+              value={form.title}
+              onChange={(e) => setForm((c) => ({ ...c, title: e.target.value }))}
             />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-start">Period Start</Label>
+              <Input
+                id="edit-start"
+                type="date"
+                value={form.periodStart}
+                onChange={(e) =>
+                  setForm((c) => ({ ...c, periodStart: e.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-end">Period End</Label>
+              <Input
+                id="edit-end"
+                type="date"
+                value={form.periodEnd}
+                onChange={(e) =>
+                  setForm((c) => ({ ...c, periodEnd: e.target.value }))
+                }
+              />
+            </div>
           </div>
         </div>
 
@@ -410,7 +316,12 @@ function EditTimesheetDialog({
           <Button variant="outline" onClick={onClose} disabled={mutation.isPending}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={mutation.isPending}>
+          <Button
+            onClick={() =>
+              mutation.mutate({ id: timesheet.id, ...form })
+            }
+            disabled={mutation.isPending}
+          >
             {mutation.isPending ? "Saving…" : "Save Changes"}
           </Button>
         </DialogFooter>
@@ -603,6 +514,300 @@ function RejectDialog({
   );
 }
 
+// ─── Attendance log shape (subset used for matching) ──────────────────────────
+
+type AttendanceLog = {
+  id: number;
+  staffId: string;
+  date: string;
+  status: string;
+  clockIn: string | null;
+  clockOut: string | null;
+  workHours: string | null;
+};
+
+// ─── Import from Attendance Dialog ────────────────────────────────────────────
+
+function ImportFromAttendanceDialog({
+  timesheet,
+  attendanceLogs,
+  existingEntryDates,
+  onClose,
+}: {
+  timesheet: {
+    id: string;
+    staffProfileId: string;
+    periodStart: string;
+    periodEnd: string;
+  };
+  attendanceLogs: AttendanceLog[];
+  existingEntryDates: Set<string>;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const addEntryMut = useMutation(orpc.timesheets.addEntry.mutationOptions());
+
+  // Pre-check Workday rows that have workHours AND aren't already in timesheet
+  const initialSelected = useMemo(() => {
+    const set = new Set<number>();
+    for (const log of attendanceLogs) {
+      if (
+        log.status === "Workday" &&
+        log.workHours &&
+        Number(log.workHours) > 0 &&
+        !existingEntryDates.has(log.date)
+      ) {
+        set.add(log.id);
+      }
+    }
+    return set;
+  }, [attendanceLogs, existingEntryDates]);
+
+  const [selected, setSelected] = useState<Set<number>>(initialSelected);
+  const [importing, setImporting] = useState(false);
+  const [progress, setProgress] = useState({ done: 0, total: 0, failed: 0 });
+
+  function toggle(id: number) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  // Sort logs by date ascending for the preview
+  const sortedLogs = useMemo(
+    () =>
+      [...attendanceLogs].sort((a, b) =>
+        a.date.localeCompare(b.date),
+      ),
+    [attendanceLogs],
+  );
+
+  function isSelectable(log: AttendanceLog) {
+    return log.status === "Workday";
+  }
+
+  async function runImport() {
+    const targets = sortedLogs.filter(
+      (log) => selected.has(log.id) && isSelectable(log),
+    );
+    if (targets.length === 0) {
+      toast.error("Select at least one Workday row to import.");
+      return;
+    }
+    setImporting(true);
+    setProgress({ done: 0, total: targets.length, failed: 0 });
+    let done = 0;
+    let failed = 0;
+    for (const log of targets) {
+      try {
+        const hours = Number(log.workHours);
+        await addEntryMut.mutateAsync({
+          timesheetId: timesheet.id,
+          workDate: log.date,
+          hours: Number.isFinite(hours) && hours > 0 ? Number(hours.toFixed(2)) : 8,
+          category: "Regular",
+          description: `Imported from attendance — clock-in ${log.clockIn ?? "—"} · clock-out ${log.clockOut ?? "—"}`,
+        });
+        done++;
+      } catch {
+        failed++;
+      }
+      setProgress({ done: done + failed, total: targets.length, failed });
+    }
+    await queryClient.invalidateQueries({
+      queryKey: orpc.timesheets.list.key(),
+    });
+    setImporting(false);
+    if (failed > 0) {
+      toast.warning(`Imported ${done}, failed ${failed}.`);
+    } else {
+      toast.success(`Imported ${done} attendance entr${done === 1 ? "y" : "ies"}.`);
+    }
+    onClose();
+  }
+
+  const selectableCount = sortedLogs.filter((l) => isSelectable(l)).length;
+  const selectedCount = sortedLogs.filter(
+    (l) => selected.has(l.id) && isSelectable(l),
+  ).length;
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o && !importing) onClose(); }}>
+      <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Import Entries from Attendance</DialogTitle>
+          <DialogDescription>
+            {sortedLogs.length} attendance log{sortedLogs.length === 1 ? "" : "s"} for this period ·
+            {" "}{selectableCount} workday{selectableCount === 1 ? "" : "s"} eligible ·
+            {" "}{selectedCount} selected
+          </DialogDescription>
+        </DialogHeader>
+
+        {sortedLogs.length === 0 ? (
+          <div className="py-10 text-center text-sm text-muted-foreground">
+            No attendance logs found for this period.
+          </div>
+        ) : (
+          <div className="rounded-md border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/60 border-b">
+                  <th className="w-8 px-2 py-2" />
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">
+                    Date
+                  </th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">
+                    Status
+                  </th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">
+                    Clock In
+                  </th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">
+                    Clock Out
+                  </th>
+                  <th className="text-right px-3 py-2 text-xs font-medium text-muted-foreground">
+                    Work Hours
+                  </th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">
+                    Category
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedLogs.map((log) => {
+                  const selectable = isSelectable(log);
+                  const alreadyImported = existingEntryDates.has(log.date);
+                  return (
+                    <tr
+                      key={log.id}
+                      className={`border-b last:border-0 ${selectable ? "hover:bg-muted/20" : "opacity-50"}`}
+                    >
+                      <td className="px-2 py-1.5 text-center">
+                        <input
+                          type="checkbox"
+                          disabled={!selectable || importing}
+                          checked={selected.has(log.id) && selectable}
+                          onChange={() => toggle(log.id)}
+                          className="size-4 accent-primary"
+                        />
+                      </td>
+                      <td className="px-3 py-1.5 font-mono text-xs">
+                        {format(parseISO(log.date), "dd MMM yyyy")}
+                      </td>
+                      <td className="px-3 py-1.5">
+                        <span className="text-xs rounded px-1.5 py-0.5 bg-muted">
+                          {log.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-1.5 font-mono text-xs">
+                        {log.clockIn ? log.clockIn.slice(0, 5) : "—"}
+                      </td>
+                      <td className="px-3 py-1.5 font-mono text-xs">
+                        {log.clockOut ? log.clockOut.slice(0, 5) : "—"}
+                      </td>
+                      <td className="px-3 py-1.5 text-right font-mono text-xs">
+                        {log.workHours ?? "—"}
+                      </td>
+                      <td className="px-3 py-1.5 text-xs text-muted-foreground">
+                        {alreadyImported ? (
+                          <span className="text-blue-700 dark:text-blue-300">
+                            already in timesheet
+                          </span>
+                        ) : selectable ? (
+                          "Regular"
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {importing && progress.total > 0 && (
+          <p className="text-xs text-muted-foreground py-1">
+            Imported {progress.done} of {progress.total}…
+            {progress.failed > 0 ? ` (${progress.failed} failed)` : ""}
+          </p>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={importing}>
+            Cancel
+          </Button>
+          <Button
+            onClick={runImport}
+            disabled={importing || selectedCount === 0}
+          >
+            {importing
+              ? `Importing ${progress.done}/${progress.total}…`
+              : `Import ${selectedCount} entr${selectedCount === 1 ? "y" : "ies"}`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Alignment helpers ────────────────────────────────────────────────────────
+
+type AlignmentKind = "match" | "mismatch" | "absent" | "none";
+
+function getAlignment(
+  entryDate: string,
+  entryHours: number | null,
+  log: AttendanceLog | undefined,
+): AlignmentKind {
+  void entryDate;
+  if (!log) return "none";
+  if (log.status === "Absent") return "absent";
+  if (log.status !== "Workday") return "none";
+  if (entryHours == null) return "none";
+  const logHrs = log.workHours != null ? Number(log.workHours) : NaN;
+  if (!Number.isFinite(logHrs)) return "none";
+  const delta = Math.abs(logHrs - entryHours);
+  return delta <= 0.5 ? "match" : "mismatch";
+}
+
+function AlignmentBadge({ kind }: { kind: AlignmentKind }) {
+  if (kind === "match") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-1.5 py-0.5 text-[10px] font-medium">
+        <Check className="size-3" />
+        matches
+      </span>
+    );
+  }
+  if (kind === "mismatch") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 text-[10px] font-medium">
+        <AlertTriangle className="size-3" />
+        mismatch
+      </span>
+    );
+  }
+  if (kind === "absent") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 px-1.5 py-0.5 text-[10px] font-medium">
+        <XCircle className="size-3" />
+        absent
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-muted text-muted-foreground px-1.5 py-0.5 text-[10px] font-medium">
+      <CircleAlert className="size-3" />
+      no attendance
+    </span>
+  );
+}
+
 // ─── Expanded Entries Panel ───────────────────────────────────────────────────
 
 function EntriesPanel({
@@ -611,6 +816,13 @@ function EntriesPanel({
   timesheet: {
     id: string;
     status: string;
+    staffProfileId: string;
+    periodStart: string | null;
+    periodEnd: string | null;
+    staffProfile?: {
+      id: string;
+      user?: { name?: string | null } | null;
+    } | null;
     entries?: Array<{
       id: string;
       workDate: string;
@@ -622,7 +834,44 @@ function EntriesPanel({
 }) {
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const isDraft = timesheet.status === "draft";
+
+  // Single bulk attendance query for this timesheet's period — used for both
+  // the Import dialog and alignment badges. No N+1.
+  const attendanceQuery = useQuery({
+    ...orpc.attendanceTime.logs.list.queryOptions({
+      input: {
+        staffProfileId: timesheet.staffProfileId,
+        from: timesheet.periodStart ?? undefined,
+        to: timesheet.periodEnd ?? undefined,
+        limit: 500,
+      },
+    }),
+    enabled: Boolean(timesheet.periodStart && timesheet.periodEnd),
+  });
+
+  const attendanceLogs: AttendanceLog[] = useMemo(
+    () =>
+      (attendanceQuery.data ?? []).map((log) => ({
+        id: log.id,
+        staffId: log.staffId,
+        date: log.date,
+        status: log.status,
+        clockIn: log.clockIn,
+        clockOut: log.clockOut,
+        workHours: log.workHours,
+      })),
+    [attendanceQuery.data],
+  );
+
+  const attendanceByDate = useMemo(() => {
+    const map = new Map<string, AttendanceLog>();
+    for (const log of attendanceLogs) {
+      map.set(log.date, log);
+    }
+    return map;
+  }, [attendanceLogs]);
 
   const removeMutation = useMutation(
     orpc.timesheets.removeEntry.mutationOptions({
@@ -637,24 +886,60 @@ function EntriesPanel({
   );
 
   const entries = timesheet.entries ?? [];
+  const existingEntryDates = useMemo(
+    () => new Set(entries.map((e) => e.workDate)),
+    [entries],
+  );
+
+  const staffName = timesheet.staffProfile?.user?.name;
+  const staffId = timesheet.staffProfileId;
 
   return (
     <div className="bg-muted/30 border-t px-4 py-3">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Time Entries ({entries.length})
-        </span>
+      <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Time Entries ({entries.length})
+          </span>
+          {staffId && (
+            <Link
+              to="/staff/$staffId"
+              params={{ staffId }}
+              className="text-xs text-primary hover:underline inline-flex items-center gap-0.5"
+            >
+              View {staffName ?? "staff"} profile
+              <ArrowRight className="size-3" />
+            </Link>
+          )}
+        </div>
         {isDraft && (
-          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setAddOpen(true)}>
-            <Plus className="size-3 mr-1" />
-            Add Entry
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => setImportOpen(true)}
+              disabled={attendanceQuery.isLoading}
+            >
+              <Clock className="size-3 mr-1" />
+              Import from Attendance
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => setAddOpen(true)}
+            >
+              <Plus className="size-3 mr-1" />
+              Add Entry
+            </Button>
+          </div>
         )}
       </div>
 
       {entries.length === 0 ? (
         <p className="text-sm text-muted-foreground py-2">
-          No entries yet.{isDraft ? " Add entries using the button above." : ""}
+          No entries yet.{isDraft ? " Add entries using the buttons above." : ""}
         </p>
       ) : (
         <div className="rounded-md border overflow-hidden">
@@ -665,41 +950,59 @@ function EntriesPanel({
                 <th className="text-left px-3 py-1.5 text-xs font-medium text-muted-foreground">Hours</th>
                 <th className="text-left px-3 py-1.5 text-xs font-medium text-muted-foreground">Category</th>
                 <th className="text-left px-3 py-1.5 text-xs font-medium text-muted-foreground">Description</th>
+                <th className="text-left px-3 py-1.5 text-xs font-medium text-muted-foreground">Attendance</th>
                 {isDraft && <th className="w-8 px-2 py-1.5" />}
               </tr>
             </thead>
             <tbody>
-              {entries.map((entry) => (
-                <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/20">
-                  <td className="px-3 py-2 font-mono text-xs">
-                    {entry.workDate ? format(parseISO(entry.workDate), "dd MMM yyyy") : "—"}
-                  </td>
-                  <td className="px-3 py-2 font-semibold">{entry.hours ?? "—"}</td>
-                  <td className="px-3 py-2">
-                    <span className="text-xs bg-primary/10 text-primary rounded px-1.5 py-0.5">
-                      {entry.category}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-muted-foreground text-xs max-w-xs truncate">
-                    {entry.description || "—"}
-                  </td>
-                  {isDraft && (
-                    <td className="px-2 py-2">
-                      <button
-                        className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                        disabled={removeMutation.isPending}
-                        onClick={() => {
-                          if (confirm("Remove this entry?")) {
-                            removeMutation.mutate({ id: entry.id });
-                          }
-                        }}
-                      >
-                        <X className="size-3.5" />
-                      </button>
+              {entries.map((entry) => {
+                const hoursNum =
+                  entry.hours == null ? null : Number(entry.hours);
+                const log = attendanceByDate.get(entry.workDate);
+                const kind = getAlignment(
+                  entry.workDate,
+                  Number.isFinite(hoursNum) ? (hoursNum as number) : null,
+                  log,
+                );
+                return (
+                  <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/20">
+                    <td className="px-3 py-2 font-mono text-xs">
+                      {entry.workDate ? format(parseISO(entry.workDate), "dd MMM yyyy") : "—"}
                     </td>
-                  )}
-                </tr>
-              ))}
+                    <td className="px-3 py-2 font-semibold">{entry.hours ?? "—"}</td>
+                    <td className="px-3 py-2">
+                      <span className="text-xs bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                        {entry.category}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground text-xs max-w-xs truncate">
+                      {entry.description || "—"}
+                    </td>
+                    <td className="px-3 py-2">
+                      {attendanceQuery.isLoading ? (
+                        <Skeleton className="h-4 w-20" />
+                      ) : (
+                        <AlignmentBadge kind={kind} />
+                      )}
+                    </td>
+                    {isDraft && (
+                      <td className="px-2 py-2">
+                        <button
+                          className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                          disabled={removeMutation.isPending}
+                          onClick={() => {
+                            if (confirm("Remove this entry?")) {
+                              removeMutation.mutate({ id: entry.id });
+                            }
+                          }}
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -707,6 +1010,19 @@ function EntriesPanel({
 
       {addOpen && (
         <AddEntryDialog timesheetId={timesheet.id} onClose={() => setAddOpen(false)} />
+      )}
+      {importOpen && timesheet.periodStart && timesheet.periodEnd && (
+        <ImportFromAttendanceDialog
+          timesheet={{
+            id: timesheet.id,
+            staffProfileId: timesheet.staffProfileId,
+            periodStart: timesheet.periodStart,
+            periodEnd: timesheet.periodEnd,
+          }}
+          attendanceLogs={attendanceLogs}
+          existingEntryDates={existingEntryDates}
+          onClose={() => setImportOpen(false)}
+        />
       )}
     </div>
   );

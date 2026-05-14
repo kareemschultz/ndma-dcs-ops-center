@@ -4,10 +4,19 @@
 //   Lateness Dashboard — quarterly lateness summary table (read-only here; edit on /lateness)
 //   Clock Logs        — daily clock-in/out per staff; full CRUD (add, edit times, delete)
 
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
-import { Clock3, Pencil, Plus, SortAsc, SortDesc, Trash2, Upload } from "lucide-react";
+import {
+  ClipboardList,
+  Clock3,
+  Pencil,
+  Plus,
+  SortAsc,
+  SortDesc,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import * as XLSX from "xlsx";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
@@ -43,7 +52,6 @@ import {
   TableRow,
 } from "@ndma-dcs-staff-portal/ui/components/table";
 
-import { AttendanceSubNav } from "@/components/layout/attendance-sub-nav";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -757,6 +765,7 @@ function LatenessTab() {
 // ─── Clock Logs Tab ───────────────────────────────────────────────────────────
 
 function ClockLogsTab() {
+  const navigate = useNavigate();
   const [staffFilter, setStaffFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [teamFilter, setTeamFilter] = useState<string>("all");
@@ -793,6 +802,44 @@ function ClockLogsTab() {
       },
     }),
   );
+
+  // Draft timesheets for cross-reference. Lookup map keyed by
+  // `${staffProfileId}|YYYY-MM` → timesheet id. Used to wire the
+  // "View timesheet" action per attendance row to the draft timesheet
+  // covering that row's month, if one exists.
+  const { data: draftTimesheets } = useQuery(
+    orpc.timesheets.list.queryOptions({
+      input: {
+        status: "draft",
+        staffProfileId: staffFilter || undefined,
+        team: teamFilter !== "all" ? (teamFilter as "DCS" | "NOC") : undefined,
+      },
+    }),
+  );
+
+  const draftByStaffMonth = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const ts of draftTimesheets ?? []) {
+      if (!ts.periodStart || !ts.periodEnd) continue;
+      // For each month that overlaps the timesheet period, register it.
+      // periodStart/periodEnd are YYYY-MM-DD; iterate by month.
+      const start = parseISO(ts.periodStart);
+      const end = parseISO(ts.periodEnd);
+      const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+      const stop = new Date(end.getFullYear(), end.getMonth(), 1);
+      while (cursor <= stop) {
+        const key = `${ts.staffProfileId}|${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
+        if (!map.has(key)) map.set(key, ts.id);
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+    }
+    return map;
+  }, [draftTimesheets]);
+
+  function timesheetForRow(staffId: string, date: string): string | null {
+    const yyyyMm = date.slice(0, 7);
+    return draftByStaffMonth.get(`${staffId}|${yyyyMm}`) ?? null;
+  }
 
   return (
     <>
@@ -891,6 +938,7 @@ function ClockLogsTab() {
                 <TableHead>Clock Out</TableHead>
                 <TableHead>Hours</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Timesheet</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
@@ -898,14 +946,14 @@ function ClockLogsTab() {
               {isLoading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 8 }).map((_, j) => (
+                    {Array.from({ length: 9 }).map((_, j) => (
                       <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : !(logs?.length) ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
                     No attendance logs found.
                   </TableCell>
                 </TableRow>
@@ -966,6 +1014,33 @@ function ClockLogsTab() {
                         </span>
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
+                        {(() => {
+                          const tsId = timesheetForRow(row.staffId, row.date);
+                          if (tsId) {
+                            return (
+                              <button
+                                type="button"
+                                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                                onClick={() => navigate({ to: "/timesheets" })}
+                                title="View draft timesheet for this month"
+                              >
+                                <ClipboardList className="size-3.5" />
+                                View timesheet
+                              </button>
+                            );
+                          }
+                          return (
+                            <span
+                              className="inline-flex items-center gap-1 text-xs text-muted-foreground/60 cursor-not-allowed"
+                              title="No draft timesheet exists for this month"
+                            >
+                              <ClipboardList className="size-3.5" />
+                              No draft
+                            </span>
+                          );
+                        })()}
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <button
                           className="p-1 rounded hover:bg-muted text-muted-foreground"
                           onClick={() =>
@@ -1022,8 +1097,6 @@ function AttendancePage() {
           <ThemeSwitch />
         </div>
       </Header>
-
-      <AttendanceSubNav activeView="logs" />
 
       <Main className="space-y-6">
         <div>
