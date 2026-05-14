@@ -354,6 +354,26 @@ correlationId: context.requestId,
 - The pre-commit hook tries to run `bat` (a cat alternative) to show diffs — fails if not installed
 - **Fix:** `git commit -m "your message here"` using `-m` flag directly (NOT heredoc syntax with `cat <<'EOF'`)
 
+### Lateness records — month must be full name, exact match
+- The `lateness_records.month` column stores full month names: "January", "February", … "December"
+- The unique constraint is `(staff_profile_id, year, month)` — exact string match, case-sensitive
+- **WRONG:** storing "Jan", "jan", "JANUARY" — these bypass the unique constraint and create duplicate records
+- **CORRECT:** always call `expandMonth()` / use the MONTH_ABBREV map before inserting
+- **Dedup SQL (run on prod if duplicates exist):**
+  ```sql
+  DELETE FROM lateness_records a USING lateness_records b
+  WHERE a.id > b.id
+    AND a.staff_profile_id = b.staff_profile_id
+    AND a.year = b.year
+    AND a.month = b.month;
+  ```
+
+### Post-phase 16 feature work is on branch `claude/inspiring-morse-bdf638`
+- 5 commits ahead of main (as of 2026-05-14): timesheets CRUD, attendance clock log CRUD, lateness Excel import
+- **Merge this branch before starting new features** — open a PR against main
+- **Pending tasks on that branch:** monthly timesheets UI, prod data dump (needs LAN access to 10.6.104.13)
+- See AGENT_LOG.md 2026-05-14 entry for full details
+
 ### Security Best Practices
 - Always validate on the server (oRPC procedures) even when validating on the client.
 - Use `protectedProcedure` for every endpoint that touches user/org data.
