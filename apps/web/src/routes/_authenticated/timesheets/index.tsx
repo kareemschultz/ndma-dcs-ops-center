@@ -93,6 +93,99 @@ const ENTRY_CATEGORIES = [
   "Other",
 ] as const;
 
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = [CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 1];
+
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function monthBounds(year: number, monthIndex: number): {
+  periodStart: string;
+  periodEnd: string;
+} {
+  const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+  return {
+    periodStart: `${year}-${pad2(monthIndex + 1)}-01`,
+    periodEnd: `${year}-${pad2(monthIndex + 1)}-${pad2(lastDay)}`,
+  };
+}
+
+function parsePeriodToMonth(start: string): { year: number; monthIndex: number } {
+  const [y, m] = start.split("-").map(Number);
+  if (!y || !m) {
+    const now = new Date();
+    return { year: now.getFullYear(), monthIndex: now.getMonth() };
+  }
+  return { year: y, monthIndex: m - 1 };
+}
+
+function MonthYearPicker({
+  year,
+  monthIndex,
+  onChange,
+}: {
+  year: number;
+  monthIndex: number;
+  onChange: (year: number, monthIndex: number) => void;
+}) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <div className="space-y-1.5">
+        <Label>Year</Label>
+        <Select
+          value={String(year)}
+          onValueChange={(v) => onChange(Number(v), monthIndex)}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {YEAR_OPTIONS.map((y) => (
+              <SelectItem key={y} value={String(y)}>
+                {y}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label>Month</Label>
+        <Select
+          value={String(monthIndex)}
+          onValueChange={(v) => onChange(year, Number(v))}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {MONTHS.map((m, idx) => (
+              <SelectItem key={m} value={String(idx)}>
+                {m}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+}
+
 // ─── Create Timesheet Dialog ──────────────────────────────────────────────────
 
 function CreateTimesheetDialog({
@@ -106,12 +199,29 @@ function CreateTimesheetDialog({
   const { data: staff } = useQuery(
     orpc.staff.list.queryOptions({ input: { limit: 200, offset: 0 } }),
   );
-  const [form, setForm] = useState({
-    staffProfileId: "",
-    title: "",
-    periodStart: "",
-    periodEnd: "",
-  });
+
+  const now = new Date();
+  const [staffProfileId, setStaffProfileId] = useState("");
+  const [year, setYear] = useState(now.getFullYear());
+  const [monthIndex, setMonthIndex] = useState(now.getMonth());
+  const [title, setTitle] = useState(`${MONTHS[now.getMonth()]} ${now.getFullYear()}`);
+  const [titleEdited, setTitleEdited] = useState(false);
+
+  function handleMonthYearChange(nextYear: number, nextMonthIndex: number) {
+    setYear(nextYear);
+    setMonthIndex(nextMonthIndex);
+    if (!titleEdited) {
+      setTitle(`${MONTHS[nextMonthIndex]} ${nextYear}`);
+    }
+  }
+
+  function resetForm() {
+    setStaffProfileId("");
+    setYear(now.getFullYear());
+    setMonthIndex(now.getMonth());
+    setTitle(`${MONTHS[now.getMonth()]} ${now.getFullYear()}`);
+    setTitleEdited(false);
+  }
 
   const mutation = useMutation(
     orpc.timesheets.create.mutationOptions({
@@ -121,7 +231,7 @@ function CreateTimesheetDialog({
           queryKey: orpc.timesheets.list.key(),
         });
         onOpenChange(false);
-        setForm({ staffProfileId: "", title: "", periodStart: "", periodEnd: "" });
+        resetForm();
       },
       onError: (error: Error) =>
         toast.error(error.message ?? "Failed to create timesheet"),
@@ -129,20 +239,16 @@ function CreateTimesheetDialog({
   );
 
   function submit() {
-    if (
-      !form.staffProfileId ||
-      !form.title ||
-      !form.periodStart ||
-      !form.periodEnd
-    ) {
-      toast.error("All fields are required.");
+    if (!staffProfileId || !title) {
+      toast.error("Staff member and title are required.");
       return;
     }
+    const { periodStart, periodEnd } = monthBounds(year, monthIndex);
     mutation.mutate({
-      staffProfileId: form.staffProfileId,
-      title: form.title,
-      periodStart: form.periodStart,
-      periodEnd: form.periodEnd,
+      staffProfileId,
+      title,
+      periodStart,
+      periodEnd,
     });
   }
 
@@ -152,7 +258,7 @@ function CreateTimesheetDialog({
         <DialogHeader>
           <DialogTitle>New Timesheet</DialogTitle>
           <DialogDescription>
-            Create a timesheet record for a staff member.
+            Create a monthly timesheet for a staff member.
           </DialogDescription>
         </DialogHeader>
 
@@ -160,10 +266,8 @@ function CreateTimesheetDialog({
           <div className="space-y-1.5">
             <Label>Staff Member</Label>
             <Select
-              value={form.staffProfileId}
-              onValueChange={(v) =>
-                setForm((c) => ({ ...c, staffProfileId: v ?? "" }))
-              }
+              value={staffProfileId}
+              onValueChange={(v) => setStaffProfileId(v ?? "")}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select staff member" />
@@ -178,41 +282,26 @@ function CreateTimesheetDialog({
             </Select>
           </div>
 
+          <MonthYearPicker
+            year={year}
+            monthIndex={monthIndex}
+            onChange={handleMonthYearChange}
+          />
+
           <div className="space-y-1.5">
             <Label htmlFor="ts-title">Title</Label>
             <Input
               id="ts-title"
-              value={form.title}
-              onChange={(e) =>
-                setForm((c) => ({ ...c, title: e.target.value }))
-              }
-              placeholder="e.g. April Operations"
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setTitleEdited(true);
+              }}
+              placeholder={`${MONTHS[monthIndex]} ${year}`}
             />
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="ts-start">Period Start</Label>
-              <Input
-                id="ts-start"
-                type="date"
-                value={form.periodStart}
-                onChange={(e) =>
-                  setForm((c) => ({ ...c, periodStart: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="ts-end">Period End</Label>
-              <Input
-                id="ts-end"
-                type="date"
-                value={form.periodEnd}
-                onChange={(e) =>
-                  setForm((c) => ({ ...c, periodEnd: e.target.value }))
-                }
-              />
-            </div>
+            <p className="text-xs text-muted-foreground">
+              Auto-generated from month/year. Customize if needed.
+            </p>
           </div>
         </div>
 
@@ -243,11 +332,21 @@ function EditTimesheetDialog({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({
-    title: timesheet.title,
-    periodStart: timesheet.periodStart,
-    periodEnd: timesheet.periodEnd,
-  });
+  const initial = parsePeriodToMonth(timesheet.periodStart);
+  const [year, setYear] = useState(initial.year);
+  const [monthIndex, setMonthIndex] = useState(initial.monthIndex);
+  const [title, setTitle] = useState(timesheet.title);
+  const [titleEdited, setTitleEdited] = useState(
+    timesheet.title !== `${MONTHS[initial.monthIndex]} ${initial.year}`,
+  );
+
+  function handleMonthYearChange(nextYear: number, nextMonthIndex: number) {
+    setYear(nextYear);
+    setMonthIndex(nextMonthIndex);
+    if (!titleEdited) {
+      setTitle(`${MONTHS[nextMonthIndex]} ${nextYear}`);
+    }
+  }
 
   const mutation = useMutation(
     orpc.timesheets.update.mutationOptions({
@@ -262,6 +361,20 @@ function EditTimesheetDialog({
     }),
   );
 
+  function submit() {
+    if (!title) {
+      toast.error("Title is required.");
+      return;
+    }
+    const { periodStart, periodEnd } = monthBounds(year, monthIndex);
+    mutation.mutate({
+      id: timesheet.id,
+      title,
+      periodStart,
+      periodEnd,
+    });
+  }
+
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="sm:max-w-lg">
@@ -273,37 +386,23 @@ function EditTimesheetDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          <MonthYearPicker
+            year={year}
+            monthIndex={monthIndex}
+            onChange={handleMonthYearChange}
+          />
+
           <div className="space-y-1.5">
             <Label htmlFor="edit-title">Title</Label>
             <Input
               id="edit-title"
-              value={form.title}
-              onChange={(e) => setForm((c) => ({ ...c, title: e.target.value }))}
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setTitleEdited(true);
+              }}
+              placeholder={`${MONTHS[monthIndex]} ${year}`}
             />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-start">Period Start</Label>
-              <Input
-                id="edit-start"
-                type="date"
-                value={form.periodStart}
-                onChange={(e) =>
-                  setForm((c) => ({ ...c, periodStart: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-end">Period End</Label>
-              <Input
-                id="edit-end"
-                type="date"
-                value={form.periodEnd}
-                onChange={(e) =>
-                  setForm((c) => ({ ...c, periodEnd: e.target.value }))
-                }
-              />
-            </div>
           </div>
         </div>
 
@@ -311,12 +410,7 @@ function EditTimesheetDialog({
           <Button variant="outline" onClick={onClose} disabled={mutation.isPending}>
             Cancel
           </Button>
-          <Button
-            onClick={() =>
-              mutation.mutate({ id: timesheet.id, ...form })
-            }
-            disabled={mutation.isPending}
-          >
+          <Button onClick={submit} disabled={mutation.isPending}>
             {mutation.isPending ? "Saving…" : "Save Changes"}
           </Button>
         </DialogFooter>

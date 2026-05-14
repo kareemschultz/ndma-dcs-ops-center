@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Search, Plus, Eye, LayoutGrid, Table2, FileDown } from "lucide-react";
+import { Users, Search, Plus, Eye, LayoutGrid, Table2, FileDown, Shield } from "lucide-react";
 import { exportStaffExcel } from "@/utils/excel-export";
 import { toast } from "sonner";
 import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
@@ -19,6 +19,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -56,6 +57,20 @@ const STATUS_COLORS: Record<string, string> = {
   terminated: "bg-muted text-muted-foreground line-through",
 };
 
+const CARD_BORDER: Record<string, string> = {
+  active: "border-l-blue-500",
+  on_leave: "border-l-red-400",
+  inactive: "border-l-border",
+  terminated: "border-l-border",
+};
+
+const COL_HEADER: Record<string, string> = {
+  active: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200",
+  on_leave: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
+  inactive: "bg-muted text-muted-foreground",
+  terminated: "bg-muted text-muted-foreground",
+};
+
 const BOARD_COLUMNS: Array<{
   status: "" | "active" | "inactive" | "on_leave" | "terminated";
   label: string;
@@ -65,6 +80,22 @@ const BOARD_COLUMNS: Array<{
   { status: "inactive", label: "Inactive" },
   { status: "terminated", label: "Terminated" },
 ];
+
+function getInitials(name?: string | null) {
+  if (!name) return "?";
+  return name.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
+}
+
+function StaffAvatar({ name, size = "md" }: { name?: string | null; size?: "sm" | "md" | "lg" }) {
+  const sizes = { sm: "h-7 w-7 text-xs", md: "h-9 w-9 text-sm", lg: "h-12 w-12 text-base" };
+  return (
+    <div
+      className={`flex shrink-0 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 ${sizes[size]}`}
+    >
+      {getInitials(name)}
+    </div>
+  );
+}
 
 function StaffCard({
   staff,
@@ -84,19 +115,21 @@ function StaffCard({
   };
   onOpen: (id: string) => void;
 }) {
+  const borderCls = CARD_BORDER[staff.status] ?? "border-l-border";
   return (
     <button
       type="button"
       onClick={() => onOpen(staff.id)}
-      className="w-full rounded-2xl border bg-background p-4 text-left transition-colors hover:border-primary/50 hover:bg-accent/40"
+      className={`w-full rounded-2xl border border-l-4 bg-background p-4 text-left transition-colors hover:border-primary/50 hover:bg-accent/40 ${borderCls}`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="flex items-start gap-3">
+        <StaffAvatar name={staff.user?.name} />
+        <div className="min-w-0 flex-1">
           <p className="font-medium truncate">{staff.user?.name ?? "—"}</p>
           <p className="text-xs text-muted-foreground truncate">{staff.jobTitle}</p>
         </div>
         <span
-          className={`inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-medium ${
+          className={`inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-medium shrink-0 ${
             STATUS_COLORS[staff.status] ?? "bg-muted text-muted-foreground"
           }`}
         >
@@ -201,6 +234,10 @@ function NewStaffDialog({ onClose }: { onClose: () => void }) {
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
         <DialogTitle>New Staff Member</DialogTitle>
+        <DialogDescription>
+          Create a user account and link a staff profile. The new staff member can sign in
+          with the email and temporary password you set here.
+        </DialogDescription>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4 py-2">
         <div className="grid grid-cols-2 gap-3">
@@ -300,6 +337,18 @@ function StaffPage() {
     return true;
   });
 
+  const stats = useMemo(() => {
+    const all = data ?? [];
+    return {
+      active: all.filter((s) => s.status === "active").length,
+      onLeave: all.filter((s) => s.status === "on_leave").length,
+      onCall: all.filter((s) => s.isOnCallEligible).length,
+      contract: all.filter(
+        (s) => s.employmentType === "contract" || s.employmentType === "temporary",
+      ).length,
+    };
+  }, [data]);
+
   const boardColumns = useMemo(
     () =>
       BOARD_COLUMNS.map((column) => ({
@@ -341,6 +390,40 @@ function StaffPage() {
           </p>
         </div>
 
+        {/* Stats strip */}
+        <div className="mb-4 overflow-hidden rounded-2xl border bg-muted/30">
+          <div className="flex divide-x text-sm">
+            {[
+              { label: "Active", value: stats.active, cls: "" },
+              {
+                label: "On Leave",
+                value: stats.onLeave,
+                cls: stats.onLeave > 0 ? "text-red-600 dark:text-red-400" : "",
+              },
+              {
+                label: "On-Call Eligible",
+                value: stats.onCall,
+                cls: "text-blue-600 dark:text-blue-400",
+              },
+              { label: "Contract / Temp", value: stats.contract, cls: "" },
+              {
+                label: "Total",
+                value: data?.length ?? 0,
+                cls: "text-muted-foreground",
+              },
+            ].map((s) => (
+              <div key={s.label} className="flex flex-1 flex-col px-5 py-3">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  {s.label}
+                </span>
+                <span className={`text-xl font-bold tabular-nums leading-tight ${s.cls}`}>
+                  {s.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Search + Status Filter */}
         <div className="mb-3 flex flex-wrap gap-3">
           <div className="relative">
@@ -353,15 +436,21 @@ function StaffPage() {
             />
           </div>
 
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="rounded-xl border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          <Select
+            value={status === "" ? "_all" : status}
+            onValueChange={(v) => setStatus(!v || v === "_all" ? "" : v)}
           >
-            {STATUS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((o) => (
+                <SelectItem key={o.value || "_all"} value={o.value || "_all"}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           <div className="inline-flex rounded-xl border bg-background p-0.5">
             <button
@@ -436,9 +525,13 @@ function StaffPage() {
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 {boardColumns.map((column) => (
                   <div key={column.status} className="rounded-2xl border bg-muted/20 p-3">
-                    <div className="mb-3 flex items-center justify-between">
+                    <div
+                      className={`mb-3 flex items-center justify-between rounded-lg px-3 py-2 ${
+                        COL_HEADER[column.status] ?? "bg-background text-foreground"
+                      }`}
+                    >
                       <h3 className="text-sm font-semibold">{column.label}</h3>
-                      <span className="rounded-full bg-background px-2 py-0.5 text-xs text-muted-foreground">
+                      <span className="rounded-full bg-white/40 px-2 py-0.5 text-xs font-bold tabular-nums dark:bg-black/20">
                         {column.staff.length}
                       </span>
                     </div>
@@ -493,16 +586,23 @@ function StaffPage() {
                   filtered.map((s) => (
                     <TableRow key={s.id}>
                       <TableCell>
-                        <Link
-                          to="/staff/$staffId"
-                          params={{ staffId: s.id }}
-                          className="font-medium hover:underline"
-                        >
-                          {s.user?.name ?? "—"}
-                        </Link>
-                        {s.isTeamLead && (
-                          <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">Lead</span>
-                        )}
+                        <div className="flex items-center gap-2.5">
+                          <StaffAvatar name={s.user?.name} size="sm" />
+                          <div className="min-w-0">
+                            <Link
+                              to="/staff/$staffId"
+                              params={{ staffId: s.id }}
+                              className="font-medium hover:underline"
+                            >
+                              {s.user?.name ?? "—"}
+                            </Link>
+                            {s.isTeamLead && (
+                              <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">
+                                Lead
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell className="font-mono text-muted-foreground text-xs">
                         {s.employeeId}
@@ -526,9 +626,11 @@ function StaffPage() {
                       </TableCell>
                       <TableCell>
                         {s.isOnCallEligible ? (
-                          <span className="text-blue-600 text-xs">Yes</span>
+                          <span className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                            <Shield className="size-3" /> Eligible
+                          </span>
                         ) : (
-                          <span className="text-muted-foreground text-xs">No</span>
+                          <span className="text-muted-foreground text-xs">—</span>
                         )}
                       </TableCell>
                       <TableCell>

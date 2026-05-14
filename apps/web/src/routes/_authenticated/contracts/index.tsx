@@ -17,6 +17,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -105,15 +106,104 @@ function daysUntilEnd(endDate: string | null): number | null {
   return differenceInDays(parseISO(endDate), new Date());
 }
 
-function DaysUntilBadge({ endDate }: { endDate: string | null }) {
-  const days = daysUntilEnd(endDate);
-  if (days === null) return <span className="text-muted-foreground text-xs">—</span>;
-  if (days < 0) return <span className="text-xs font-medium text-red-600">Expired</span>;
-  if (days < 30)
-    return <span className="text-xs font-medium text-red-600">{days}d</span>;
-  if (days <= 60)
-    return <span className="text-xs font-medium text-amber-600">{days}d</span>;
-  return <span className="text-xs text-muted-foreground">{days}d</span>;
+function DaysBadge({ days }: { days: number | null }) {
+  if (days == null) return <span className="text-muted-foreground text-xs">—</span>;
+  if (days < 0)
+    return (
+      <span className="inline-flex items-center gap-1 rounded-md bg-red-600 px-2 py-0.5 text-xs font-bold text-white">
+        <AlertCircle className="size-3" /> Expired {Math.abs(days)}d ago
+      </span>
+    );
+  const cls =
+    days <= 30
+      ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 font-bold"
+      : days <= 60
+        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 font-semibold"
+        : days <= 90
+          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+          : "text-muted-foreground";
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs tabular-nums ${cls}`}
+    >
+      {days <= 30 && <AlertCircle className="size-3" />}
+      {days}d
+    </span>
+  );
+}
+
+type ExpiringContract = {
+  id: string;
+  endDate: string | null;
+  contractType: string;
+  staffProfile?: { user?: { name?: string | null } | null } | null;
+};
+
+function ExpiringSoonSection({ contracts }: { contracts: ExpiringContract[] }) {
+  const today = new Date();
+  const tiers: Array<{ label: string; min: number; max: number; cls: string }> = [
+    {
+      label: "Critical — ≤30 days",
+      min: -Infinity,
+      max: 30,
+      cls: "border-red-200 bg-red-50/60 dark:border-red-900 dark:bg-red-950/20",
+    },
+    {
+      label: "Soon — 31–60 days",
+      min: 31,
+      max: 60,
+      cls: "border-amber-200 bg-amber-50/60 dark:border-amber-900 dark:bg-amber-950/20",
+    },
+    {
+      label: "Upcoming — 61–90 days",
+      min: 61,
+      max: 90,
+      cls: "border-blue-200 bg-blue-50/40 dark:border-blue-900 dark:bg-blue-950/10",
+    },
+  ];
+
+  return (
+    <div className="space-y-3">
+      {tiers.map((tier) => {
+        const items = contracts.filter((c) => {
+          if (!c.endDate) return false;
+          const d = differenceInDays(parseISO(c.endDate), today);
+          return d >= tier.min && d <= tier.max;
+        });
+        if (items.length === 0) return null;
+        return (
+          <div key={tier.label} className={`rounded-xl border p-4 ${tier.cls}`}>
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold">
+              {tier.max <= 30 && <AlertCircle className="size-4 text-red-500" />}
+              {tier.label}
+              <span className="ml-auto rounded-full bg-white/60 px-2 py-0.5 text-xs dark:bg-black/20">
+                {items.length}
+              </span>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {items.map((c) => {
+                const d = c.endDate ? differenceInDays(parseISO(c.endDate), today) : null;
+                return (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between gap-2 rounded-lg border bg-background px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium">
+                        {c.staffProfile?.user?.name ?? "—"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{c.contractType}</div>
+                    </div>
+                    <DaysBadge days={d} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function RenewalStatusSelect({
@@ -198,6 +288,9 @@ function CreateContractDialog({ onClose }: { onClose: () => void }) {
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
         <DialogTitle>Create Contract</DialogTitle>
+        <DialogDescription>
+          Add a new employment contract for an existing staff member.
+        </DialogDescription>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4 py-2">
         <div className="space-y-1.5">
@@ -303,6 +396,9 @@ function EditContractDialog({
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
         <DialogTitle>Edit Contract</DialogTitle>
+        <DialogDescription>
+          Update contract details. Staff member assignment cannot be changed.
+        </DialogDescription>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4 py-2">
         <div className="space-y-1.5">
@@ -382,15 +478,25 @@ function ContractsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [editingContract, setEditingContract] = useState<ContractRecord | null>(null);
 
-  const { data, isLoading } = useQuery(
+  const { data: allData, isLoading } = useQuery(
     orpc.contracts.list.queryOptions({
-      input: { status: status || undefined, limit: 100, offset: 0 },
-    })
+      input: { limit: 200, offset: 0 },
+    }),
   );
 
   const { data: expiring } = useQuery(
-    orpc.contracts.getExpiringSoon.queryOptions({ input: { withinDays: 60 } })
+    orpc.contracts.getExpiringSoon.queryOptions({ input: { withinDays: 90 } }),
   );
+
+  const all = allData ?? [];
+  const data = status ? all.filter((c) => c.status === status) : all;
+
+  const stats = {
+    active: all.filter((c) => c.status === "active").length,
+    expiring: expiring?.length ?? 0,
+    expired: all.filter((c) => c.status === "expired").length,
+    terminated: all.filter((c) => c.status === "terminated").length,
+  };
 
   return (
     <>
@@ -427,27 +533,70 @@ function ContractsPage() {
           </Button>
         </div>
 
-        {expiring && expiring.length > 0 && (
-          <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-700 dark:text-amber-300">
-            <AlertCircle className="size-4 shrink-0" />
-            <strong>{expiring.length}</strong> contract{expiring.length > 1 ? "s" : ""} expiring
-            within 60 days — renewal action required.
+        {/* Stats strip */}
+        <div className="mb-6 overflow-hidden rounded-2xl border bg-muted/30">
+          <div className="flex divide-x text-sm">
+            {[
+              {
+                label: "Active",
+                value: stats.active,
+                cls: "text-blue-600 dark:text-blue-400",
+              },
+              {
+                label: "Expiring ≤90 days",
+                value: stats.expiring,
+                cls: stats.expiring > 0 ? "text-amber-600 dark:text-amber-400" : "",
+              },
+              {
+                label: "Expired",
+                value: stats.expired,
+                cls: stats.expired > 0 ? "text-red-600 dark:text-red-400" : "",
+              },
+              {
+                label: "Terminated",
+                value: stats.terminated,
+                cls: "text-muted-foreground",
+              },
+            ].map((s) => (
+              <div key={s.label} className="flex flex-1 flex-col px-5 py-3">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  {s.label}
+                </span>
+                <span className={`text-xl font-bold tabular-nums leading-tight ${s.cls}`}>
+                  {s.value}
+                </span>
+              </div>
+            ))}
           </div>
+        </div>
+
+        {/* Expiring soon — tiered urgency */}
+        {expiring && expiring.length > 0 && (
+          <section className="mb-6">
+            <h2 className="mb-3 text-base font-semibold">Expiring Soon</h2>
+            <ExpiringSoonSection contracts={expiring as ExpiringContract[]} />
+          </section>
         )}
 
         <div className="mb-4 flex flex-wrap gap-3">
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as ContractStatus | "")}
-            className="rounded-xl border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          <Select
+            value={status === "" ? "_all" : status}
+            onValueChange={(v) =>
+              setStatus(!v || v === "_all" ? "" : (v as ContractStatus))
+            }
           >
-            <option value="">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="expiring_soon">Expiring Soon</option>
-            <option value="expired">Expired</option>
-            <option value="renewed">Renewed</option>
-            <option value="terminated">Terminated</option>
-          </select>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Statuses" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all">All Statuses</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="expiring_soon">Expiring Soon</SelectItem>
+              <SelectItem value="expired">Expired</SelectItem>
+              <SelectItem value="renewed">Renewed</SelectItem>
+              <SelectItem value="terminated">Terminated</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="rounded-xl border overflow-x-auto">
@@ -503,7 +652,7 @@ function ContractsPage() {
                           : "Open-ended"}
                       </TableCell>
                       <TableCell>
-                        <DaysUntilBadge endDate={contract.endDate} />
+                        <DaysBadge days={daysUntilEnd(contract.endDate)} />
                       </TableCell>
                       <TableCell>
                         <span
