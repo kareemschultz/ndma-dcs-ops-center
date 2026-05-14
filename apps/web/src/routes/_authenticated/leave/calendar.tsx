@@ -24,6 +24,7 @@ import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@ndma-dcs-staff-portal/ui/components/card";
 import { Header } from "@/components/layout/header";
+import { LeaveSubNav } from "@/components/layout/leave-sub-nav";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { useTeamFilter } from "@/lib/team-filter";
@@ -194,6 +195,8 @@ function LeaveCalendarPage() {
           <ThemeSwitch />
         </div>
       </Header>
+
+      <LeaveSubNav />
 
       <Main>
         <div className="mb-6 flex items-center justify-between flex-wrap gap-2">

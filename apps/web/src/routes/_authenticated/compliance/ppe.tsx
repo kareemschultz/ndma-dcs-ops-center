@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@ndma-dcs-staff-portal/ui/components/table";
 
+import { ComplianceSubNav } from "@/components/layout/compliance-sub-nav";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -164,6 +165,8 @@ function PPEMatrixPage() {
           <ThemeSwitch />
         </div>
       </Header>
+
+      <ComplianceSubNav />
 
       <Main>
         <p className="mb-4 text-sm text-muted-foreground">

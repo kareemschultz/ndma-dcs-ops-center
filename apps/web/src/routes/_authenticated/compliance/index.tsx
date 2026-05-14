@@ -17,6 +17,7 @@ import { AlertCircle, BookOpen, CheckCircle2, HardHat, Shield } from "lucide-rea
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@ndma-dcs-staff-portal/ui/components/card";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
+import { ComplianceSubNav } from "@/components/layout/compliance-sub-nav";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -158,6 +159,8 @@ function ComplianceHubPage() {
         </div>
         <div className="ms-auto flex items-center gap-2"><ThemeSwitch /></div>
       </Header>
+
+      <ComplianceSubNav />
 
       <Main className="space-y-6">
         {/* Header + overall score */}

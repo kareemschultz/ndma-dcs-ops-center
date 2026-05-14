@@ -142,64 +142,28 @@ function AdvancesPage() {
           onTabChange={(v) => setTab(v as "all" | AdvanceStatus)}
         />
 
-        {/* KPI strip */}
+        {/* KPI strip — prototype shape: label top-left, icon top-right, value below */}
         <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Card>
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="rounded-md bg-primary/10 p-2 text-primary">
-                <CreditCard className="size-5" />
-              </div>
-              <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Total requests
+          {[
+            { label: "Total requests", value: stats?.total ?? 0, Icon: CreditCard, tone: "" },
+            { label: "Pending clearance", value: stats?.pending ?? 0, Icon: Clock, tone: "text-amber-700 dark:text-amber-400" },
+            { label: "Total disbursed", value: fmtMoney(stats?.totalDisbursed ?? 0), Icon: Banknote, tone: "" },
+            { label: "Cleared", value: stats?.cleared ?? 0, Icon: CheckCircle2, tone: "" },
+          ].map((kpi) => (
+            <Card key={kpi.label}>
+              <CardContent className="p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-[10.5px] uppercase tracking-wider text-muted-foreground">
+                    {kpi.label}
+                  </span>
+                  <kpi.Icon className="size-3.5 text-muted-foreground" />
                 </div>
-                <div className="text-xl font-bold tabular-nums">{stats?.total ?? 0}</div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="rounded-md bg-amber-100 p-2 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                <Clock className="size-5" />
-              </div>
-              <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Pending clearance
+                <div className={`mt-1 text-[22px] font-semibold tabular-nums ${kpi.tone}`}>
+                  {kpi.value}
                 </div>
-                <div className="text-xl font-bold tabular-nums text-amber-700 dark:text-amber-400">
-                  {stats?.pending ?? 0}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="rounded-md bg-blue-100 p-2 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                <Banknote className="size-5" />
-              </div>
-              <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Total disbursed
-                </div>
-                <div className="text-base font-bold tabular-nums">
-                  {fmtMoney(stats?.totalDisbursed ?? 0)}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="rounded-md bg-blue-100 p-2 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                <CheckCircle2 className="size-5" />
-              </div>
-              <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground">
-                  Cleared
-                </div>
-                <div className="text-xl font-bold tabular-nums">{stats?.cleared ?? 0}</div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Table */}

@@ -30,6 +30,7 @@ import {
 } from "@ndma-dcs-staff-portal/ui/components/table";
 import { Header } from "@/components/layout/header";
 import { LeaveViolationsBadge } from "@/components/leave-violations-badge";
+import { LeaveSubNav } from "@/components/layout/leave-sub-nav";
 import { Main } from "@/components/layout/main";
 import { PageHeader } from "@/components/layout/page-header";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -178,6 +179,8 @@ function LeavePage() {
           <ThemeSwitch />
         </div>
       </Header>
+
+      <LeaveSubNav />
 
       <Main className="space-y-6">
         <PageHeader
