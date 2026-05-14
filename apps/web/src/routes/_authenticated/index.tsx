@@ -434,7 +434,7 @@ function DashboardPage() {
             <PanelCard title="Your day" subtitle={todayDisplay}>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
-                  <div className="h-9 w-9 rounded-md bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center shrink-0">
+                  <div className="h-9 w-9 rounded-md bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 flex items-center justify-center shrink-0">
                     <Sun className="size-4" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -452,7 +452,7 @@ function DashboardPage() {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="h-9 w-9 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+                  <div className="h-9 w-9 rounded-md bg-gold-50 dark:bg-gold-950/40 text-gold-700 dark:text-gold-300 flex items-center justify-center shrink-0">
                     <AlertTriangle className="size-4" />
                   </div>
                   <div className="min-w-0 flex-1">
