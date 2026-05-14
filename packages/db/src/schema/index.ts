@@ -63,3 +63,5 @@ export * from "./appraisal-tracker-view";
 export * from "./noc-performance-journal";
 // Post-Phase-16 feature work — advance requests (NDMA cash-advance workflow)
 export * from "./advance-requests";
+// Post-Phase-16 — daily roll-call attendance (10-status per NDMA HR spec)
+export * from "./daily-attendance";

@@ -66,6 +66,8 @@ import {
 import { nocPerformanceJournalRouter } from "./noc-performance-journal";
 // Post-Phase-16 — NDMA advance request workflow
 import { advancesRouter } from "./advances";
+// Post-Phase-16 — daily roll-call attendance register (10-status)
+import { attendanceDailyRouter } from "./attendance-daily";
 
 const healthCheck = publicProcedure.handler(() => "OK");
 const privateData = protectedProcedure.handler(({ context }) => ({
@@ -134,6 +136,8 @@ export type AppRouter = {
   nocPerformanceJournal: typeof nocPerformanceJournalRouter;
   // Post-Phase-16 — NDMA advance requests
   advances: typeof advancesRouter;
+  // Post-Phase-16 — daily roll-call attendance
+  attendanceDaily: typeof attendanceDailyRouter;
 };
 
 export const appRouter: AppRouter = {
@@ -197,6 +201,8 @@ export const appRouter: AppRouter = {
   nocPerformanceJournal: nocPerformanceJournalRouter,
   // Post-Phase-16 — NDMA advance requests
   advances: advancesRouter,
+  // Post-Phase-16 — daily roll-call attendance
+  attendanceDaily: attendanceDailyRouter,
 };
 
 export type AppRouterClient = RouterClient<AppRouter>;
