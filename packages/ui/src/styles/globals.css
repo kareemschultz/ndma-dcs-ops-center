@@ -218,13 +218,13 @@
   color: oklch(0.78 0.13 240);
 }
 
-/* Group labels — slightly bolder + uppercase tracking per prototype */
+/* Group labels — uppercase tracking-wider per prototype */
 [data-sidebar="group-label"] {
-  font-size: 10.5px !important;
+  font-size: 11px !important;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   font-weight: 600;
-  color: var(--color-ink-400);
+  color: var(--color-ink-500);
 }
 
 /* ── Print / PDF Export ──────────────────────────────────────────────────── */

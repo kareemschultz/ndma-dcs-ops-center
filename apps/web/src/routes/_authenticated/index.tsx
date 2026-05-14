@@ -72,8 +72,8 @@ function StatusChip({ status }: { status: string }) {
     detected: "bg-muted text-muted-foreground",
     investigating: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
     identified: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
-    mitigating: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200",
-    resolved: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200",
+    mitigating: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-brand-200",
+    resolved: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-brand-200",
   };
   const cls = map[status] ?? "bg-muted text-muted-foreground";
   return (
@@ -185,7 +185,7 @@ function HeroKpi({
       onClick={onClick}
       className="text-left rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 backdrop-blur p-3.5 transition-colors"
     >
-      <div className="text-[10.5px] uppercase tracking-wider text-blue-200 font-medium">
+      <div className="text-[10.5px] uppercase tracking-wider text-brand-200 font-medium">
         {label}
       </div>
       {loading ? (
@@ -195,7 +195,7 @@ function HeroKpi({
           {value ?? 0}
         </div>
       )}
-      <div className="tabular-nums text-[11.5px] text-blue-200 mt-0.5">{sub}</div>
+      <div className="tabular-nums text-[11.5px] text-brand-200 mt-0.5">{sub}</div>
     </button>
   );
 }
@@ -315,7 +315,7 @@ function DashboardPage() {
 
       <Main className="p-0 max-w-none @7xl/content:max-w-none">
         {/* ── Hero strip ── */}
-        <section className="relative overflow-hidden border-b bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950 text-white">
+        <section className="relative overflow-hidden border-b bg-gradient-to-br from-brand-800 via-brand-700 to-brand-900 text-white">
           {/* Grid overlay */}
           <div
             className="absolute inset-0 opacity-60"
@@ -326,15 +326,15 @@ function DashboardPage() {
             }}
           />
           {/* Ambient glow */}
-          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-amber-400/20 blur-3xl" />
+          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gold-400/20 blur-3xl" />
           <div className="relative px-6 py-7">
             <div className="flex items-start justify-between gap-6 flex-wrap">
               <div className="min-w-0">
                 {/* Live indicator */}
-                <div className="flex items-center gap-2 text-[11.5px] uppercase tracking-widest text-blue-200 font-medium">
+                <div className="flex items-center gap-2 text-[11.5px] uppercase tracking-widest text-brand-200 font-medium">
                   <span className="relative inline-flex">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                    <span className="absolute inset-0 h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping opacity-75" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-gold-400" />
+                    <span className="absolute inset-0 h-1.5 w-1.5 rounded-full bg-gold-400 animate-ping opacity-75" />
                   </span>
                   <span>
                     Live operations · {todayDisplay} · {format(new Date(), "HH:mm")} AST
@@ -345,7 +345,7 @@ function DashboardPage() {
                   {getGreeting()}, {firstName(userName)}.
                 </h1>
                 {/* Shift context */}
-                <p className="mt-1 text-[14px] text-blue-100 max-w-xl">
+                <p className="mt-1 text-[14px] text-brand-100 max-w-xl">
                   {currentWeek ? (
                     <>
                       On-call schedule is set for W{currentWeekNum}.{" "}
@@ -379,7 +379,7 @@ function DashboardPage() {
                 </Button>
                 <Button
                   size="sm"
-                  className="bg-amber-500 hover:bg-amber-400 text-stone-900 font-medium border-0"
+                  className="bg-gold-500 hover:bg-gold-400 text-stone-900 font-medium border-0"
                   onClick={() => navigate({ to: "/incidents" })}
                 >
                   <Zap className="size-3.5" />
@@ -445,7 +445,7 @@ function DashboardPage() {
                         : "No schedule this week"}
                     </div>
                   </div>
-                  <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">
+                  <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-brand-200">
                     <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
                     Active
                   </span>
@@ -680,7 +680,7 @@ function DashboardPage() {
                         <div className="text-[11px] text-muted-foreground">{r.label}</div>
                       </div>
                       {r.label === "Lead" && (
-                        <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium bg-blue-50 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">
+                        <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium bg-blue-50 text-blue-800 dark:bg-blue-900/40 dark:text-brand-200">
                           <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
                           Lead
                         </span>
@@ -747,7 +747,7 @@ function DashboardPage() {
             >
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { label: "Day 07–19",  count: nocOnDay,   cls: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200" },
+                  { label: "Day 07–19",  count: nocOnDay,   cls: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-brand-200" },
                   { label: "Night 19–07",count: nocOnNight, cls: "bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200" },
                   { label: "On leave",   count: todayNocShifts.filter((s) => ["Annual Leave", "Sick Leave", "Maternity Leave"].includes(s.shiftType)).length, cls: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200" },
                   { label: "Off",        count: todayNocShifts.filter((s) => s.shiftType === "Off").length, cls: "bg-muted text-muted-foreground" },

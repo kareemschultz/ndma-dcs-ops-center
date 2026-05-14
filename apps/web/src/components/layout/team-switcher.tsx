@@ -41,7 +41,7 @@ export function TeamSwitcher({ teams }: TeamSwitcherProps) {
             render={
               <SidebarMenuButton
                 size="lg"
-                className="bg-gradient-to-r from-brand-800 to-brand-700 text-white hover:from-brand-700 hover:to-brand-600 hover:text-white data-[popup-open]:from-brand-700 data-[popup-open]:to-brand-600 data-[popup-open]:text-white group-data-[collapsible=icon]:!bg-gradient-to-r group-data-[collapsible=icon]:!from-brand-800 group-data-[collapsible=icon]:!to-brand-700"
+                className="bg-gradient-to-br from-brand-800 via-brand-700 to-brand-900 text-white hover:text-white data-[popup-open]:text-white group-data-[collapsible=icon]:!bg-gradient-to-br group-data-[collapsible=icon]:!from-brand-800 group-data-[collapsible=icon]:!to-brand-900"
               />
             }
           >
