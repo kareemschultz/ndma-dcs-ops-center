@@ -83,7 +83,48 @@
 }
 
 @theme inline {
-  --font-sans: "Inter Variable", sans-serif;
+  /* Font — Geist per design handoff §3 (loaded via Google Fonts in index.html) */
+  --font-sans: "Geist", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+
+  /* "ink" warm-neutral scale per design handoff §2 — DO NOT use slate/zinc */
+  --color-ink-50: #fafaf9;
+  --color-ink-100: #f5f5f4;
+  --color-ink-150: #eeedec;
+  --color-ink-200: #e7e5e4;
+  --color-ink-300: #d6d3d1;
+  --color-ink-400: #a8a29e;
+  --color-ink-500: #78716c;
+  --color-ink-600: #57534e;
+  --color-ink-700: #44403c;
+  --color-ink-800: #292524;
+  --color-ink-900: #1c1917;
+  --color-ink-950: #0e0c0b;
+
+  /* "gold" amber-accent scale per design handoff §2 (warnings, pending) */
+  --color-gold-50: #fffbeb;
+  --color-gold-100: #fef3c7;
+  --color-gold-200: #fde68a;
+  --color-gold-300: #fcd34d;
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #f59e0b;
+  --color-gold-600: #d97706;
+  --color-gold-700: #b45309;
+  --color-gold-800: #92400e;
+
+  /* "brand" shorthand aliases mapping to NDMA blue primary */
+  --color-brand-50: oklch(0.97 0.025 240);
+  --color-brand-100: oklch(0.93 0.05 240);
+  --color-brand-200: oklch(0.86 0.085 240);
+  --color-brand-300: oklch(0.75 0.13 240);
+  --color-brand-400: oklch(0.64 0.155 240);
+  --color-brand-500: oklch(0.55 0.16 240);
+  --color-brand-600: oklch(0.5 0.16 240);
+  --color-brand-700: oklch(0.45 0.15 240);
+  --color-brand-800: oklch(0.35 0.13 240);
+  --color-brand-900: oklch(0.27 0.1 240);
+  --color-brand-950: oklch(0.2 0.08 240);
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -130,10 +171,60 @@
   }
   body {
     @apply font-sans bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01", "ss03";
+    -webkit-font-smoothing: antialiased;
   }
   html {
     @apply font-sans;
   }
+}
+
+/* ── Sidebar: brand-accent active items per design handoff sidebar.jsx ──── */
+/* Stronger active state: tinted background + left border accent in brand blue */
+[data-sidebar="menu-button"][data-active="true"],
+[data-sidebar="menu-sub-button"][data-active="true"] {
+  position: relative;
+  background-color: var(--color-brand-50);
+  color: var(--color-brand-900);
+  font-weight: 500;
+}
+.dark [data-sidebar="menu-button"][data-active="true"],
+.dark [data-sidebar="menu-sub-button"][data-active="true"] {
+  background-color: oklch(0.27 0.1 240 / 0.3);
+  color: oklch(0.92 0.04 240);
+}
+[data-sidebar="menu-button"][data-active="true"]::before,
+[data-sidebar="menu-sub-button"][data-active="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-top-right-radius: 2px;
+  border-bottom-right-radius: 2px;
+  background-color: var(--color-brand-700);
+}
+.dark [data-sidebar="menu-button"][data-active="true"]::before,
+.dark [data-sidebar="menu-sub-button"][data-active="true"]::before {
+  background-color: oklch(0.7 0.16 240);
+}
+[data-sidebar="menu-button"][data-active="true"] svg,
+[data-sidebar="menu-sub-button"][data-active="true"] svg {
+  color: var(--color-brand-700);
+}
+.dark [data-sidebar="menu-button"][data-active="true"] svg,
+.dark [data-sidebar="menu-sub-button"][data-active="true"] svg {
+  color: oklch(0.78 0.13 240);
+}
+
+/* Group labels — slightly bolder + uppercase tracking per prototype */
+[data-sidebar="group-label"] {
+  font-size: 10.5px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  color: var(--color-ink-400);
 }
 
 /* ── Print / PDF Export ──────────────────────────────────────────────────── */

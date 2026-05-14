@@ -41,18 +41,20 @@ export function TeamSwitcher({ teams }: TeamSwitcherProps) {
             render={
               <SidebarMenuButton
                 size="lg"
-                className="data-[popup-open]:bg-sidebar-accent data-[popup-open]:text-sidebar-accent-foreground"
+                className="bg-gradient-to-r from-brand-800 to-brand-700 text-white hover:from-brand-700 hover:to-brand-600 hover:text-white data-[popup-open]:from-brand-700 data-[popup-open]:to-brand-600 data-[popup-open]:text-white group-data-[collapsible=icon]:!bg-gradient-to-r group-data-[collapsible=icon]:!from-brand-800 group-data-[collapsible=icon]:!to-brand-700"
               />
             }
           >
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-white/20 text-white backdrop-blur">
               <activeTeam.logo className="size-4" />
             </div>
             <div className="grid flex-1 text-start text-sm leading-tight">
-              <span className="truncate font-semibold">{activeTeam.name}</span>
-              <span className="truncate text-xs">{activeTeam.plan}</span>
+              <span className="truncate font-semibold text-white">{activeTeam.name}</span>
+              <span className="truncate text-[10.5px] uppercase tracking-wider text-white/70">
+                {activeTeam.plan}
+              </span>
             </div>
-            <ChevronsUpDown className="ms-auto" />
+            <ChevronsUpDown className="ms-auto text-white/70" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-(--available-width) min-w-56 rounded-lg"
