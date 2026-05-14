@@ -18,7 +18,11 @@ export default defineConfig({
   },
   server: {
     port: 3001,
-    host: "0.0.0.0", // allow access from 10.6.104.x network
+    host: "0.0.0.0",
+    proxy: {
+      "/rpc": { target: "http://localhost:3000", changeOrigin: true },
+      "/api": { target: "http://localhost:3000", changeOrigin: true },
+    },
   },
   build: {
     rollupOptions: {
