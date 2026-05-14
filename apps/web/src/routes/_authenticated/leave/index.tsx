@@ -31,6 +31,7 @@ import {
 import { Header } from "@/components/layout/header";
 import { LeaveViolationsBadge } from "@/components/leave-violations-badge";
 import { Main } from "@/components/layout/main";
+import { PageHeader } from "@/components/layout/page-header";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { useTeamFilter } from "@/lib/team-filter";
 import {
@@ -174,36 +175,41 @@ function LeavePage() {
           <span className="text-sm font-medium">Leave Management</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportLeaveExcel(data ?? [], `Leave_Requests_${new Date().toISOString().slice(0, 10)}.xlsx`)}
-            disabled={!data?.length}
-          >
-            <FileDown className="mr-1 size-4" />
-            Export Excel
-          </Button>
           <ThemeSwitch />
-          {/* [FIX] useNavigate instead of <Link><Button> (Button has no asChild in Base UI) */}
-          <Button size="sm" onClick={() => navigate({ to: "/leave/new" })}>
-            <Plus className="mr-1 size-4" />Request Leave
-          </Button>
         </div>
       </Header>
 
       <Main className="space-y-6">
-        {/* Page heading + stats */}
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Leave Management</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Submit and manage team leave requests.</p>
-          </div>
-          {pendingCount > 0 && (
+        <PageHeader
+          eyebrow="People"
+          title="Leave"
+          description="Submit and manage team leave requests."
+          actions={
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportLeaveExcel(data ?? [], `Leave_Requests_${new Date().toISOString().slice(0, 10)}.xlsx`)}
+                disabled={!data?.length}
+              >
+                <FileDown className="mr-1 size-4" />
+                Export Excel
+              </Button>
+              {/* [FIX] useNavigate instead of <Link><Button> (Button has no asChild in Base UI) */}
+              <Button size="sm" onClick={() => navigate({ to: "/leave/new" })}>
+                <Plus className="mr-1 size-4" />Request Leave
+              </Button>
+            </>
+          }
+        />
+
+        {pendingCount > 0 && (
+          <div className="flex justify-end">
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-100 px-3 py-1.5 text-sm font-medium text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
               {pendingCount} request{pendingCount > 1 ? "s" : ""} pending approval
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Leave balances — horizontal bars */}
         {currentStaff && balanceRows.length > 0 && (

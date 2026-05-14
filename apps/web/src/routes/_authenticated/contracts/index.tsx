@@ -34,6 +34,7 @@ import {
 } from "@ndma-dcs-staff-portal/ui/components/select";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { PageHeader } from "@/components/layout/page-header";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
 
@@ -506,32 +507,33 @@ function ContractsPage() {
           <span className="text-sm font-medium">Contracts</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportContractsExcel(data ?? [], `Contracts_${new Date().toISOString().slice(0, 10)}.xlsx`)}
-            disabled={!data?.length}
-          >
-            <FileDown className="size-4 mr-1.5" />
-            Export Excel
-          </Button>
           <ThemeSwitch />
         </div>
       </Header>
 
       <Main>
-        <div className="mb-6 flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Staff Contracts</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Employment contract register with renewal tracking.
-            </p>
-          </div>
-          <Button onClick={() => setShowCreate(true)}>
-            <Plus className="size-4 mr-2" />
-            Create Contract
-          </Button>
-        </div>
+        <PageHeader
+          eyebrow="People"
+          title="Staff Contracts"
+          description="Employment contract register with renewal tracking."
+          actions={
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportContractsExcel(data ?? [], `Contracts_${new Date().toISOString().slice(0, 10)}.xlsx`)}
+                disabled={!data?.length}
+              >
+                <FileDown className="size-4 mr-1.5" />
+                Export Excel
+              </Button>
+              <Button size="sm" onClick={() => setShowCreate(true)}>
+                <Plus className="size-4 mr-1.5" />
+                Create Contract
+              </Button>
+            </>
+          }
+        />
 
         {/* Stats strip */}
         <div className="mb-6 overflow-hidden rounded-2xl border bg-muted/30">

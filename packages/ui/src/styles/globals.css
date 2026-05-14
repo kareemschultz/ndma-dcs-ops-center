@@ -87,20 +87,6 @@
   --font-sans: "Geist", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
 
-  /* "ink" warm-neutral scale per design handoff §2 — DO NOT use slate/zinc */
-  --color-ink-50: #fafaf9;
-  --color-ink-100: #f5f5f4;
-  --color-ink-150: #eeedec;
-  --color-ink-200: #e7e5e4;
-  --color-ink-300: #d6d3d1;
-  --color-ink-400: #a8a29e;
-  --color-ink-500: #78716c;
-  --color-ink-600: #57534e;
-  --color-ink-700: #44403c;
-  --color-ink-800: #292524;
-  --color-ink-900: #1c1917;
-  --color-ink-950: #0e0c0b;
-
   /* "gold" amber-accent scale per design handoff §2 (warnings, pending) */
   --color-gold-50: #fffbeb;
   --color-gold-100: #fef3c7;
@@ -111,6 +97,7 @@
   --color-gold-600: #d97706;
   --color-gold-700: #b45309;
   --color-gold-800: #92400e;
+  --color-gold-950: #451a03;
 
   /* "brand" shorthand aliases mapping to NDMA blue primary */
   --color-brand-50: oklch(0.97 0.025 240);
@@ -163,6 +150,20 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+
+  /* Ink — warm neutral scale (NDMA design handoff §2) */
+  --color-ink-50: #fafaf9;
+  --color-ink-100: #f5f5f4;
+  --color-ink-150: #eeedec;
+  --color-ink-200: #e7e5e4;
+  --color-ink-300: #d6d3d1;
+  --color-ink-400: #a8a29e;
+  --color-ink-500: #78716c;
+  --color-ink-600: #57534e;
+  --color-ink-700: #44403c;
+  --color-ink-800: #292524;
+  --color-ink-900: #1c1917;
+  --color-ink-950: #0e0c0b;
 }
 
 @layer base {
@@ -180,7 +181,6 @@
 }
 
 /* ── Sidebar: brand-accent active items per design handoff sidebar.jsx ──── */
-/* Stronger active state: tinted background + left border accent in brand blue */
 [data-sidebar="menu-button"][data-active="true"],
 [data-sidebar="menu-sub-button"][data-active="true"] {
   position: relative;
@@ -218,7 +218,6 @@
   color: oklch(0.78 0.13 240);
 }
 
-/* Group labels — uppercase tracking-wider per prototype */
 [data-sidebar="group-label"] {
   font-size: 11px !important;
   text-transform: uppercase;

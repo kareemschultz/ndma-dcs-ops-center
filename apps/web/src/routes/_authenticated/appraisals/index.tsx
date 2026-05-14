@@ -46,6 +46,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { PageHeader } from "@/components/layout/page-header";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { chartTheme } from "@/lib/chart-theme";
 import { useTeamFilter } from "@/lib/team-filter";
@@ -731,43 +732,45 @@ function AppraisalsPage() {
           <span className="text-sm font-medium">Appraisals</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate({ to: "/appraisals/inbox" })}>
-            <Inbox className="mr-1.5 size-3.5" />
-            Inbox
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportAppraisalsExcel(appraisals ?? [], `Appraisals_${new Date().toISOString().slice(0, 10)}.xlsx`)}
-            disabled={!appraisals?.length}
-          >
-            <FileDown className="mr-1.5 size-3.5" />
-            Export Excel
-          </Button>
-          <Button size="sm" onClick={() => setShowCreate(true)}>
-            <Plus className="mr-1.5 size-3.5" />
-            New Appraisal
-          </Button>
           <ThemeSwitch />
         </div>
       </Header>
 
       <Main className="space-y-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Appraisals</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Browse appraisal history by team, then open a staff detail view for the full evaluation trail.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
-                Manager: {session?.user?.name ?? REVIEW_CHAIN.manager}
-              </Badge>
-              <Badge variant="outline" className="border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300">
-                PA: {REVIEW_CHAIN.pa}
-              </Badge>
-            </div>
-          </div>
+        <PageHeader
+          eyebrow="Performance"
+          title="Appraisals"
+          description="Browse appraisal history by team, then open a staff detail view for the full evaluation trail."
+          actions={
+            <>
+              <Button variant="outline" size="sm" onClick={() => navigate({ to: "/appraisals/inbox" })}>
+                <Inbox className="mr-1.5 size-3.5" />
+                Inbox
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportAppraisalsExcel(appraisals ?? [], `Appraisals_${new Date().toISOString().slice(0, 10)}.xlsx`)}
+                disabled={!appraisals?.length}
+              >
+                <FileDown className="mr-1.5 size-3.5" />
+                Export Excel
+              </Button>
+              <Button size="sm" onClick={() => setShowCreate(true)}>
+                <Plus className="mr-1.5 size-3.5" />
+                New Appraisal
+              </Button>
+            </>
+          }
+        />
+
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
+            Manager: {session?.user?.name ?? REVIEW_CHAIN.manager}
+          </Badge>
+          <Badge variant="outline" className="border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300">
+            PA: {REVIEW_CHAIN.pa}
+          </Badge>
         </div>
 
         <CycleBanner />

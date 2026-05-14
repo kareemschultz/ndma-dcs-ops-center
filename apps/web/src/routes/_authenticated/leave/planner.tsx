@@ -48,6 +48,7 @@ import {
 } from "@ndma-dcs-staff-portal/ui/components/table";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { PageHeader } from "@/components/layout/page-header";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { useTeamFilter } from "@/lib/team-filter";
 import { getLeaveTypeDisplayName } from "@/lib/leave-types";
@@ -419,17 +420,11 @@ function LeavePlannerPage() {
       </Header>
 
       <Main className="space-y-4">
-        {/* Page heading */}
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">People</p>
-            <h1 className="text-2xl font-bold tracking-tight">Leave Planner</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Approved and scheduled leave — {monthLabel}
-              {team !== "All" ? ` · ${team}` : ""}
-            </p>
-          </div>
-        </div>
+        <PageHeader
+          eyebrow="People"
+          title="Leave Planner"
+          description={`Approved and scheduled leave — ${monthLabel}${team !== "All" ? ` · ${team}` : ""}`}
+        />
 
         {/* ── Always-visible summary stats strip (TOP) ─────────────────── */}
         <Card>

@@ -33,6 +33,7 @@ import {
 } from "@ndma-dcs-staff-portal/ui/components/select";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { PageHeader } from "@/components/layout/page-header";
 import { useTeamFilter } from "@/lib/team-filter";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
@@ -366,29 +367,32 @@ function StaffPage() {
           <span className="text-sm font-medium">Staff Directory</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportStaffExcel(data ?? [], `Staff_List_${new Date().toISOString().slice(0, 10)}.xlsx`)}
-            disabled={!data?.length}
-          >
-            <FileDown className="size-4 mr-1.5" />
-            Export Excel
-          </Button>
-          <Button size="sm" onClick={() => setShowCreate(true)}>
-            <Plus className="size-4 mr-1.5" /> New Staff
-          </Button>
           <ThemeSwitch />
         </div>
       </Header>
 
       <Main>
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight">Staff Directory</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {data?.length ?? "—"} staff members
-          </p>
-        </div>
+        <PageHeader
+          eyebrow="People"
+          title="Staff Directory"
+          description={`${data?.length ?? "—"} staff members`}
+          actions={
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportStaffExcel(data ?? [], `Staff_List_${new Date().toISOString().slice(0, 10)}.xlsx`)}
+                disabled={!data?.length}
+              >
+                <FileDown className="size-4 mr-1.5" />
+                Export Excel
+              </Button>
+              <Button size="sm" onClick={() => setShowCreate(true)}>
+                <Plus className="size-4 mr-1.5" /> New Staff
+              </Button>
+            </>
+          }
+        />
 
         {/* Stats strip */}
         <div className="mb-4 overflow-hidden rounded-2xl border bg-muted/30">

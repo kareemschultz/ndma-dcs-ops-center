@@ -34,6 +34,7 @@ import {
 
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { PageHeader } from "@/components/layout/page-header";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
 
@@ -116,22 +117,30 @@ function AdvancesPage() {
           <span className="text-sm font-medium">Advance Requests</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
-          <Button size="sm" onClick={() => navigate({ to: "/advances/new" })}>
-            <Plus className="mr-1.5 size-4" />
-            New Advance
-          </Button>
           <ThemeSwitch />
         </div>
       </Header>
 
       <Main>
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight">Advance Requests</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Cash advances for field operations, site visits, and travel. Approved advances generate
-            NDMA Excel and DCS PDF requisitions.
-          </p>
-        </div>
+        <PageHeader
+          eyebrow="Procurement"
+          title="Advance Requests"
+          description="Cash advances for field operations, site visits, and travel. Approved advances generate NDMA Excel and DCS PDF requisitions."
+          actions={
+            <Button size="sm" onClick={() => navigate({ to: "/advances/new" })}>
+              <Plus className="mr-1.5 size-4" />
+              New Advance
+            </Button>
+          }
+          tabs={[
+            { value: "all", label: "All", count: counts.all },
+            { value: "pending", label: "Pending", count: counts.pending },
+            { value: "partial", label: "Partial", count: counts.partial },
+            { value: "cleared", label: "Cleared", count: counts.cleared },
+          ]}
+          activeTab={tab}
+          onTabChange={(v) => setTab(v as "all" | AdvanceStatus)}
+        />
 
         {/* KPI strip */}
         <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -191,27 +200,6 @@ function AdvancesPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Status tabs */}
-        <div className="mb-4 flex items-center gap-1 border-b">
-          {(["all", "pending", "partial", "cleared"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              className={`-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors ${
-                tab === t
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t === "all" ? "All" : STATUS_LABELS[t]}
-              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">
-                {counts[t]}
-              </span>
-            </button>
-          ))}
         </div>
 
         {/* Table */}
