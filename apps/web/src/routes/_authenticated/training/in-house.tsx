@@ -155,7 +155,11 @@ export default function InHouseTrainingLogPage() {
 
           <Select value={staffFilter} onValueChange={(v) => v != null && setStaffFilter(v)}>
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="All staff" />
+              <SelectValue>
+                {staffFilter && staffFilter !== "all"
+                  ? (staff?.find(s => s.id === staffFilter)?.user?.name ?? staff?.find(s => s.id === staffFilter)?.employeeId ?? staffFilter)
+                  : "All staff"}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Staff</SelectItem>
@@ -263,7 +267,11 @@ export default function InHouseTrainingLogPage() {
                 onValueChange={(v) => v != null && setForm((f) => ({ ...f, staffId: v }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select staff…" />
+                  <SelectValue>
+                    {form.staffId
+                      ? (staff?.find(s => s.id === form.staffId)?.user?.name ?? staff?.find(s => s.id === form.staffId)?.employeeId ?? form.staffId)
+                      : "Select staff…"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {staff?.map((s) => (

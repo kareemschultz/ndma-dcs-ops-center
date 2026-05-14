@@ -10,6 +10,64 @@
 
 ---
 
+## 2026-05-14 — Time & Attendance CRUD + Lateness Excel Import — [IN PROGRESS on branch claude/inspiring-morse-bdf638]
+
+- **Agent:** Claude Code (claude-opus-4-7, 1M context)
+- **Branch:** `claude/inspiring-morse-bdf638`
+- **Commits:** `c57798d`, `77c8b18`, `a5d01e5`, `f170bc4`
+- **Status:** 4 commits ahead of main, pending PR + merge
+
+### What shipped
+
+**Timesheets page (`apps/web/src/routes/_authenticated/timesheets/index.tsx`) — full overhaul**
+- Expandable rows with inline `EntriesPanel` (time entries per timesheet)
+- `CreateTimesheetDialog` with staff select, title, period start/end
+- `EditTimesheetDialog` (draft only)
+- `AddEntryDialog` (date, hours, category, description)
+- `RejectDialog` with required reason textarea
+- Submit/Approve/Reject workflow with status-based action buttons
+- Status filter + Team filter dropdowns
+- Color-coded status badges (amber=submitted, blue=approved, red=rejected, slate=draft)
+- Summary strip: total, pending, approved counts
+
+**Attendance router (`packages/api/src/routers/attendance-time.ts`) — added 3 procedures**
+- `logs.create` — requireRole("timesheet","create"), calcWorkHours auto helper
+- `logs.update` — requireRole("timesheet","update"), recalculates work hours
+- `logs.delete` — requireRole("timesheet","update")
+- All include logAudit with actorRole + correlationId
+
+**Attendance page (`apps/web/src/routes/_authenticated/attendance/index.tsx`) — full rewrite**
+- Tab 1 "Clock Logs": full CRUD table (Staff/Team/Status/date-range filters, +Add Log, click-to-edit, auto work-hours)
+- Tab 2 "Lateness Dashboard": read-only flat list + **"Import Excel" button** (see below)
+- `LogDialog` handles create/edit/delete with Clock In/Out → Work Hours auto-calculation
+
+**Lateness import on Attendance page — Excel parser for `LatenessReportNOC&DC_YYYY_v01.xlsx`**
+- Full parser copied from /lateness page: 3-independent-lists-side-by-side format, raw time fractions
+- Year selector (defaults to prior year) controls which year the import writes to
+- `ImportPreviewDialog` shows matched/unmatched staff before committing
+- Upserts via `orpc.lateness.upsert`, invalidates both list + lateness caches
+
+**Lateness parser fix (`apps/web/src/routes/_authenticated/lateness/index.tsx`)**
+- Complete rewrite of the Excel parser after inspecting actual file structure
+- Group 1: cols 1,2,3,4 | Group 2: cols 6,7,8,9 | Group 3: cols 11,12,13,14[,15]
+- Q1/Q2 Group 3: col14=DaysMissing, col15=DaysOnSchedule | Q3/Q4 Group 3: col14=DaysLate
+- De-duplicates by staffName|month|year key
+
+### Known issue discovered (screenshot 2026-05-14)
+**Duplicate lateness rows in display:** importing the same file multiple times from both /lateness and /attendance pages creates extra records when the month is stored under different casing or abbreviations (e.g. "Jan" vs "January"). The `latenessRecords` unique constraint is on `(staffId, year, month)` — exact string match. If prior imports stored "Jan" and current imports store "January", these are treated as different records.
+**Fix needed:** Clean up duplicate records in prod DB, and enforce full month names ("January" etc.) in ALL import paths. Both pages already use `expandMonth()` which returns full names — so old "Jan" records must have been created by an earlier import before the parser was corrected.
+
+### Typecheck
+- `bun run check-types` ✅ clean after each commit
+
+### Next agent handoff notes
+- **Merge this branch** to main via PR before starting new feature work
+- **Fix duplicate lateness records** — run a SQL dedup on prod: `DELETE FROM lateness_records WHERE id NOT IN (SELECT MIN(id) FROM lateness_records GROUP BY staff_profile_id, year, month)`
+- **Timesheets month-based UI** — user requested changing timesheet creation from free-form date range to Year+Month selector (auto-sets periodStart=first day, periodEnd=last day). NOT YET DONE — was in progress when session ended on tokens.
+- **Prod data dump** — user asked to save prod DB data so it's not lost. Could not connect to prod (SSH tunnel to 10.6.104.13 requires VPN/direct LAN access). Next agent should: (1) open SSH tunnel, (2) run `pg_dump --data-only --column-inserts --no-owner -T session -T account -T verification -T audit_logs -T notifications postgresql://postgres:479eb69dc9fea88e6474f3cc6e9944cc088a33337a7021f8@127.0.0.1:5434/dcs_ops > packages/db/prod-data-dump.sql`, (3) commit the SQL file.
+
+---
+
 ## 2026-05-13 — Design handoff completion (session 2) — [MERGED]
 
 - **Agent:** Claude Code (claude-opus-4-7, 1M context)

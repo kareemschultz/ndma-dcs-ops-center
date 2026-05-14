@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Tag } from "lucide-react";
+import { Pencil, Plus, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@ndma-dcs-staff-portal/ui/components/badge";
@@ -50,10 +50,23 @@ const EMPTY_FORM: CatalogForm = {
   level: "",
 };
 
+type EditingItem = {
+  id: number;
+  trainingArea: string;
+  recommendedCert: string;
+  vendor: string;
+  level: string;
+};
+
 export default function CertCatalogPage() {
   const queryClient = useQueryClient();
+
+  // Create dialog
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [form, setForm] = useState<CatalogForm>(EMPTY_FORM);
+
+  // Edit dialog
+  const [editingItem, setEditingItem] = useState<EditingItem | null>(null);
 
   const { data: catalog, isLoading } = useQuery(orpc.certCatalog.list.queryOptions());
 
@@ -66,6 +79,17 @@ export default function CertCatalogPage() {
         toast.success("Certification added to catalog");
       },
       onError: () => toast.error("Failed to add certification"),
+    }),
+  );
+
+  const updateMutation = useMutation(
+    orpc.certCatalog.update.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: orpc.certCatalog.list.key() });
+        setEditingItem(null);
+        toast.success("Certification updated");
+      },
+      onError: () => toast.error("Failed to update certification"),
     }),
   );
 
@@ -87,6 +111,31 @@ export default function CertCatalogPage() {
       recommendedCert: form.recommendedCert,
       vendor: form.vendor || undefined,
       level: form.level || undefined,
+    });
+  }
+
+  function handleUpdate() {
+    if (!editingItem) return;
+    if (!editingItem.trainingArea || !editingItem.recommendedCert) {
+      toast.error("Training area and certification are required");
+      return;
+    }
+    updateMutation.mutate({
+      id: editingItem.id,
+      trainingArea: editingItem.trainingArea || undefined,
+      recommendedCert: editingItem.recommendedCert || undefined,
+      vendor: editingItem.vendor || undefined,
+      level: editingItem.level || undefined,
+    });
+  }
+
+  function openEditDialog(c: { id: number; trainingArea: string; recommendedCert: string; vendor?: string | null; level?: string | null }) {
+    setEditingItem({
+      id: c.id,
+      trainingArea: c.trainingArea,
+      recommendedCert: c.recommendedCert,
+      vendor: c.vendor ?? "",
+      level: c.level ?? "",
     });
   }
 
@@ -137,19 +186,32 @@ export default function CertCatalogPage() {
                         <TableHead>Certification</TableHead>
                         <TableHead>Vendor</TableHead>
                         <TableHead>Level</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {certs?.map((c) => (
                         <TableRow key={c.id}>
                           <TableCell className="font-medium">{c.recommendedCert}</TableCell>
-                          <TableCell>{c.vendor ?? <span className="text-muted-foreground">—</span>}</TableCell>
+                          <TableCell>
+                            {c.vendor ?? <span className="text-muted-foreground">—</span>}
+                          </TableCell>
                           <TableCell>
                             {c.level ? (
                               <Badge variant="outline">{c.level}</Badge>
                             ) : (
                               <span className="text-muted-foreground">—</span>
                             )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openEditDialog(c)}
+                              title="Edit certification"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -162,6 +224,7 @@ export default function CertCatalogPage() {
         )}
       </Main>
 
+      {/* Add Certification Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -212,6 +275,72 @@ export default function CertCatalogPage() {
             </Button>
             <Button onClick={handleCreate} disabled={createMutation.isPending}>
               Add
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Certification Dialog */}
+      <Dialog open={editingItem != null} onOpenChange={(open) => { if (!open) setEditingItem(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Certification</DialogTitle>
+            <DialogDescription>
+              Update the details for this certification in the catalog.
+            </DialogDescription>
+          </DialogHeader>
+          {editingItem != null && (
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <Label>Training Area *</Label>
+                <Input
+                  placeholder="e.g. Networking, Cloud, Security…"
+                  value={editingItem.trainingArea}
+                  onChange={(e) =>
+                    setEditingItem((prev) => prev ? { ...prev, trainingArea: e.target.value } : prev)
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Recommended Certification *</Label>
+                <Input
+                  placeholder="e.g. CCNA, AWS Solutions Architect…"
+                  value={editingItem.recommendedCert}
+                  onChange={(e) =>
+                    setEditingItem((prev) => prev ? { ...prev, recommendedCert: e.target.value } : prev)
+                  }
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>Vendor</Label>
+                  <Input
+                    placeholder="e.g. Cisco, Amazon…"
+                    value={editingItem.vendor}
+                    onChange={(e) =>
+                      setEditingItem((prev) => prev ? { ...prev, vendor: e.target.value } : prev)
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Level</Label>
+                  <Input
+                    placeholder="e.g. Associate, Professional…"
+                    value={editingItem.level}
+                    onChange={(e) =>
+                      setEditingItem((prev) => prev ? { ...prev, level: e.target.value } : prev)
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setEditingItem(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdate} disabled={updateMutation.isPending}>
+              Save Changes
             </Button>
           </div>
         </DialogContent>

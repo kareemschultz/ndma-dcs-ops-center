@@ -30,6 +30,8 @@
     "cmdk": "^1.1.1",
     "date-fns": "^4.1.0",
     "dotenv": "catalog:",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "lucide-react": "catalog:",
     "next-themes": "catalog:",
     "react": "catalog:",
@@ -39,6 +41,7 @@
     "react-top-loading-bar": "^3.0.2",
     "recharts": "^3.8.1",
     "sonner": "catalog:",
+    "xlsx": "^0.18.5",
     "zod": "catalog:",
     "zustand": "^5.0.12"
   },

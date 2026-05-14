@@ -1300,8 +1300,8 @@ function ProfilePage() {
                       <div key={shift.id} className="flex items-center justify-between px-3 py-2.5 gap-3">
                         <span className="text-sm">{format(parseISO(shift.shiftDate), "EEE dd MMM yyyy")}</span>
                         <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium shrink-0 ${
-                          shift.shiftType === "12hr Day" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" :
-                          shift.shiftType === "12hr Night" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" :
+                          shift.shiftType === "Day Shift" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" :
+                          shift.shiftType === "Night Shift" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" :
                           shift.shiftType === "Annual Leave" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" :
                           shift.shiftType === "Sick Leave" ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" :
                           "bg-muted text-muted-foreground"

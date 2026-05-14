@@ -2,7 +2,8 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { differenceInDays, format, parseISO } from "date-fns";
-import { FileText, AlertCircle, Plus, Pencil } from "lucide-react";
+import { FileText, AlertCircle, Plus, Pencil, FileDown } from "lucide-react";
+import { exportContractsExcel } from "@/utils/excel-export";
 import { toast } from "sonner";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 import {
@@ -399,6 +400,15 @@ function ContractsPage() {
           <span className="text-sm font-medium">Contracts</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportContractsExcel(data ?? [], `Contracts_${new Date().toISOString().slice(0, 10)}.xlsx`)}
+            disabled={!data?.length}
+          >
+            <FileDown className="size-4 mr-1.5" />
+            Export Excel
+          </Button>
           <ThemeSwitch />
         </div>
       </Header>

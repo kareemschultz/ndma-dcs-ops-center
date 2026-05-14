@@ -121,8 +121,8 @@ function SchedulingHubPage() {
             { label: "Day coverage", value: "100%", sub: "24/7 DCS on-call" },
             {
               label: "NOC on shift now",
-              value: nocLoading ? "—" : String((nocCounts["12hr Day"] ?? 0) + (nocCounts["12hr Night"] ?? 0)),
-              sub: `${nocCounts["12hr Day"] ?? 0} day · ${nocCounts["12hr Night"] ?? 0} night`,
+              value: nocLoading ? "—" : String((nocCounts["Day Shift"] ?? 0) + (nocCounts["Night Shift"] ?? 0)),
+              sub: `${nocCounts["Day Shift"] ?? 0} day · ${nocCounts["Night Shift"] ?? 0} night`,
             },
             {
               label: `Q${currentQ} maintenance`,
@@ -213,8 +213,8 @@ function SchedulingHubPage() {
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { label: "12hr Day",      count: nocCounts["12hr Day"]      ?? 0, cls: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200" },
-                    { label: "12hr Night",    count: nocCounts["12hr Night"]    ?? 0, cls: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200" },
+                    { label: "Day Shift",     count: nocCounts["Day Shift"]     ?? 0, cls: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200" },
+                    { label: "Night Shift",   count: nocCounts["Night Shift"]   ?? 0, cls: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200" },
                     { label: "Annual Leave",  count: nocCounts["Annual Leave"]  ?? 0, cls: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200" },
                     { label: "Off",           count: nocCounts["Off"]           ?? 0, cls: "bg-muted text-muted-foreground" },
                   ].map((s) => (

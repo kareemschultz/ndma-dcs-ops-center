@@ -12,11 +12,15 @@ import { useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { CalendarOff, CheckCircle, Plus, XCircle } from "lucide-react";
+import { CalendarOff, CheckCircle, FileDown, Plus, Trash2, XCircle } from "lucide-react";
+import { exportLeaveExcel } from "@/utils/excel-export";
 import { toast } from "sonner";
 
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@ndma-dcs-staff-portal/ui/components/card";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@ndma-dcs-staff-portal/ui/components/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@ndma-dcs-staff-portal/ui/components/select";
@@ -25,6 +29,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@ndma-dcs-staff-portal/ui/components/table";
 import { Header } from "@/components/layout/header";
+import { LeaveViolationsBadge } from "@/components/leave-violations-badge";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { useTeamFilter } from "@/lib/team-filter";
@@ -85,9 +90,10 @@ function LeaveBalanceBar({ label, used, allowance }: { label: string; used: numb
 }
 
 function LeavePage() {
-  const [activeTab,    setActiveTab]    = useState<"all" | "pending">("all");
-  const [statusFilter, setStatusFilter] = useState<LeaveStatus | "">("");
-  const [typeFilter,   setTypeFilter]   = useState<string>("");
+  const [activeTab,        setActiveTab]        = useState<"all" | "pending">("all");
+  const [statusFilter,     setStatusFilter]     = useState<LeaveStatus | "">("");
+  const [typeFilter,       setTypeFilter]       = useState<string>("");
+  const [deleteTarget,     setDeleteTarget]     = useState<{ id: string; name: string } | null>(null);
   const navigate = useNavigate();
   const { team } = useTeamFilter();
 
@@ -121,6 +127,16 @@ function LeavePage() {
   const rejectMutation = useMutation(
     orpc.leave.requests.reject.mutationOptions({
       onSuccess: () => { toast.success("Leave rejected"); queryClient.invalidateQueries({ queryKey: orpc.leave.requests.list.key() }); },
+      onError: (e: Error) => toast.error(e.message),
+    }),
+  );
+  const deleteMutation = useMutation(
+    orpc.leave.requests.delete.mutationOptions({
+      onSuccess: () => {
+        toast.success("Leave request deleted");
+        queryClient.invalidateQueries({ queryKey: orpc.leave.requests.list.key() });
+        setDeleteTarget(null);
+      },
       onError: (e: Error) => toast.error(e.message),
     }),
   );
@@ -158,6 +174,15 @@ function LeavePage() {
           <span className="text-sm font-medium">Leave Management</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportLeaveExcel(data ?? [], `Leave_Requests_${new Date().toISOString().slice(0, 10)}.xlsx`)}
+            disabled={!data?.length}
+          >
+            <FileDown className="mr-1 size-4" />
+            Export Excel
+          </Button>
           <ThemeSwitch />
           {/* [FIX] useNavigate instead of <Link><Button> (Button has no asChild in Base UI) */}
           <Button size="sm" onClick={() => navigate({ to: "/leave/new" })}>
@@ -260,14 +285,15 @@ function LeavePage() {
                   <TableHead>Dates</TableHead>
                   <TableHead>Days</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Violations</TableHead>
                   <TableHead>Approver</TableHead>
-                  <TableHead className="w-24">Actions</TableHead>
+                  <TableHead className="w-32">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
                       No leave requests found.
                     </TableCell>
                   </TableRow>
@@ -280,24 +306,35 @@ function LeavePage() {
                     </TableCell>
                     <TableCell><span className="tabular-nums font-medium">{r.totalDays}</span></TableCell>
                     <TableCell><LeaveStatusBadge status={r.status} /></TableCell>
+                    <TableCell><LeaveViolationsBadge violations={r.violations} /></TableCell>
                     <TableCell className="text-sm">{r.approvedBy?.name ?? "—"}</TableCell>
                     <TableCell>
-                      {r.status === "pending" && (
-                        <div className="flex gap-1">
-                          <Button size="icon" variant="ghost" className="size-7 text-blue-600 hover:text-blue-700"
-                            onClick={() => approveMutation.mutate({ id: r.id })}
-                            disabled={approveMutation.isPending}
-                          >
-                            <CheckCircle className="size-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" className="size-7 text-red-500 hover:text-red-600"
-                            onClick={() => rejectMutation.mutate({ id: r.id, rejectionReason: "" })}
-                            disabled={rejectMutation.isPending}
-                          >
-                            <XCircle className="size-4" />
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex gap-1">
+                        {r.status === "pending" && (
+                          <>
+                            <Button size="icon" variant="ghost" className="size-7 text-blue-600 hover:text-blue-700"
+                              onClick={() => approveMutation.mutate({ id: r.id })}
+                              disabled={approveMutation.isPending}
+                            >
+                              <CheckCircle className="size-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="size-7 text-red-500 hover:text-red-600"
+                              onClick={() => rejectMutation.mutate({ id: r.id, rejectionReason: "" })}
+                              disabled={rejectMutation.isPending}
+                            >
+                              <XCircle className="size-4" />
+                            </Button>
+                          </>
+                        )}
+                        <Button
+                          size="icon" variant="ghost"
+                          className="size-7 text-destructive hover:text-destructive/80"
+                          onClick={() => setDeleteTarget({ id: r.id, name: r.staffProfile?.user?.name ?? r.id })}
+                          title="Delete leave request"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -305,6 +342,31 @@ function LeavePage() {
             </Table>
           </div>
         )}
+
+        {/* Delete confirm dialog */}
+        <Dialog open={Boolean(deleteTarget)} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Delete Leave Request</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to permanently delete the leave request for{" "}
+                <span className="font-medium">{deleteTarget?.name}</span>? This cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleteMutation.isPending}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={deleteMutation.isPending}
+                onClick={() => { if (deleteTarget) deleteMutation.mutate({ id: deleteTarget.id }); }}
+              >
+                {deleteMutation.isPending ? "Deleting…" : "Delete"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </Main>
     </>
   );

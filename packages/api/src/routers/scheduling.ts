@@ -1,8 +1,9 @@
 import { ORPCError } from "@orpc/server";
-import { eq } from "drizzle-orm";
+import { and, eq, gte, lte } from "drizzle-orm";
 import { z } from "zod";
 
 import {
+  type NocShiftType,
   db,
   dcsOncallSwaps,
   dcsOnCallWeeks,
@@ -17,6 +18,20 @@ import { logAudit } from "../lib/audit";
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 const DCS_ROLES = ["lead_engineer", "asn_support", "enterprise_support", "core_support"] as const;
+
+const NOC_SHIFT_TYPES = [
+  "Day Shift",
+  "Night Shift",
+  "Swing Shift",
+  "Off",
+  "Annual Leave",
+  "Sick Leave",
+  "Maternity Leave",
+  "Training",
+  "Training Half Day",
+  "Custom",
+  "Outreach",
+] as const satisfies readonly NocShiftType[];
 
 // ── Scheduling router ──────────────────────────────────────────────────────
 
@@ -53,7 +68,8 @@ export const schedulingRouter = {
             z.object({
               staffId: z.string().min(1),
               shiftDate: z.string(),
-              shiftType: z.enum(["12hr Day", "12hr Night", "Off", "Annual Leave", "Sick Leave"]),
+              shiftType: z.enum(NOC_SHIFT_TYPES),
+              notes: z.string().optional().nullable(),
             }),
           ),
         }),
@@ -67,11 +83,13 @@ export const schedulingRouter = {
               staffId: entry.staffId,
               shiftDate: entry.shiftDate,
               shiftType: entry.shiftType,
+              notes: entry.notes ?? null,
             })
             .onConflictDoUpdate({
               target: [nocShifts.staffId, nocShifts.shiftDate],
               set: {
                 shiftType: entry.shiftType,
+                notes: entry.notes ?? null,
                 updatedAt: new Date(),
               },
             })
@@ -100,7 +118,7 @@ export const schedulingRouter = {
       .input(
         z.object({
           id: z.number().int(),
-          shiftType: z.enum(["12hr Day", "12hr Night", "Off", "Annual Leave", "Sick Leave"]),
+          shiftType: z.enum(NOC_SHIFT_TYPES),
         }),
       )
       .handler(async ({ input, context }) => {
@@ -132,6 +150,72 @@ export const schedulingRouter = {
         });
 
         return updated;
+      }),
+
+    importMonth: requireRole("shift", "create")
+      .input(
+        z.object({
+          year: z.number().int(),
+          month: z.number().int().min(1).max(12),
+          rows: z.array(
+            z.object({
+              staffId: z.string(),
+              day: z.number().int().min(1).max(31),
+              shiftType: z.enum(NOC_SHIFT_TYPES),
+              notes: z.string().optional(),
+            }),
+          ),
+        }),
+      )
+      .handler(async ({ input, context }) => {
+        const { year, month, rows } = input;
+        // Delete existing shifts for this month for the staff in this batch
+        const staffIds = [...new Set(rows.map((r) => r.staffId))];
+        const monthStr = String(month).padStart(2, "0");
+        const monthStart = `${year}-${monthStr}-01`;
+        const lastDay = new Date(year, month, 0).getDate();
+        const monthEnd = `${year}-${monthStr}-${String(lastDay).padStart(2, "0")}`;
+
+        for (const sid of staffIds) {
+          await db.delete(nocShifts).where(
+            and(
+              eq(nocShifts.staffId, sid),
+              gte(nocShifts.shiftDate, monthStart),
+              lte(nocShifts.shiftDate, monthEnd),
+            ),
+          );
+        }
+
+        // Insert new shifts
+        const values = rows.map((r) => {
+          const d = new Date(year, month - 1, r.day);
+          return {
+            staffId: r.staffId,
+            shiftDate: d.toISOString().slice(0, 10),
+            shiftType: r.shiftType as NocShiftType,
+            notes: r.notes ?? null,
+          };
+        });
+
+        if (values.length > 0) {
+          await db.insert(nocShifts).values(values);
+        }
+
+        await logAudit({
+          actorId: context.session.user.id,
+          actorName: context.session.user.name,
+          actorRole: context.userRole ?? undefined,
+          correlationId: context.requestId,
+          action: "scheduling.nocShifts.importMonth",
+          module: "scheduling",
+          resourceType: "noc_shift",
+          resourceId: `${year}-${month}`,
+          afterValue: { year, month, count: values.length },
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+        });
+
+        return { imported: values.length };
       }),
   },
 
@@ -300,6 +384,26 @@ export const schedulingRouter = {
         });
 
         return upserted;
+      }),
+
+    delete: requireRole("shift", "delete")
+      .input(z.object({ id: z.string().min(1) }))
+      .handler(async ({ input, context }) => {
+        await db
+          .delete(quarterlyMaintenanceTasks)
+          .where(eq(quarterlyMaintenanceTasks.id, input.id));
+        await logAudit({
+          actorId: context.session.user.id,
+          actorName: context.session.user.name,
+          actorRole: context.userRole ?? undefined,
+          action: "scheduling.maintenance.delete",
+          module: "scheduling",
+          resourceType: "quarterly_maintenance_task",
+          resourceId: input.id,
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+          correlationId: context.requestId,
+        });
       }),
   },
 

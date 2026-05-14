@@ -92,6 +92,7 @@ export const latenessRouter = {
         staffName: string;
         department: string | null;
         months: Record<string, {
+          id: number;
           totalTimeLate: string;
           daysLate: number;
           daysMissingFromAttendance: number | null;
@@ -111,6 +112,7 @@ export const latenessRouter = {
         }
         const entry = staffMap.get(rec.staffId)!;
         entry.months[rec.month] = {
+          id: rec.id,
           totalTimeLate: rec.totalTimeLate,
           daysLate: rec.daysLate,
           daysMissingFromAttendance: rec.daysMissingFromAttendance ?? null,

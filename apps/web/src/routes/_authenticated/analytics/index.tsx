@@ -51,7 +51,7 @@ const CURRENT_YEAR = 2026;
 
 const C = {
   blue: "#3b82f6",
-  green: "#3b82f6",
+  green: "#3b82f6",   // intentionally blue — no green in this app
   amber: "#f59e0b",
   red: "#ef4444",
   purple: "#8b5cf6",
@@ -61,11 +61,10 @@ const C = {
   rose: "#f43f5e",
   slate: "#64748b",
   cyan: "#06b6d4",
-  lime: "#84cc16",
-  pink: "#ec4899",
   sky: "#0ea5e9",
+  pink: "#ec4899",
   violet: "#7c3aed",
-  emerald: "#10b981",
+  fuchsia: "#d946ef",
 } as const;
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -186,8 +185,8 @@ const WORK_TYPE_COLORS: string[] = [
   C.purple,
   C.teal,
   C.cyan,
-  C.emerald,
-  C.lime,
+  C.sky,
+  C.violet,
   C.amber,
   C.orange,
 ];

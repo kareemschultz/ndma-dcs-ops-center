@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Search, Plus, Eye, LayoutGrid, Table2 } from "lucide-react";
+import { Users, Search, Plus, Eye, LayoutGrid, Table2, FileDown } from "lucide-react";
+import { exportStaffExcel } from "@/utils/excel-export";
 import { toast } from "sonner";
 import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
@@ -316,6 +317,15 @@ function StaffPage() {
           <span className="text-sm font-medium">Staff Directory</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => exportStaffExcel(data ?? [], `Staff_List_${new Date().toISOString().slice(0, 10)}.xlsx`)}
+            disabled={!data?.length}
+          >
+            <FileDown className="size-4 mr-1.5" />
+            Export Excel
+          </Button>
           <Button size="sm" onClick={() => setShowCreate(true)}>
             <Plus className="size-4 mr-1.5" /> New Staff
           </Button>

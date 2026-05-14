@@ -274,8 +274,8 @@ function DashboardPage() {
     orpc.scheduling.nocShifts.list.queryOptions({ input: { year: currentYear, month: currentMonth } }),
   );
   const todayNocShifts = nocShifts?.filter((s) => s.shiftDate === todayStr) ?? [];
-  const nocOnDay   = todayNocShifts.filter((s) => s.shiftType === "12hr Day").length;
-  const nocOnNight = todayNocShifts.filter((s) => s.shiftType === "12hr Night").length;
+  const nocOnDay   = todayNocShifts.filter((s) => s.shiftType === "Day Shift").length;
+  const nocOnNight = todayNocShifts.filter((s) => s.shiftType === "Night Shift").length;
 
   // Active incidents (unresolved)
   const activeIncidents = incidentsList?.filter(

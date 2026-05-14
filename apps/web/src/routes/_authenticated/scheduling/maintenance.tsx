@@ -10,16 +10,16 @@
 //   • Status badge colours: pending=muted, in_progress=amber, complete=blue, deferred=red
 //   • Each task shows assigned staff as initials chips + completion date
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { CheckCircle2, ChevronDown, ChevronRight, Plus, Wrench } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, Pencil, Plus, Trash2, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@ndma-dcs-staff-portal/ui/components/dialog";
 import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
 import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
@@ -79,7 +79,7 @@ function StaffInitialsChip({ name }: { name: string | null | undefined }) {
   );
 }
 
-// ── Add Task Dialog ────────────────────────────────────────────────────────────
+// ── Add / Edit Task Dialog ─────────────────────────────────────────────────────
 
 type AddForm = {
   taskName: string; quarter: string; year: string;
@@ -88,28 +88,50 @@ type AddForm = {
 };
 
 function AddTaskDialog({
-  open, onOpenChange, defaultYear, defaultQuarter, staffList,
+  open, onOpenChange, defaultYear, defaultQuarter, staffList, editTask,
 }: {
   open: boolean; onOpenChange: (v: boolean) => void;
   defaultYear: number; defaultQuarter: number;
   staffList: Array<{ id: string; user?: { name?: string | null } | null }>;
+  editTask?: MaintenanceTask | null;
 }) {
   const queryClient = useQueryClient();
+  const isEditing = Boolean(editTask);
+
   const [form, setForm] = useState<AddForm>({
-    taskName: "", quarter: String(defaultQuarter), year: String(defaultYear),
-    completionStatus: "pending", completionNotes: "", assignedStaffIds: [],
+    taskName:         editTask?.taskName ?? "",
+    quarter:          String(editTask?.quarter ?? defaultQuarter),
+    year:             String(editTask?.year ?? defaultYear),
+    completionStatus: editTask?.completionStatus ?? "pending",
+    completionNotes:  editTask?.completionNotes ?? "",
+    assignedStaffIds: editTask?.assignedStaffIds ?? [],
   });
+
+  // Reset form when dialog opens (or editTask changes)
+  useEffect(() => {
+    if (open) {
+      setForm({
+        taskName:         editTask?.taskName ?? "",
+        quarter:          String(editTask?.quarter ?? defaultQuarter),
+        year:             String(editTask?.year ?? defaultYear),
+        completionStatus: editTask?.completionStatus ?? "pending",
+        completionNotes:  editTask?.completionNotes ?? "",
+        assignedStaffIds: editTask?.assignedStaffIds ?? [],
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editTask?.id]);
 
   // [FIX] Use orpc.scheduling.maintenance.upsert (not orpc.roster.maintenance.create)
   const mutation = useMutation(
     orpc.scheduling.maintenance.upsert.mutationOptions({
       onSuccess: () => {
-        toast.success("Task created");
+        toast.success(isEditing ? "Task updated" : "Task created");
         queryClient.invalidateQueries({ queryKey: orpc.scheduling.maintenance.list.key() });
         onOpenChange(false);
-        setForm((f) => ({ ...f, taskName: "", completionNotes: "", assignedStaffIds: [] }));
+        setForm({ taskName: "", quarter: String(defaultQuarter), year: String(defaultYear), completionStatus: "pending", completionNotes: "", assignedStaffIds: [] });
       },
-      onError: (err: Error) => toast.error(err.message ?? "Failed to create task"),
+      onError: (err: Error) => toast.error(err.message ?? "Failed to save task"),
     }),
   );
 
@@ -138,7 +160,10 @@ function AddTaskDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add Maintenance Task</DialogTitle>
+          <DialogTitle>{isEditing ? "Edit Maintenance Task" : "Add Maintenance Task"}</DialogTitle>
+          <DialogDescription>
+            {isEditing ? "Update the task details below." : "Fill in the details to add a new maintenance task."}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="space-y-1.5">
@@ -218,7 +243,7 @@ function AddTaskDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Saving…" : "Create task"}
+              {mutation.isPending ? "Saving…" : isEditing ? "Save changes" : "Create task"}
             </Button>
           </DialogFooter>
         </form>
@@ -227,13 +252,61 @@ function AddTaskDialog({
   );
 }
 
+// ── Delete Confirm Dialog ──────────────────────────────────────────────────────
+
+function DeleteTaskDialog({
+  task, onClose,
+}: {
+  task: MaintenanceTask | null;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const deleteMutation = useMutation(
+    orpc.scheduling.maintenance.delete.mutationOptions({
+      onSuccess: () => {
+        toast.success("Task deleted");
+        queryClient.invalidateQueries({ queryKey: orpc.scheduling.maintenance.list.key() });
+        onClose();
+      },
+      onError: (err: Error) => toast.error(err.message ?? "Failed to delete task"),
+    }),
+  );
+
+  return (
+    <Dialog open={Boolean(task)} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Delete Task</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to permanently delete &ldquo;{task?.taskName}&rdquo;? This cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose} disabled={deleteMutation.isPending}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={deleteMutation.isPending}
+            onClick={() => { if (task) deleteMutation.mutate({ id: task.id }); }}
+          >
+            {deleteMutation.isPending ? "Deleting…" : "Delete"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Quarter section ────────────────────────────────────────────────────────────
 
-function QuarterSection({ quarter, year, tasks, staffById, defaultOpen }: {
+function QuarterSection({ quarter, year, tasks, staffById, defaultOpen, onEdit, onDelete }: {
   quarter: number; year: number;
   tasks: MaintenanceTask[];
   staffById: Record<string, { user?: { name?: string | null } | null }>;
   defaultOpen: boolean;
+  onEdit: (task: MaintenanceTask) => void;
+  onDelete: (task: MaintenanceTask) => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const done  = tasks.filter((t) => t.completionStatus === "complete").length;
@@ -326,6 +399,26 @@ function QuarterSection({ quarter, year, tasks, staffById, defaultOpen }: {
                     </div>
                   )}
                 </div>
+
+                {/* Edit + Delete actions */}
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    size="icon" variant="ghost"
+                    className="size-7 text-muted-foreground hover:text-foreground"
+                    onClick={() => onEdit(task)}
+                    title="Edit task"
+                  >
+                    <Pencil className="size-3.5" />
+                  </Button>
+                  <Button
+                    size="icon" variant="ghost"
+                    className="size-7 text-destructive hover:text-destructive/80"
+                    onClick={() => onDelete(task)}
+                    title="Delete task"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
               </div>
             ))
           )}
@@ -340,8 +433,10 @@ function QuarterSection({ quarter, year, tasks, staffById, defaultOpen }: {
 function SchedulingMaintenancePage() {
   const currentYear = new Date().getFullYear();
   const currentQ    = Math.ceil((new Date().getMonth() + 1) / 3);
-  const [year, setYear]     = useState(currentYear);
-  const [addOpen, setAddOpen] = useState(false);
+  const [year, setYear]           = useState(currentYear);
+  const [addOpen, setAddOpen]     = useState(false);
+  const [editTask, setEditTask]   = useState<MaintenanceTask | null>(null);
+  const [deleteTask, setDeleteTask] = useState<MaintenanceTask | null>(null);
 
   // [FIX] Use orpc.scheduling.maintenance.list (was orpc.roster.maintenance.list)
   const { data: tasks, isLoading } = useQuery(
@@ -387,7 +482,7 @@ function SchedulingMaintenancePage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button onClick={() => setAddOpen(true)}>
+            <Button onClick={() => { setEditTask(null); setAddOpen(true); }}>
               <Plus className="size-4 mr-1" /> Add task
             </Button>
           </div>
@@ -405,6 +500,8 @@ function SchedulingMaintenancePage() {
                 tasks={(tasks ?? []).filter((t) => t.quarter === q) as MaintenanceTask[]}
                 staffById={staffById}
                 defaultOpen={q === currentQ}
+                onEdit={(task) => { setEditTask(task); setAddOpen(true); }}
+                onDelete={(task) => setDeleteTask(task)}
               />
             ))
           )}
@@ -413,10 +510,16 @@ function SchedulingMaintenancePage() {
 
       <AddTaskDialog
         open={addOpen}
-        onOpenChange={setAddOpen}
+        onOpenChange={(v) => { setAddOpen(v); if (!v) setEditTask(null); }}
         defaultYear={year}
         defaultQuarter={currentQ}
         staffList={staffList}
+        editTask={editTask}
+      />
+
+      <DeleteTaskDialog
+        task={deleteTask}
+        onClose={() => setDeleteTask(null)}
       />
     </>
   );

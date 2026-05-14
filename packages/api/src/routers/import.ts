@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  type NocShiftType,
   appraisals,
   appraisalNotes,
   appraisalScores,
@@ -901,7 +902,7 @@ async function processRosterRow(
   }
 
   if (data.rosterType === "noc_shifts") {
-    const shiftType = data.shiftType as "12hr Day" | "12hr Night" | "Off" | "Annual Leave" | "Sick Leave";
+    const shiftType = data.shiftType as NocShiftType;
     await db
       .insert(nocShifts)
       .values({

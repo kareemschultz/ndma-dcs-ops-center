@@ -17,13 +17,23 @@ import { serveStatic } from "hono/bun";
 const app = new Hono();
 
 app.use(logger());
+// Parse comma-separated allowed origins, e.g. "http://localhost:3001,http://10.6.104.23:3001"
+// A single "*" means reflect any origin (dev convenience).
+const _allowedOrigins = env.CORS_ORIGIN === "*"
+  ? null
+  : env.CORS_ORIGIN.split(",").map((o) => o.trim()).filter(Boolean);
+
 app.use(
   "/*",
   cors({
-    origin: env.CORS_ORIGIN,
+    origin: (origin) => {
+      if (!origin) return _allowedOrigins?.[0] ?? origin;
+      if (_allowedOrigins === null) return origin; // reflect all — dev mode
+      return _allowedOrigins.includes(origin) ? origin : (_allowedOrigins[0] ?? origin);
+    },
     allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
+    allowHeaders: ["Content-Type", "Authorization", "Cookie"],
+    credentials: true, // required for cookie-based Better Auth sessions
   }),
 );
 
@@ -44,7 +54,39 @@ app.use("/*", async (c, next) => {
   );
 });
 
-app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+// Better Auth returns its own Response object that bypasses Hono middleware,
+// so we must manually inject CORS headers for the auth routes.
+app.on(["POST", "GET", "OPTIONS"], "/api/auth/*", async (c) => {
+  const origin = c.req.header("origin") ?? "";
+  const isAllowed =
+    _allowedOrigins === null ||
+    (origin !== "" && _allowedOrigins.includes(origin));
+
+  // Handle CORS preflight for auth routes
+  if (c.req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": isAllowed && origin ? origin : (_allowedOrigins?.[0] ?? ""),
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, Cookie",
+        "Vary": "Origin",
+      },
+    });
+  }
+
+  const response = await auth.handler(c.req.raw);
+
+  // Inject CORS headers into Better Auth's response
+  if (isAllowed && origin) {
+    response.headers.set("Access-Control-Allow-Origin", origin);
+    response.headers.set("Access-Control-Allow-Credentials", "true");
+    response.headers.set("Vary", "Origin");
+  }
+
+  return response;
+});
 
 export const apiHandler = new OpenAPIHandler(appRouter, {
   plugins: [
