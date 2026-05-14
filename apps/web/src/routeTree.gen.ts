@@ -43,6 +43,7 @@ import { Route as AuthenticatedAuditIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAttendanceIndexRouteImport } from './routes/_authenticated/attendance/index'
 import { Route as AuthenticatedAppraisalsIndexRouteImport } from './routes/_authenticated/appraisals/index'
 import { Route as AuthenticatedAnalyticsIndexRouteImport } from './routes/_authenticated/analytics/index'
+import { Route as AuthenticatedAdvancesIndexRouteImport } from './routes/_authenticated/advances/index'
 import { Route as AuthenticatedAccessIndexRouteImport } from './routes/_authenticated/access/index'
 import { Route as AuthenticatedWorkWorkloadRouteImport } from './routes/_authenticated/work/workload'
 import { Route as AuthenticatedWorkNewRouteImport } from './routes/_authenticated/work/new'
@@ -93,6 +94,8 @@ import { Route as AuthenticatedAttendanceMonthlyRouteImport } from './routes/_au
 import { Route as AuthenticatedAttendanceHolidaysRouteImport } from './routes/_authenticated/attendance/holidays'
 import { Route as AuthenticatedAppraisalsInboxRouteImport } from './routes/_authenticated/appraisals/inbox'
 import { Route as AuthenticatedAppraisalsAppraisalIdRouteImport } from './routes/_authenticated/appraisals/$appraisalId'
+import { Route as AuthenticatedAdvancesNewRouteImport } from './routes/_authenticated/advances/new'
+import { Route as AuthenticatedAdvancesAdvanceIdRouteImport } from './routes/_authenticated/advances/$advanceId'
 import { Route as AuthenticatedAccessRegistryRouteImport } from './routes/_authenticated/access/registry'
 import { Route as AuthenticatedAccessPlatformsRouteImport } from './routes/_authenticated/access/platforms'
 import { Route as AuthenticatedAccessAccountIdRouteImport } from './routes/_authenticated/access/$accountId'
@@ -293,6 +296,12 @@ const AuthenticatedAnalyticsIndexRoute =
   AuthenticatedAnalyticsIndexRouteImport.update({
     id: '/analytics/',
     path: '/analytics/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdvancesIndexRoute =
+  AuthenticatedAdvancesIndexRouteImport.update({
+    id: '/advances/',
+    path: '/advances/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAccessIndexRoute =
@@ -589,6 +598,18 @@ const AuthenticatedAppraisalsAppraisalIdRoute =
     path: '/appraisals/$appraisalId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdvancesNewRoute =
+  AuthenticatedAdvancesNewRouteImport.update({
+    id: '/advances/new',
+    path: '/advances/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdvancesAdvanceIdRoute =
+  AuthenticatedAdvancesAdvanceIdRouteImport.update({
+    id: '/advances/$advanceId',
+    path: '/advances/$advanceId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAccessRegistryRoute =
   AuthenticatedAccessRegistryRouteImport.update({
     id: '/access/registry',
@@ -651,6 +672,8 @@ export interface FileRoutesByFullPath {
   '/access/$accountId': typeof AuthenticatedAccessAccountIdRoute
   '/access/platforms': typeof AuthenticatedAccessPlatformsRoute
   '/access/registry': typeof AuthenticatedAccessRegistryRouteWithChildren
+  '/advances/$advanceId': typeof AuthenticatedAdvancesAdvanceIdRoute
+  '/advances/new': typeof AuthenticatedAdvancesNewRoute
   '/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRoute
   '/appraisals/inbox': typeof AuthenticatedAppraisalsInboxRoute
   '/attendance/holidays': typeof AuthenticatedAttendanceHolidaysRoute
@@ -701,6 +724,7 @@ export interface FileRoutesByFullPath {
   '/work/new': typeof AuthenticatedWorkNewRoute
   '/work/workload': typeof AuthenticatedWorkWorkloadRoute
   '/access/': typeof AuthenticatedAccessIndexRoute
+  '/advances/': typeof AuthenticatedAdvancesIndexRoute
   '/analytics/': typeof AuthenticatedAnalyticsIndexRoute
   '/appraisals/': typeof AuthenticatedAppraisalsIndexRoute
   '/attendance/': typeof AuthenticatedAttendanceIndexRoute
@@ -745,6 +769,8 @@ export interface FileRoutesByTo {
   '/access/$accountId': typeof AuthenticatedAccessAccountIdRoute
   '/access/platforms': typeof AuthenticatedAccessPlatformsRoute
   '/access/registry': typeof AuthenticatedAccessRegistryRouteWithChildren
+  '/advances/$advanceId': typeof AuthenticatedAdvancesAdvanceIdRoute
+  '/advances/new': typeof AuthenticatedAdvancesNewRoute
   '/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRoute
   '/appraisals/inbox': typeof AuthenticatedAppraisalsInboxRoute
   '/attendance/holidays': typeof AuthenticatedAttendanceHolidaysRoute
@@ -795,6 +821,7 @@ export interface FileRoutesByTo {
   '/work/new': typeof AuthenticatedWorkNewRoute
   '/work/workload': typeof AuthenticatedWorkWorkloadRoute
   '/access': typeof AuthenticatedAccessIndexRoute
+  '/advances': typeof AuthenticatedAdvancesIndexRoute
   '/analytics': typeof AuthenticatedAnalyticsIndexRoute
   '/appraisals': typeof AuthenticatedAppraisalsIndexRoute
   '/attendance': typeof AuthenticatedAttendanceIndexRoute
@@ -841,6 +868,8 @@ export interface FileRoutesById {
   '/_authenticated/access/$accountId': typeof AuthenticatedAccessAccountIdRoute
   '/_authenticated/access/platforms': typeof AuthenticatedAccessPlatformsRoute
   '/_authenticated/access/registry': typeof AuthenticatedAccessRegistryRouteWithChildren
+  '/_authenticated/advances/$advanceId': typeof AuthenticatedAdvancesAdvanceIdRoute
+  '/_authenticated/advances/new': typeof AuthenticatedAdvancesNewRoute
   '/_authenticated/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRoute
   '/_authenticated/appraisals/inbox': typeof AuthenticatedAppraisalsInboxRoute
   '/_authenticated/attendance/holidays': typeof AuthenticatedAttendanceHolidaysRoute
@@ -891,6 +920,7 @@ export interface FileRoutesById {
   '/_authenticated/work/new': typeof AuthenticatedWorkNewRoute
   '/_authenticated/work/workload': typeof AuthenticatedWorkWorkloadRoute
   '/_authenticated/access/': typeof AuthenticatedAccessIndexRoute
+  '/_authenticated/advances/': typeof AuthenticatedAdvancesIndexRoute
   '/_authenticated/analytics/': typeof AuthenticatedAnalyticsIndexRoute
   '/_authenticated/appraisals/': typeof AuthenticatedAppraisalsIndexRoute
   '/_authenticated/attendance/': typeof AuthenticatedAttendanceIndexRoute
@@ -937,6 +967,8 @@ export interface FileRouteTypes {
     | '/access/$accountId'
     | '/access/platforms'
     | '/access/registry'
+    | '/advances/$advanceId'
+    | '/advances/new'
     | '/appraisals/$appraisalId'
     | '/appraisals/inbox'
     | '/attendance/holidays'
@@ -987,6 +1019,7 @@ export interface FileRouteTypes {
     | '/work/new'
     | '/work/workload'
     | '/access/'
+    | '/advances/'
     | '/analytics/'
     | '/appraisals/'
     | '/attendance/'
@@ -1031,6 +1064,8 @@ export interface FileRouteTypes {
     | '/access/$accountId'
     | '/access/platforms'
     | '/access/registry'
+    | '/advances/$advanceId'
+    | '/advances/new'
     | '/appraisals/$appraisalId'
     | '/appraisals/inbox'
     | '/attendance/holidays'
@@ -1081,6 +1116,7 @@ export interface FileRouteTypes {
     | '/work/new'
     | '/work/workload'
     | '/access'
+    | '/advances'
     | '/analytics'
     | '/appraisals'
     | '/attendance'
@@ -1126,6 +1162,8 @@ export interface FileRouteTypes {
     | '/_authenticated/access/$accountId'
     | '/_authenticated/access/platforms'
     | '/_authenticated/access/registry'
+    | '/_authenticated/advances/$advanceId'
+    | '/_authenticated/advances/new'
     | '/_authenticated/appraisals/$appraisalId'
     | '/_authenticated/appraisals/inbox'
     | '/_authenticated/attendance/holidays'
@@ -1176,6 +1214,7 @@ export interface FileRouteTypes {
     | '/_authenticated/work/new'
     | '/_authenticated/work/workload'
     | '/_authenticated/access/'
+    | '/_authenticated/advances/'
     | '/_authenticated/analytics/'
     | '/_authenticated/appraisals/'
     | '/_authenticated/attendance/'
@@ -1457,6 +1496,13 @@ declare module '@tanstack/react-router' {
       path: '/analytics'
       fullPath: '/analytics/'
       preLoaderRoute: typeof AuthenticatedAnalyticsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/advances/': {
+      id: '/_authenticated/advances/'
+      path: '/advances'
+      fullPath: '/advances/'
+      preLoaderRoute: typeof AuthenticatedAdvancesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/access/': {
@@ -1809,6 +1855,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppraisalsAppraisalIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/advances/new': {
+      id: '/_authenticated/advances/new'
+      path: '/advances/new'
+      fullPath: '/advances/new'
+      preLoaderRoute: typeof AuthenticatedAdvancesNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/advances/$advanceId': {
+      id: '/_authenticated/advances/$advanceId'
+      path: '/advances/$advanceId'
+      fullPath: '/advances/$advanceId'
+      preLoaderRoute: typeof AuthenticatedAdvancesAdvanceIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/access/registry': {
       id: '/_authenticated/access/registry'
       path: '/access/registry'
@@ -1911,6 +1971,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccessAccountIdRoute: typeof AuthenticatedAccessAccountIdRoute
   AuthenticatedAccessPlatformsRoute: typeof AuthenticatedAccessPlatformsRoute
   AuthenticatedAccessRegistryRoute: typeof AuthenticatedAccessRegistryRouteWithChildren
+  AuthenticatedAdvancesAdvanceIdRoute: typeof AuthenticatedAdvancesAdvanceIdRoute
+  AuthenticatedAdvancesNewRoute: typeof AuthenticatedAdvancesNewRoute
   AuthenticatedAppraisalsAppraisalIdRoute: typeof AuthenticatedAppraisalsAppraisalIdRoute
   AuthenticatedAppraisalsInboxRoute: typeof AuthenticatedAppraisalsInboxRoute
   AuthenticatedAttendanceHolidaysRoute: typeof AuthenticatedAttendanceHolidaysRoute
@@ -1961,6 +2023,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedWorkNewRoute: typeof AuthenticatedWorkNewRoute
   AuthenticatedWorkWorkloadRoute: typeof AuthenticatedWorkWorkloadRoute
   AuthenticatedAccessIndexRoute: typeof AuthenticatedAccessIndexRoute
+  AuthenticatedAdvancesIndexRoute: typeof AuthenticatedAdvancesIndexRoute
   AuthenticatedAnalyticsIndexRoute: typeof AuthenticatedAnalyticsIndexRoute
   AuthenticatedAppraisalsIndexRoute: typeof AuthenticatedAppraisalsIndexRoute
   AuthenticatedAttendanceIndexRoute: typeof AuthenticatedAttendanceIndexRoute
@@ -2004,6 +2067,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccessPlatformsRoute: AuthenticatedAccessPlatformsRoute,
   AuthenticatedAccessRegistryRoute:
     AuthenticatedAccessRegistryRouteWithChildren,
+  AuthenticatedAdvancesAdvanceIdRoute: AuthenticatedAdvancesAdvanceIdRoute,
+  AuthenticatedAdvancesNewRoute: AuthenticatedAdvancesNewRoute,
   AuthenticatedAppraisalsAppraisalIdRoute:
     AuthenticatedAppraisalsAppraisalIdRoute,
   AuthenticatedAppraisalsInboxRoute: AuthenticatedAppraisalsInboxRoute,
@@ -2057,6 +2122,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedWorkNewRoute: AuthenticatedWorkNewRoute,
   AuthenticatedWorkWorkloadRoute: AuthenticatedWorkWorkloadRoute,
   AuthenticatedAccessIndexRoute: AuthenticatedAccessIndexRoute,
+  AuthenticatedAdvancesIndexRoute: AuthenticatedAdvancesIndexRoute,
   AuthenticatedAnalyticsIndexRoute: AuthenticatedAnalyticsIndexRoute,
   AuthenticatedAppraisalsIndexRoute: AuthenticatedAppraisalsIndexRoute,
   AuthenticatedAttendanceIndexRoute: AuthenticatedAttendanceIndexRoute,

@@ -64,6 +64,8 @@ import {
 } from "./commendations";
 // Phase 5 follow-up (migration 0030) — noc_performance_journal mistake-matrix
 import { nocPerformanceJournalRouter } from "./noc-performance-journal";
+// Post-Phase-16 — NDMA advance request workflow
+import { advancesRouter } from "./advances";
 
 const healthCheck = publicProcedure.handler(() => "OK");
 const privateData = protectedProcedure.handler(({ context }) => ({
@@ -130,6 +132,8 @@ export type AppRouter = {
   appraisalTracker: typeof appraisalTrackerRouter;
   // Phase 5 follow-up (migration 0030) — noc_performance_journal
   nocPerformanceJournal: typeof nocPerformanceJournalRouter;
+  // Post-Phase-16 — NDMA advance requests
+  advances: typeof advancesRouter;
 };
 
 export const appRouter: AppRouter = {
@@ -191,6 +195,8 @@ export const appRouter: AppRouter = {
   appraisalTracker: appraisalTrackerRouter,
   // Phase 5 follow-up (migration 0030)
   nocPerformanceJournal: nocPerformanceJournalRouter,
+  // Post-Phase-16 — NDMA advance requests
+  advances: advancesRouter,
 };
 
 export type AppRouterClient = RouterClient<AppRouter>;

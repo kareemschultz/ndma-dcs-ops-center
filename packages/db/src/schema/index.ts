@@ -61,3 +61,5 @@ export * from "./commendations";
 export * from "./appraisal-tracker-view";
 // Phase 5 follow-up (migration 0030) — noc_performance_journal (monthly mistake-matrix)
 export * from "./noc-performance-journal";
+// Post-Phase-16 feature work — advance requests (NDMA cash-advance workflow)
+export * from "./advance-requests";
