@@ -115,36 +115,38 @@ function SchedulingHubPage() {
         <SchedulingSubNav activeView="hub" />
 
         {/* Stats strip */}
-        <div className="flex divide-x border-b bg-muted/30 text-sm overflow-x-auto">
-          {[
-            { label: "DCS weeks scheduled", value: dcsLoading ? "—" : String(weeksScheduled), sub: `this year` },
-            { label: "Day coverage", value: "100%", sub: "24/7 DCS on-call" },
-            {
-              label: "NOC on shift now",
-              value: nocLoading ? "—" : String((nocCounts["Day Shift"] ?? 0) + (nocCounts["Night Shift"] ?? 0)),
-              sub: `${nocCounts["Day Shift"] ?? 0} day · ${nocCounts["Night Shift"] ?? 0} night`,
-            },
-            {
-              label: `Q${currentQ} maintenance`,
-              value: maintLoading ? "—" : `${qDone} / ${qTasks.length}`,
-              sub: "tasks complete",
-              warn: qDone < qTasks.length,
-            },
-            {
-              label: "Pending swaps",
-              value: "—",
-              sub: "awaiting review",
-              warn: false,
-            },
-          ].map((stat) => (
-            <div key={stat.label} className="flex flex-col px-5 py-3 first:pl-0 shrink-0">
-              <span className="text-xs uppercase tracking-wider text-muted-foreground whitespace-nowrap">{stat.label}</span>
-              <span className={["text-2xl font-semibold tabular-nums leading-tight", stat.warn ? "text-amber-600 dark:text-amber-400" : ""].join(" ")}>
-                {stat.value}
-              </span>
-              <span className="text-xs text-muted-foreground">{stat.sub}</span>
-            </div>
-          ))}
+        <div className="px-6 pt-5 pb-2">
+          <div className="grid grid-cols-5 divide-x rounded-xl border bg-card text-sm overflow-hidden">
+            {[
+              { label: "DCS weeks scheduled", value: dcsLoading ? "—" : String(weeksScheduled), sub: "this year" },
+              { label: "Day coverage", value: "100%", sub: "24/7 DCS on-call" },
+              {
+                label: "NOC on shift now",
+                value: nocLoading ? "—" : String((nocCounts["Day Shift"] ?? 0) + (nocCounts["Night Shift"] ?? 0)),
+                sub: `${nocCounts["Day Shift"] ?? 0} day · ${nocCounts["Night Shift"] ?? 0} night`,
+              },
+              {
+                label: `Q${currentQ} maintenance`,
+                value: maintLoading ? "—" : `${qDone} / ${qTasks.length}`,
+                sub: "tasks complete",
+                warn: qDone < qTasks.length,
+              },
+              {
+                label: "Pending swaps",
+                value: "—",
+                sub: "awaiting review",
+                warn: false,
+              },
+            ].map((stat) => (
+              <div key={stat.label} className="flex flex-col px-5 py-4">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground whitespace-nowrap">{stat.label}</span>
+                <span className={["text-2xl font-semibold tabular-nums leading-tight mt-0.5", stat.warn ? "text-amber-600 dark:text-amber-400" : ""].join(" ")}>
+                  {stat.value}
+                </span>
+                <span className="text-xs text-muted-foreground mt-0.5">{stat.sub}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="grid gap-4 p-6 md:grid-cols-3">

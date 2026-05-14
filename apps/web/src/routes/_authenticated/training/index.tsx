@@ -69,29 +69,31 @@ function TrainingOverviewPage() {
         <TrainingSubNav active="/training" />
 
         {/* Summary strip */}
-        <div className="flex divide-x border-b bg-muted/30">
-          {[
-            {
-              label: "Vouchers expiring ≤30 days",
-              value: vLoading ? "…" : String(expiring30.length),
-              cls: expiring30.length > 0 ? "text-red-600 dark:text-red-400" : "",
-            },
-            {
-              label: "Upcoming events",
-              value: eLoading ? "…" : String(upcomingEvents.length),
-              cls: "text-blue-600 dark:text-blue-400",
-            },
-            {
-              label: "Certifications in catalog",
-              value: catalog ? String(catalog.length) : "—",
-              cls: "",
-            },
-          ].map((s) => (
-            <div key={s.label} className="flex flex-col px-5 py-2.5 first:pl-6">
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</span>
-              <span className={`text-xl font-bold tabular-nums leading-tight ${s.cls}`}>{s.value}</span>
-            </div>
-          ))}
+        <div className="px-6 pt-5 pb-2">
+          <div className="inline-flex divide-x rounded-xl border bg-card overflow-hidden">
+            {[
+              {
+                label: "Vouchers expiring ≤30 days",
+                value: vLoading ? "…" : String(expiring30.length),
+                cls: expiring30.length > 0 ? "text-red-600 dark:text-red-400" : "",
+              },
+              {
+                label: "Upcoming events",
+                value: eLoading ? "…" : String(upcomingEvents.length),
+                cls: "text-blue-600 dark:text-blue-400",
+              },
+              {
+                label: "Certifications in catalog",
+                value: catalog ? String(catalog.length) : "—",
+                cls: "",
+              },
+            ].map((s) => (
+              <div key={s.label} className="flex flex-col px-5 py-4">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{s.label}</span>
+                <span className={`text-xl font-bold tabular-nums leading-tight mt-0.5 ${s.cls}`}>{s.value}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-8 p-6">
