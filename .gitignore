@@ -60,3 +60,4 @@ AccountManagement*.xlsx
 .claude/settings.local.json
 .claude/*.lock
 .claude/worktrees/
+.design-bundle/

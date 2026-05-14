@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@ndma-dcs-staff-portal/ui/components/table";
 
+import { AttendanceSubNav } from "@/components/layout/attendance-sub-nav";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -220,6 +221,8 @@ function HolidaysPage() {
           <ThemeSwitch />
         </div>
       </Header>
+
+      <AttendanceSubNav activeView="holidays" />
 
       <Main>
         <div className="mb-6">

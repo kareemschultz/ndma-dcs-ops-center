@@ -44,6 +44,7 @@ import {
 } from "@ndma-dcs-staff-portal/ui/components/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ndma-dcs-staff-portal/ui/components/tabs";
 
+import { AttendanceSubNav } from "@/components/layout/attendance-sub-nav";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -928,6 +929,8 @@ function LatenessPage() {
           <ThemeSwitch />
         </div>
       </Header>
+
+      <AttendanceSubNav activeView="lateness" />
 
       <Main>
         <div className="mb-4">

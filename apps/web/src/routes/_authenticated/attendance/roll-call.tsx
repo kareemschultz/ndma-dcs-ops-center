@@ -32,6 +32,7 @@ import {
 } from "@ndma-dcs-staff-portal/ui/components/select";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 
+import { AttendanceSubNav } from "@/components/layout/attendance-sub-nav";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -416,6 +417,8 @@ function RollCallPage() {
           <ThemeSwitch />
         </div>
       </Header>
+
+      <AttendanceSubNav activeView="roll-call" />
 
       <Main className="space-y-6">
         {/* Title + actions */}
