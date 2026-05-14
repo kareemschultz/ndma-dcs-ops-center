@@ -15,7 +15,9 @@
 import {
   BarChart3,
   BookOpen,
+  CalendarCheck,
   CalendarDays,
+  ClipboardCheck,
   ClipboardList,
   Clock,
   FileText,
@@ -23,6 +25,7 @@ import {
   KeyRound,
   LayoutDashboard,
   LineChart,
+  Plane,
   Settings,
   ShoppingCart,
   Shield,
@@ -78,6 +81,9 @@ export const sidebarData: Omit<SidebarData, "user"> = {
     {
       title: "Time & Attendance",
       items: [
+        { title: "Daily Roll-Call", url: "/attendance/roll-call", icon: ClipboardCheck },
+        { title: "Monthly Grid",    url: "/attendance/monthly",   icon: CalendarDays },
+        { title: "Public Holidays", url: "/attendance/holidays",  icon: CalendarCheck },
         { title: "Attendance Logs", url: "/attendance",  icon: Clock },
         { title: "Lateness Report", url: "/lateness",    icon: Timer },
         { title: "Timesheets",      url: "/timesheets",  icon: FileText },
@@ -88,6 +94,7 @@ export const sidebarData: Omit<SidebarData, "user"> = {
       items: [
         { title: "Directory",            url: "/staff",                icon: Users },
         { title: "Leave",                url: "/leave",                icon: Users },
+        { title: "Leave Planner",        url: "/leave/planner",        icon: Plane },
         { title: "Career Progression",   url: "/career-progression",   icon: Users },
         { title: "Contracts",            url: "/contracts",            icon: Users, requiredResource: "contract" },
         { title: "Compliance",           url: "/compliance",           icon: Users, requiredResource: "compliance" },

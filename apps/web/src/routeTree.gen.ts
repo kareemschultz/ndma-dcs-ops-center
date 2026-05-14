@@ -75,6 +75,7 @@ import { Route as AuthenticatedRosterMyRosterRouteImport } from './routes/_authe
 import { Route as AuthenticatedRosterMaintenanceRouteImport } from './routes/_authenticated/roster/maintenance'
 import { Route as AuthenticatedProcurementNewRouteImport } from './routes/_authenticated/procurement/new'
 import { Route as AuthenticatedLeaveTosdRouteImport } from './routes/_authenticated/leave/tosd'
+import { Route as AuthenticatedLeavePlannerRouteImport } from './routes/_authenticated/leave/planner'
 import { Route as AuthenticatedLeaveNewRouteImport } from './routes/_authenticated/leave/new'
 import { Route as AuthenticatedLeaveCalendarRouteImport } from './routes/_authenticated/leave/calendar'
 import { Route as AuthenticatedIncidentsNewRouteImport } from './routes/_authenticated/incidents/new'
@@ -87,6 +88,9 @@ import { Route as AuthenticatedCompliancePpeRouteImport } from './routes/_authen
 import { Route as AuthenticatedComplianceItemsRouteImport } from './routes/_authenticated/compliance/items'
 import { Route as AuthenticatedChangesNewRouteImport } from './routes/_authenticated/changes/new'
 import { Route as AuthenticatedChangesChangeIdRouteImport } from './routes/_authenticated/changes/$changeId'
+import { Route as AuthenticatedAttendanceRollCallRouteImport } from './routes/_authenticated/attendance/roll-call'
+import { Route as AuthenticatedAttendanceMonthlyRouteImport } from './routes/_authenticated/attendance/monthly'
+import { Route as AuthenticatedAttendanceHolidaysRouteImport } from './routes/_authenticated/attendance/holidays'
 import { Route as AuthenticatedAppraisalsInboxRouteImport } from './routes/_authenticated/appraisals/inbox'
 import { Route as AuthenticatedAppraisalsAppraisalIdRouteImport } from './routes/_authenticated/appraisals/$appraisalId'
 import { Route as AuthenticatedAccessRegistryRouteImport } from './routes/_authenticated/access/registry'
@@ -95,6 +99,7 @@ import { Route as AuthenticatedAccessAccountIdRouteImport } from './routes/_auth
 import { Route as AuthenticatedRotaWarningsIndexRouteImport } from './routes/_authenticated/rota/warnings/index'
 import { Route as AuthenticatedRotaFairnessIndexRouteImport } from './routes/_authenticated/rota/fairness/index'
 import { Route as AuthenticatedRotaCalendarIndexRouteImport } from './routes/_authenticated/rota/calendar/index'
+import { Route as AuthenticatedStaffStaffIdAttendanceRouteImport } from './routes/_authenticated/staff.$staffId.attendance'
 import { Route as AuthenticatedAppraisalsStaffStaffProfileIdRouteImport } from './routes/_authenticated/appraisals/staff/$staffProfileId'
 import { Route as AuthenticatedAccessRegistryStaffIdRouteImport } from './routes/_authenticated/access/registry.$staffId'
 
@@ -479,6 +484,12 @@ const AuthenticatedLeaveTosdRoute = AuthenticatedLeaveTosdRouteImport.update({
   path: '/leave/tosd',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLeavePlannerRoute =
+  AuthenticatedLeavePlannerRouteImport.update({
+    id: '/leave/planner',
+    path: '/leave/planner',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedLeaveNewRoute = AuthenticatedLeaveNewRouteImport.update({
   id: '/leave/new',
   path: '/leave/new',
@@ -548,6 +559,24 @@ const AuthenticatedChangesChangeIdRoute =
     path: '/changes/$changeId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAttendanceRollCallRoute =
+  AuthenticatedAttendanceRollCallRouteImport.update({
+    id: '/attendance/roll-call',
+    path: '/attendance/roll-call',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAttendanceMonthlyRoute =
+  AuthenticatedAttendanceMonthlyRouteImport.update({
+    id: '/attendance/monthly',
+    path: '/attendance/monthly',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAttendanceHolidaysRoute =
+  AuthenticatedAttendanceHolidaysRouteImport.update({
+    id: '/attendance/holidays',
+    path: '/attendance/holidays',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAppraisalsInboxRoute =
   AuthenticatedAppraisalsInboxRouteImport.update({
     id: '/appraisals/inbox',
@@ -596,6 +625,12 @@ const AuthenticatedRotaCalendarIndexRoute =
     path: '/rota/calendar/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedStaffStaffIdAttendanceRoute =
+  AuthenticatedStaffStaffIdAttendanceRouteImport.update({
+    id: '/attendance',
+    path: '/attendance',
+    getParentRoute: () => AuthenticatedStaffStaffIdRoute,
+  } as any)
 const AuthenticatedAppraisalsStaffStaffProfileIdRoute =
   AuthenticatedAppraisalsStaffStaffProfileIdRouteImport.update({
     id: '/appraisals/staff/$staffProfileId',
@@ -618,6 +653,9 @@ export interface FileRoutesByFullPath {
   '/access/registry': typeof AuthenticatedAccessRegistryRouteWithChildren
   '/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRoute
   '/appraisals/inbox': typeof AuthenticatedAppraisalsInboxRoute
+  '/attendance/holidays': typeof AuthenticatedAttendanceHolidaysRoute
+  '/attendance/monthly': typeof AuthenticatedAttendanceMonthlyRoute
+  '/attendance/roll-call': typeof AuthenticatedAttendanceRollCallRoute
   '/changes/$changeId': typeof AuthenticatedChangesChangeIdRoute
   '/changes/new': typeof AuthenticatedChangesNewRoute
   '/compliance/items': typeof AuthenticatedComplianceItemsRoute
@@ -630,6 +668,7 @@ export interface FileRoutesByFullPath {
   '/incidents/new': typeof AuthenticatedIncidentsNewRoute
   '/leave/calendar': typeof AuthenticatedLeaveCalendarRoute
   '/leave/new': typeof AuthenticatedLeaveNewRoute
+  '/leave/planner': typeof AuthenticatedLeavePlannerRoute
   '/leave/tosd': typeof AuthenticatedLeaveTosdRoute
   '/procurement/new': typeof AuthenticatedProcurementNewRoute
   '/roster/maintenance': typeof AuthenticatedRosterMaintenanceRoute
@@ -650,7 +689,7 @@ export interface FileRoutesByFullPath {
   '/settings/general': typeof AuthenticatedSettingsGeneralRoute
   '/settings/leave-types': typeof AuthenticatedSettingsLeaveTypesRoute
   '/settings/roles': typeof AuthenticatedSettingsRolesRoute
-  '/staff/$staffId': typeof AuthenticatedStaffStaffIdRoute
+  '/staff/$staffId': typeof AuthenticatedStaffStaffIdRouteWithChildren
   '/timesheets/documents': typeof AuthenticatedTimesheetsDocumentsRoute
   '/training/catalog': typeof AuthenticatedTrainingCatalogRoute
   '/training/events': typeof AuthenticatedTrainingEventsRoute
@@ -694,6 +733,7 @@ export interface FileRoutesByFullPath {
   '/work/': typeof AuthenticatedWorkIndexRoute
   '/access/registry/$staffId': typeof AuthenticatedAccessRegistryStaffIdRoute
   '/appraisals/staff/$staffProfileId': typeof AuthenticatedAppraisalsStaffStaffProfileIdRoute
+  '/staff/$staffId/attendance': typeof AuthenticatedStaffStaffIdAttendanceRoute
   '/rota/calendar/': typeof AuthenticatedRotaCalendarIndexRoute
   '/rota/fairness/': typeof AuthenticatedRotaFairnessIndexRoute
   '/rota/warnings/': typeof AuthenticatedRotaWarningsIndexRoute
@@ -707,6 +747,9 @@ export interface FileRoutesByTo {
   '/access/registry': typeof AuthenticatedAccessRegistryRouteWithChildren
   '/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRoute
   '/appraisals/inbox': typeof AuthenticatedAppraisalsInboxRoute
+  '/attendance/holidays': typeof AuthenticatedAttendanceHolidaysRoute
+  '/attendance/monthly': typeof AuthenticatedAttendanceMonthlyRoute
+  '/attendance/roll-call': typeof AuthenticatedAttendanceRollCallRoute
   '/changes/$changeId': typeof AuthenticatedChangesChangeIdRoute
   '/changes/new': typeof AuthenticatedChangesNewRoute
   '/compliance/items': typeof AuthenticatedComplianceItemsRoute
@@ -719,6 +762,7 @@ export interface FileRoutesByTo {
   '/incidents/new': typeof AuthenticatedIncidentsNewRoute
   '/leave/calendar': typeof AuthenticatedLeaveCalendarRoute
   '/leave/new': typeof AuthenticatedLeaveNewRoute
+  '/leave/planner': typeof AuthenticatedLeavePlannerRoute
   '/leave/tosd': typeof AuthenticatedLeaveTosdRoute
   '/procurement/new': typeof AuthenticatedProcurementNewRoute
   '/roster/maintenance': typeof AuthenticatedRosterMaintenanceRoute
@@ -739,7 +783,7 @@ export interface FileRoutesByTo {
   '/settings/general': typeof AuthenticatedSettingsGeneralRoute
   '/settings/leave-types': typeof AuthenticatedSettingsLeaveTypesRoute
   '/settings/roles': typeof AuthenticatedSettingsRolesRoute
-  '/staff/$staffId': typeof AuthenticatedStaffStaffIdRoute
+  '/staff/$staffId': typeof AuthenticatedStaffStaffIdRouteWithChildren
   '/timesheets/documents': typeof AuthenticatedTimesheetsDocumentsRoute
   '/training/catalog': typeof AuthenticatedTrainingCatalogRoute
   '/training/events': typeof AuthenticatedTrainingEventsRoute
@@ -783,6 +827,7 @@ export interface FileRoutesByTo {
   '/work': typeof AuthenticatedWorkIndexRoute
   '/access/registry/$staffId': typeof AuthenticatedAccessRegistryStaffIdRoute
   '/appraisals/staff/$staffProfileId': typeof AuthenticatedAppraisalsStaffStaffProfileIdRoute
+  '/staff/$staffId/attendance': typeof AuthenticatedStaffStaffIdAttendanceRoute
   '/rota/calendar': typeof AuthenticatedRotaCalendarIndexRoute
   '/rota/fairness': typeof AuthenticatedRotaFairnessIndexRoute
   '/rota/warnings': typeof AuthenticatedRotaWarningsIndexRoute
@@ -798,6 +843,9 @@ export interface FileRoutesById {
   '/_authenticated/access/registry': typeof AuthenticatedAccessRegistryRouteWithChildren
   '/_authenticated/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRoute
   '/_authenticated/appraisals/inbox': typeof AuthenticatedAppraisalsInboxRoute
+  '/_authenticated/attendance/holidays': typeof AuthenticatedAttendanceHolidaysRoute
+  '/_authenticated/attendance/monthly': typeof AuthenticatedAttendanceMonthlyRoute
+  '/_authenticated/attendance/roll-call': typeof AuthenticatedAttendanceRollCallRoute
   '/_authenticated/changes/$changeId': typeof AuthenticatedChangesChangeIdRoute
   '/_authenticated/changes/new': typeof AuthenticatedChangesNewRoute
   '/_authenticated/compliance/items': typeof AuthenticatedComplianceItemsRoute
@@ -810,6 +858,7 @@ export interface FileRoutesById {
   '/_authenticated/incidents/new': typeof AuthenticatedIncidentsNewRoute
   '/_authenticated/leave/calendar': typeof AuthenticatedLeaveCalendarRoute
   '/_authenticated/leave/new': typeof AuthenticatedLeaveNewRoute
+  '/_authenticated/leave/planner': typeof AuthenticatedLeavePlannerRoute
   '/_authenticated/leave/tosd': typeof AuthenticatedLeaveTosdRoute
   '/_authenticated/procurement/new': typeof AuthenticatedProcurementNewRoute
   '/_authenticated/roster/maintenance': typeof AuthenticatedRosterMaintenanceRoute
@@ -830,7 +879,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/general': typeof AuthenticatedSettingsGeneralRoute
   '/_authenticated/settings/leave-types': typeof AuthenticatedSettingsLeaveTypesRoute
   '/_authenticated/settings/roles': typeof AuthenticatedSettingsRolesRoute
-  '/_authenticated/staff/$staffId': typeof AuthenticatedStaffStaffIdRoute
+  '/_authenticated/staff/$staffId': typeof AuthenticatedStaffStaffIdRouteWithChildren
   '/_authenticated/timesheets/documents': typeof AuthenticatedTimesheetsDocumentsRoute
   '/_authenticated/training/catalog': typeof AuthenticatedTrainingCatalogRoute
   '/_authenticated/training/events': typeof AuthenticatedTrainingEventsRoute
@@ -874,6 +923,7 @@ export interface FileRoutesById {
   '/_authenticated/work/': typeof AuthenticatedWorkIndexRoute
   '/_authenticated/access/registry/$staffId': typeof AuthenticatedAccessRegistryStaffIdRoute
   '/_authenticated/appraisals/staff/$staffProfileId': typeof AuthenticatedAppraisalsStaffStaffProfileIdRoute
+  '/_authenticated/staff/$staffId/attendance': typeof AuthenticatedStaffStaffIdAttendanceRoute
   '/_authenticated/rota/calendar/': typeof AuthenticatedRotaCalendarIndexRoute
   '/_authenticated/rota/fairness/': typeof AuthenticatedRotaFairnessIndexRoute
   '/_authenticated/rota/warnings/': typeof AuthenticatedRotaWarningsIndexRoute
@@ -889,6 +939,9 @@ export interface FileRouteTypes {
     | '/access/registry'
     | '/appraisals/$appraisalId'
     | '/appraisals/inbox'
+    | '/attendance/holidays'
+    | '/attendance/monthly'
+    | '/attendance/roll-call'
     | '/changes/$changeId'
     | '/changes/new'
     | '/compliance/items'
@@ -901,6 +954,7 @@ export interface FileRouteTypes {
     | '/incidents/new'
     | '/leave/calendar'
     | '/leave/new'
+    | '/leave/planner'
     | '/leave/tosd'
     | '/procurement/new'
     | '/roster/maintenance'
@@ -965,6 +1019,7 @@ export interface FileRouteTypes {
     | '/work/'
     | '/access/registry/$staffId'
     | '/appraisals/staff/$staffProfileId'
+    | '/staff/$staffId/attendance'
     | '/rota/calendar/'
     | '/rota/fairness/'
     | '/rota/warnings/'
@@ -978,6 +1033,9 @@ export interface FileRouteTypes {
     | '/access/registry'
     | '/appraisals/$appraisalId'
     | '/appraisals/inbox'
+    | '/attendance/holidays'
+    | '/attendance/monthly'
+    | '/attendance/roll-call'
     | '/changes/$changeId'
     | '/changes/new'
     | '/compliance/items'
@@ -990,6 +1048,7 @@ export interface FileRouteTypes {
     | '/incidents/new'
     | '/leave/calendar'
     | '/leave/new'
+    | '/leave/planner'
     | '/leave/tosd'
     | '/procurement/new'
     | '/roster/maintenance'
@@ -1054,6 +1113,7 @@ export interface FileRouteTypes {
     | '/work'
     | '/access/registry/$staffId'
     | '/appraisals/staff/$staffProfileId'
+    | '/staff/$staffId/attendance'
     | '/rota/calendar'
     | '/rota/fairness'
     | '/rota/warnings'
@@ -1068,6 +1128,9 @@ export interface FileRouteTypes {
     | '/_authenticated/access/registry'
     | '/_authenticated/appraisals/$appraisalId'
     | '/_authenticated/appraisals/inbox'
+    | '/_authenticated/attendance/holidays'
+    | '/_authenticated/attendance/monthly'
+    | '/_authenticated/attendance/roll-call'
     | '/_authenticated/changes/$changeId'
     | '/_authenticated/changes/new'
     | '/_authenticated/compliance/items'
@@ -1080,6 +1143,7 @@ export interface FileRouteTypes {
     | '/_authenticated/incidents/new'
     | '/_authenticated/leave/calendar'
     | '/_authenticated/leave/new'
+    | '/_authenticated/leave/planner'
     | '/_authenticated/leave/tosd'
     | '/_authenticated/procurement/new'
     | '/_authenticated/roster/maintenance'
@@ -1144,6 +1208,7 @@ export interface FileRouteTypes {
     | '/_authenticated/work/'
     | '/_authenticated/access/registry/$staffId'
     | '/_authenticated/appraisals/staff/$staffProfileId'
+    | '/_authenticated/staff/$staffId/attendance'
     | '/_authenticated/rota/calendar/'
     | '/_authenticated/rota/fairness/'
     | '/_authenticated/rota/warnings/'
@@ -1618,6 +1683,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaveTosdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/leave/planner': {
+      id: '/_authenticated/leave/planner'
+      path: '/leave/planner'
+      fullPath: '/leave/planner'
+      preLoaderRoute: typeof AuthenticatedLeavePlannerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/leave/new': {
       id: '/_authenticated/leave/new'
       path: '/leave/new'
@@ -1702,6 +1774,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChangesChangeIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/attendance/roll-call': {
+      id: '/_authenticated/attendance/roll-call'
+      path: '/attendance/roll-call'
+      fullPath: '/attendance/roll-call'
+      preLoaderRoute: typeof AuthenticatedAttendanceRollCallRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/attendance/monthly': {
+      id: '/_authenticated/attendance/monthly'
+      path: '/attendance/monthly'
+      fullPath: '/attendance/monthly'
+      preLoaderRoute: typeof AuthenticatedAttendanceMonthlyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/attendance/holidays': {
+      id: '/_authenticated/attendance/holidays'
+      path: '/attendance/holidays'
+      fullPath: '/attendance/holidays'
+      preLoaderRoute: typeof AuthenticatedAttendanceHolidaysRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/appraisals/inbox': {
       id: '/_authenticated/appraisals/inbox'
       path: '/appraisals/inbox'
@@ -1758,6 +1851,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRotaCalendarIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/staff/$staffId/attendance': {
+      id: '/_authenticated/staff/$staffId/attendance'
+      path: '/attendance'
+      fullPath: '/staff/$staffId/attendance'
+      preLoaderRoute: typeof AuthenticatedStaffStaffIdAttendanceRouteImport
+      parentRoute: typeof AuthenticatedStaffStaffIdRoute
+    }
     '/_authenticated/appraisals/staff/$staffProfileId': {
       id: '/_authenticated/appraisals/staff/$staffProfileId'
       path: '/appraisals/staff/$staffProfileId'
@@ -1790,6 +1890,21 @@ const AuthenticatedAccessRegistryRouteWithChildren =
     AuthenticatedAccessRegistryRouteChildren,
   )
 
+interface AuthenticatedStaffStaffIdRouteChildren {
+  AuthenticatedStaffStaffIdAttendanceRoute: typeof AuthenticatedStaffStaffIdAttendanceRoute
+}
+
+const AuthenticatedStaffStaffIdRouteChildren: AuthenticatedStaffStaffIdRouteChildren =
+  {
+    AuthenticatedStaffStaffIdAttendanceRoute:
+      AuthenticatedStaffStaffIdAttendanceRoute,
+  }
+
+const AuthenticatedStaffStaffIdRouteWithChildren =
+  AuthenticatedStaffStaffIdRoute._addFileChildren(
+    AuthenticatedStaffStaffIdRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -1798,6 +1913,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccessRegistryRoute: typeof AuthenticatedAccessRegistryRouteWithChildren
   AuthenticatedAppraisalsAppraisalIdRoute: typeof AuthenticatedAppraisalsAppraisalIdRoute
   AuthenticatedAppraisalsInboxRoute: typeof AuthenticatedAppraisalsInboxRoute
+  AuthenticatedAttendanceHolidaysRoute: typeof AuthenticatedAttendanceHolidaysRoute
+  AuthenticatedAttendanceMonthlyRoute: typeof AuthenticatedAttendanceMonthlyRoute
+  AuthenticatedAttendanceRollCallRoute: typeof AuthenticatedAttendanceRollCallRoute
   AuthenticatedChangesChangeIdRoute: typeof AuthenticatedChangesChangeIdRoute
   AuthenticatedChangesNewRoute: typeof AuthenticatedChangesNewRoute
   AuthenticatedComplianceItemsRoute: typeof AuthenticatedComplianceItemsRoute
@@ -1810,6 +1928,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIncidentsNewRoute: typeof AuthenticatedIncidentsNewRoute
   AuthenticatedLeaveCalendarRoute: typeof AuthenticatedLeaveCalendarRoute
   AuthenticatedLeaveNewRoute: typeof AuthenticatedLeaveNewRoute
+  AuthenticatedLeavePlannerRoute: typeof AuthenticatedLeavePlannerRoute
   AuthenticatedLeaveTosdRoute: typeof AuthenticatedLeaveTosdRoute
   AuthenticatedProcurementNewRoute: typeof AuthenticatedProcurementNewRoute
   AuthenticatedRosterMaintenanceRoute: typeof AuthenticatedRosterMaintenanceRoute
@@ -1830,7 +1949,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsGeneralRoute: typeof AuthenticatedSettingsGeneralRoute
   AuthenticatedSettingsLeaveTypesRoute: typeof AuthenticatedSettingsLeaveTypesRoute
   AuthenticatedSettingsRolesRoute: typeof AuthenticatedSettingsRolesRoute
-  AuthenticatedStaffStaffIdRoute: typeof AuthenticatedStaffStaffIdRoute
+  AuthenticatedStaffStaffIdRoute: typeof AuthenticatedStaffStaffIdRouteWithChildren
   AuthenticatedTimesheetsDocumentsRoute: typeof AuthenticatedTimesheetsDocumentsRoute
   AuthenticatedTrainingCatalogRoute: typeof AuthenticatedTrainingCatalogRoute
   AuthenticatedTrainingEventsRoute: typeof AuthenticatedTrainingEventsRoute
@@ -1888,6 +2007,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppraisalsAppraisalIdRoute:
     AuthenticatedAppraisalsAppraisalIdRoute,
   AuthenticatedAppraisalsInboxRoute: AuthenticatedAppraisalsInboxRoute,
+  AuthenticatedAttendanceHolidaysRoute: AuthenticatedAttendanceHolidaysRoute,
+  AuthenticatedAttendanceMonthlyRoute: AuthenticatedAttendanceMonthlyRoute,
+  AuthenticatedAttendanceRollCallRoute: AuthenticatedAttendanceRollCallRoute,
   AuthenticatedChangesChangeIdRoute: AuthenticatedChangesChangeIdRoute,
   AuthenticatedChangesNewRoute: AuthenticatedChangesNewRoute,
   AuthenticatedComplianceItemsRoute: AuthenticatedComplianceItemsRoute,
@@ -1900,6 +2022,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIncidentsNewRoute: AuthenticatedIncidentsNewRoute,
   AuthenticatedLeaveCalendarRoute: AuthenticatedLeaveCalendarRoute,
   AuthenticatedLeaveNewRoute: AuthenticatedLeaveNewRoute,
+  AuthenticatedLeavePlannerRoute: AuthenticatedLeavePlannerRoute,
   AuthenticatedLeaveTosdRoute: AuthenticatedLeaveTosdRoute,
   AuthenticatedProcurementNewRoute: AuthenticatedProcurementNewRoute,
   AuthenticatedRosterMaintenanceRoute: AuthenticatedRosterMaintenanceRoute,
@@ -1922,7 +2045,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsGeneralRoute: AuthenticatedSettingsGeneralRoute,
   AuthenticatedSettingsLeaveTypesRoute: AuthenticatedSettingsLeaveTypesRoute,
   AuthenticatedSettingsRolesRoute: AuthenticatedSettingsRolesRoute,
-  AuthenticatedStaffStaffIdRoute: AuthenticatedStaffStaffIdRoute,
+  AuthenticatedStaffStaffIdRoute: AuthenticatedStaffStaffIdRouteWithChildren,
   AuthenticatedTimesheetsDocumentsRoute: AuthenticatedTimesheetsDocumentsRoute,
   AuthenticatedTrainingCatalogRoute: AuthenticatedTrainingCatalogRoute,
   AuthenticatedTrainingEventsRoute: AuthenticatedTrainingEventsRoute,
