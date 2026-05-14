@@ -1,9 +1,29 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type ReactNode } from "react";
+import { type ReactNode, useMemo } from "react";
 import { useState } from "react";
 import { differenceInDays, format, parseISO } from "date-fns";
-import { AlertCircle, CheckCircle2, Clock, ClipboardCheck, FileDown, Info, Inbox, LayoutGrid, Pencil, Plus, Send, ShieldCheck, TrendingUp } from "lucide-react";
+import {
+  AlertCircle,
+  BarChart3,
+  CheckCircle2,
+  Clock,
+  ClipboardCheck,
+  FileDown,
+  FileText,
+  GitPullRequest,
+  Info,
+  Inbox,
+  LayoutGrid,
+  List,
+  Pencil,
+  Plus,
+  Send,
+  ShieldCheck,
+  TrendingUp,
+  UserCheck,
+  Building2,
+} from "lucide-react";
 import { exportAppraisalsExcel } from "@/utils/excel-export";
 import {
   Bar,
@@ -77,11 +97,13 @@ type AppraisalListRow = {
   status: string;
   periodStart: string | null;
   periodEnd: string | null;
+  submittedAt?: string | null;
   reviewer?: { user?: { name?: string | null } | null } | null;
   staffProfile?: {
     user?: { name?: string | null } | null;
     department?: { id: string; name: string; code: string } | null;
   } | null;
+  cycle?: { id: string; year: number; half: string } | null;
 };
 
 type TrackerRow = {
@@ -124,23 +146,12 @@ type AppraisalKpiSummary = {
   }[];
 };
 
-const STATUS_ORDER: AppraisalStatus[] = [
-  "draft",
-  "scheduled",
-  "in_progress",
-  "submitted",
-  "approved",
-  "rejected",
-  "completed",
-  "overdue",
-];
-
 const STATUS_COLORS: Record<AppraisalStatus, string> = {
-  draft: "bg-muted text-muted-foreground",
+  draft: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
   scheduled: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  in_progress: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
+  in_progress: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
   submitted: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  approved: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  approved: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
   rejected: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   completed: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   overdue: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
@@ -189,12 +200,13 @@ function CycleBanner() {
   const daysLeft = openCycle.closedAt
     ? differenceInDays(new Date(openCycle.closedAt), new Date())
     : null;
+  const halfLabel = openCycle.half === "h1" ? "First Half" : "Second Half";
   return (
     <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
       <Info className="size-4 shrink-0" />
       <span className="flex-1">
         <strong>
-          {openCycle.half} {openCycle.year} appraisal cycle is open.
+          {openCycle.year} — {halfLabel} appraisal cycle is open.
         </strong>
         {daysLeft != null && daysLeft > 3 && (
           <span className="ml-1 text-blue-600 dark:text-blue-400">Closes in {daysLeft} days.</span>
@@ -507,7 +519,7 @@ function CreateAppraisalDialog({ open, onClose }: { open: boolean; onClose: () =
               <SelectContent>
                 <SelectItem value="">None</SelectItem>
                 {(openCycles.length > 0 ? openCycles : allCycles).map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.half} {c.year}</SelectItem>
+                  <SelectItem key={c.id} value={c.id}>{c.half === "h1" ? "First Half" : "Second Half"} {c.year}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -578,6 +590,13 @@ function formatPeriod(appraisal: AppraisalListRow) {
   return "—";
 }
 
+function getInitials(name?: string | null): string {
+  if (!name) return "—";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 function StatCard({
   title,
   value,
@@ -602,13 +621,236 @@ function StatCard({
   );
 }
 
+// ── Pipeline columns config ────────────────────────────────────────────────────
+// Maps to the 5-stage Kanban from the design-handoff prototype.
+// Note: the DB enum has no `manager_review` / `hr_processing` — we use the
+// underlying workflow statuses (`in_progress`, `approved`) which represent
+// those stages in the lifecycle (submit → submitted → in_progress (manager
+// reviewing) → approved (manager done, awaiting HR) → completed (HR done)).
+type PipelineStage = "draft" | "submitted" | "manager_review" | "hr_processing" | "complete";
+
+type PipelineColumn = {
+  key: PipelineStage;
+  label: string;
+  // Status values that should land in this column.
+  matches: AppraisalStatus[];
+  dotClass: string;
+  badgeClass: string;
+  iconColor: string;
+};
+
+const PIPELINE_COLUMNS: PipelineColumn[] = [
+  {
+    key: "draft",
+    label: "Draft",
+    matches: ["draft"],
+    dotClass: "bg-slate-400",
+    badgeClass: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+    iconColor: "text-slate-500",
+  },
+  {
+    key: "submitted",
+    label: "Submitted",
+    matches: ["submitted"],
+    dotClass: "bg-amber-500",
+    badgeClass: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+    iconColor: "text-amber-600",
+  },
+  {
+    key: "manager_review",
+    label: "Manager Review",
+    matches: ["in_progress"],
+    dotClass: "bg-violet-500",
+    badgeClass: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
+    iconColor: "text-violet-600",
+  },
+  {
+    key: "hr_processing",
+    label: "HR Processing",
+    matches: ["approved"],
+    dotClass: "bg-blue-500",
+    badgeClass: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+    iconColor: "text-blue-600",
+  },
+  {
+    key: "complete",
+    label: "Complete",
+    matches: ["completed"],
+    dotClass: "bg-blue-700",
+    badgeClass: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+    iconColor: "text-blue-700",
+  },
+];
+
+function stageOf(status: string): PipelineStage | null {
+  for (const col of PIPELINE_COLUMNS) {
+    if ((col.matches as string[]).includes(status)) return col.key;
+  }
+  return null;
+}
+
+// ── Pipeline Kanban card ──────────────────────────────────────────────────────
+function PipelineCard({
+  row,
+  onOpen,
+}: {
+  row: AppraisalListRow;
+  onOpen: (id: string) => void;
+}) {
+  const name = row.staffProfile?.user?.name ?? "—";
+  const dept = row.staffProfile?.department?.code ?? row.staffProfile?.department?.name ?? "—";
+  const score = row.totalScore;
+  const max = 65;
+  const pct = score != null ? Math.round((score / max) * 100) : null;
+
+  const pctColor =
+    pct == null
+      ? "text-muted-foreground"
+      : pct >= 70
+        ? "text-blue-700 dark:text-blue-300"
+        : pct >= 50
+          ? "text-amber-600 dark:text-amber-400"
+          : "text-red-600 dark:text-red-400";
+
+  const barColor =
+    pct == null
+      ? "bg-muted"
+      : pct >= 70
+        ? "bg-blue-600"
+        : pct >= 50
+          ? "bg-amber-500"
+          : "bg-red-500";
+
+  const showScore = score != null && row.status !== "draft";
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(row.id)}
+      className="block w-full rounded-xl border bg-card p-3 text-left transition-colors hover:border-primary/60 hover:shadow-sm"
+    >
+      <div className="mb-2 flex items-center gap-2">
+        <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
+          {getInitials(name)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[12.5px] font-semibold">{name}</div>
+          <div className="truncate text-[11px] text-muted-foreground">{dept}</div>
+        </div>
+        <UrgencyBadge submittedAt={row.submittedAt} />
+      </div>
+      {showScore && pct != null ? (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-muted-foreground tabular-nums">
+              {score}/{max}
+            </span>
+            <span className={`font-semibold tabular-nums ${pctColor}`}>{pct}%</span>
+          </div>
+          <div className="h-1 overflow-hidden rounded-full bg-muted">
+            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+      ) : (
+        <div className="text-[11px] italic text-muted-foreground">Ratings pending</div>
+      )}
+    </button>
+  );
+}
+
+// ── Pipeline Kanban view (5 columns) ──────────────────────────────────────────
+function PipelineView({
+  rows,
+  isLoading,
+  onOpen,
+  onNew,
+}: {
+  rows: AppraisalListRow[];
+  isLoading: boolean;
+  onOpen: (id: string) => void;
+  onNew: () => void;
+}) {
+  const grouped = useMemo(() => {
+    const out: Record<PipelineStage, AppraisalListRow[]> = {
+      draft: [],
+      submitted: [],
+      manager_review: [],
+      hr_processing: [],
+      complete: [],
+    };
+    for (const row of rows) {
+      const stage = stageOf(row.status);
+      if (stage) out[stage].push(row);
+    }
+    return out;
+  }, [rows]);
+
+  if (isLoading) {
+    return (
+      <div className="flex gap-3 overflow-x-auto pb-4">
+        {PIPELINE_COLUMNS.map((col) => (
+          <div key={col.key} className="w-64 shrink-0 space-y-2">
+            <Skeleton className="h-6 w-32" />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-20 w-full rounded-xl" />
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-4">
+      {PIPELINE_COLUMNS.map((col) => {
+        const colRows = grouped[col.key];
+        return (
+          <div key={col.key} className="w-64 shrink-0">
+            <div className="sticky top-0 z-10 -mx-1 mb-2 flex items-center justify-between px-1 pb-2">
+              <div className="flex items-center gap-1.5">
+                <span className={`size-2 rounded-full ${col.dotClass}`} />
+                <span className="text-[12.5px] font-semibold">{col.label}</span>
+              </div>
+              <span
+                className={`inline-flex min-w-[1.5rem] items-center justify-center rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold ${col.badgeClass}`}
+              >
+                {colRows.length}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {colRows.map((row) => (
+                <PipelineCard key={row.id} row={row} onOpen={onOpen} />
+              ))}
+              <button
+                type="button"
+                onClick={onNew}
+                className="block w-full rounded-xl border-2 border-dashed border-muted-foreground/30 py-2.5 text-[12px] text-muted-foreground transition-colors hover:border-primary/60 hover:text-primary"
+              >
+                + Add
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function AppraisalsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { team } = useTeamFilter();
-  const [tab, setTab] = useState("records");
+  const [tab, setTab] = useState("pipeline");
   const [showCreate, setShowCreate] = useState(false);
+  const [cycleFilter, setCycleFilter] = useState<string>("all");
   const { data: session } = authClient.useSession();
+
+  const { data: cyclesData } = useQuery(orpc.appraisalCycles.list.queryOptions());
+  const cycles =
+    (cyclesData as
+      | Array<{ id: string; status: string; year: number; half: string }>
+      | undefined) ?? [];
+  const selectedCycle = cycles.find((c) => c.id === cycleFilter);
 
   const { data: trackerRows, isLoading: trackerLoading } = useQuery(
     orpc.appraisals.tracker.list.queryOptions({
@@ -620,6 +862,7 @@ function AppraisalsPage() {
     orpc.appraisals.list.queryOptions({
       input: {
         team: team === "All" ? undefined : team,
+        cycleId: cycleFilter !== "all" ? cycleFilter : undefined,
         limit: 200,
         offset: 0,
       },
@@ -645,24 +888,32 @@ function AppraisalsPage() {
     }).length,
   };
 
-  const submitWorkflow = useMutation(
+  // Pipeline data must be filtered by selected cycle client-side because
+  // workflow.list does not accept a cycleId filter.
+  const allPipelineRows = (pipelineRows ?? []) as AppraisalListRow[];
+  const pipelineRowsFiltered = useMemo(() => {
+    if (cycleFilter === "all") return allPipelineRows;
+    return allPipelineRows.filter((r) => r.cycle?.id === cycleFilter);
+  }, [allPipelineRows, cycleFilter]);
+
+  // Stats strip counts derived from pipeline rows (5 stage buckets).
+  const stageCounts = useMemo(() => {
+    const counts: Record<PipelineStage, number> = {
+      draft: 0,
+      submitted: 0,
+      manager_review: 0,
+      hr_processing: 0,
+      complete: 0,
+    };
+    for (const r of pipelineRowsFiltered) {
+      const s = stageOf(r.status);
+      if (s) counts[s] += 1;
+    }
+    return counts;
+  }, [pipelineRowsFiltered]);
+
+  useMutation(
     orpc.appraisals.workflow.submit.mutationOptions({
-      onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: orpc.appraisals.workflow.list.key() });
-        await queryClient.invalidateQueries({ queryKey: orpc.appraisals.list.key() });
-      },
-    }),
-  );
-  const approveWorkflow = useMutation(
-    orpc.appraisals.workflow.approve.mutationOptions({
-      onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: orpc.appraisals.workflow.list.key() });
-        await queryClient.invalidateQueries({ queryKey: orpc.appraisals.list.key() });
-      },
-    }),
-  );
-  const processWorkflow = useMutation(
-    orpc.appraisals.workflow.process.mutationOptions({
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: orpc.appraisals.workflow.list.key() });
         await queryClient.invalidateQueries({ queryKey: orpc.appraisals.list.key() });
@@ -724,6 +975,20 @@ function AppraisalsPage() {
     averageScore: item.averageScore ?? 0,
   }));
 
+  function handleOpenAppraisal(id: string) {
+    navigate({ to: "/appraisals/$appraisalId", params: { appraisalId: id } });
+  }
+
+  // Build year+half dropdown options from real cycles.
+  const cycleOptions = useMemo(() => {
+    // Sort by year desc, then h2 before h1 (most recent first).
+    const sorted = [...cycles].sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year;
+      return a.half === b.half ? 0 : a.half === "h2" ? -1 : 1;
+    });
+    return sorted;
+  }, [cycles]);
+
   return (
     <>
       <Header fixed>
@@ -740,9 +1005,26 @@ function AppraisalsPage() {
         <PageHeader
           eyebrow="Performance"
           title="Appraisals"
-          description="Browse appraisal history by team, then open a staff detail view for the full evaluation trail."
+          description="Manage the full appraisal lifecycle — from submission through HR processing to completion."
           actions={
             <>
+              <Select value={cycleFilter} onValueChange={(v) => setCycleFilter(v ?? "all")}>
+                <SelectTrigger className="h-8 w-[200px]">
+                  <SelectValue>
+                    {selectedCycle
+                      ? `${selectedCycle.year} — ${selectedCycle.half === "h1" ? "First Half" : "Second Half"}`
+                      : "All cycles"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All cycles</SelectItem>
+                  {cycleOptions.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.year} — {c.half === "h1" ? "First Half" : "Second Half"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button variant="outline" size="sm" onClick={() => navigate({ to: "/appraisals/inbox" })}>
                 <Inbox className="mr-1.5 size-3.5" />
                 Inbox
@@ -764,227 +1046,95 @@ function AppraisalsPage() {
           }
         />
 
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
-            Manager: {session?.user?.name ?? REVIEW_CHAIN.manager}
-          </Badge>
-          <Badge variant="outline" className="border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300">
-            PA: {REVIEW_CHAIN.pa}
-          </Badge>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
+                Manager: {session?.user?.name ?? REVIEW_CHAIN.manager}
+              </Badge>
+              <Badge variant="outline" className="border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300">
+                PA: {REVIEW_CHAIN.pa}
+              </Badge>
+            </div>
+          </div>
         </div>
 
         <CycleBanner />
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-          {kpiLoading ? (
-            Array.from({ length: 6 }).map((_, index) => (
-              <Skeleton key={index} className="h-24 rounded-2xl" />
-            ))
-          ) : (
-            <>
-              <StatCard
-                title="Total Evaluations"
-                value={(kpis?.totalEvaluations ?? rows.length).toString()}
-                icon={<LayoutGrid className="size-4 text-blue-600" />}
-                tone="bg-blue-50 dark:bg-blue-950/40"
-              />
-              <StatCard
-                title="Average Score"
-                value={kpis?.averageScore != null ? `${kpis.averageScore}%` : "—"}
-                icon={<TrendingUp className="size-4 text-blue-600" />}
-                tone="bg-blue-50 dark:bg-blue-950/40"
-              />
-              <StatCard
-                title="Completion Rate"
-                value={`${kpis?.completionRate ?? 0}%`}
-                icon={<ClipboardCheck className="size-4 text-indigo-600" />}
-                tone="bg-indigo-50 dark:bg-indigo-950/40"
-              />
-              <StatCard
-                title="Pending Approval"
-                value={(kpis?.pendingCount ?? 0).toString()}
-                icon={<Send className="size-4 text-amber-600" />}
-                tone="bg-amber-50 dark:bg-amber-950/40"
-              />
-              <StatCard
-                title="Follow-ups Due Soon"
-                value={(kpis?.dueSoonFollowups ?? 0).toString()}
-                icon={<ShieldCheck className="size-4 text-violet-600" />}
-                tone="bg-violet-50 dark:bg-violet-950/40"
-              />
-              <StatCard
-                title="Overdue Follow-ups"
-                value={(kpis?.overdueFollowups ?? 0).toString()}
-                icon={<ClipboardCheck className="size-4 text-red-600" />}
-                tone="bg-red-50 dark:bg-red-950/40"
-              />
-            </>
-          )}
+        {/* Pipeline stats strip — 5 stage buckets that match the Kanban columns */}
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {pipelineLoading
+            ? Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 rounded-xl" />
+              ))
+            : PIPELINE_COLUMNS.map((col) => {
+                const Icon =
+                  col.key === "draft"
+                    ? FileText
+                    : col.key === "submitted"
+                      ? Send
+                      : col.key === "manager_review"
+                        ? UserCheck
+                        : col.key === "hr_processing"
+                          ? Building2
+                          : CheckCircle2;
+                return (
+                  <button
+                    key={col.key}
+                    type="button"
+                    onClick={() => setTab("pipeline")}
+                    className="rounded-xl border bg-card p-4 text-left transition-colors hover:border-primary/60"
+                  >
+                    <div className="mb-2 flex items-center justify-between">
+                      <Icon className={`size-4 ${col.iconColor}`} />
+                      <span
+                        className={`inline-flex min-w-[1.5rem] items-center justify-center rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold ${col.badgeClass}`}
+                      >
+                        {stageCounts[col.key]}
+                      </span>
+                    </div>
+                    <div className="text-[20px] font-bold tabular-nums leading-none">
+                      {stageCounts[col.key]}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">{col.label}</div>
+                  </button>
+                );
+              })}
         </section>
-
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {trackerLoading ? (
-            Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={index} className="h-24 rounded-2xl" />
-            ))
-          ) : (
-            <>
-              <StatCard
-                title="Total Evaluations"
-                value={totals.totalCount.toString()}
-                icon={<LayoutGrid className="size-4 text-blue-600" />}
-                tone="bg-blue-50 dark:bg-blue-950/40"
-              />
-              <StatCard
-                title="Approved / Completed"
-                value={(totals.approvedCount + totals.completedCount).toString()}
-                icon={<TrendingUp className="size-4 text-blue-600" />}
-                tone="bg-blue-50 dark:bg-blue-950/40"
-              />
-              <StatCard
-                title="Submitted"
-                value={totals.submittedCount.toString()}
-                icon={<ClipboardCheck className="size-4 text-amber-600" />}
-                tone="bg-amber-50 dark:bg-amber-950/40"
-              />
-              <StatCard
-                title="Overdue"
-                value={totals.overdueCount.toString()}
-                icon={<ClipboardCheck className="size-4 text-red-600" />}
-                tone="bg-red-50 dark:bg-red-950/40"
-              />
-            </>
-          )}
-        </section>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Tracked Teams</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {tracker.length > 0 ? (
-                  tracker.map((row) => (
-                    <Badge key={`${row.departmentCode}-${row.year}-${row.period}`} variant="outline">
-                      {row.departmentCode} {row.year}
-                    </Badge>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">No tracker rows available yet.</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Average Total Score</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{averageScore != null ? `${averageScore}%` : "—"}</p>
-              <p className="text-sm text-muted-foreground">Across the filtered appraisal set.</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Current Filter</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm font-medium">
-                {team === "All" ? "All teams" : `${team} only`}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Showing appraisal records returned by the Hono API.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
 
         <Tabs value={tab} onValueChange={setTab} className="space-y-4">
           <TabsList variant="line" className="justify-start">
-            <TabsTrigger value="insights">KPI Insights</TabsTrigger>
-            <TabsTrigger value="records">Records</TabsTrigger>
-            <TabsTrigger value="pipeline">Approval Pipeline</TabsTrigger>
+            <TabsTrigger value="pipeline">
+              <GitPullRequest className="mr-1.5 size-3.5" />
+              Pipeline
+            </TabsTrigger>
+            <TabsTrigger value="records">
+              <List className="mr-1.5 size-3.5" />
+              All
+            </TabsTrigger>
+            <TabsTrigger value="tracker">
+              <BarChart3 className="mr-1.5 size-3.5" />
+              Tracker
+            </TabsTrigger>
             <TabsTrigger value="followups">
               Follow-ups{followupStats.overdue > 0 ? ` (${followupStats.overdue} overdue)` : ""}
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="insights">
-            <div className="grid gap-4 xl:grid-cols-3">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Workflow Status Mix</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {!statusChartData.length ? (
-                    <p className="py-12 text-center text-sm text-muted-foreground">No appraisal status data yet.</p>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <PieChart>
-                        <Pie data={statusChartData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
-                          {statusChartData.map((entry) => (
-                            <Cell key={entry.name} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        <Tooltip contentStyle={chartTheme.tooltipContent} />
-                        <Legend iconType="circle" iconSize={8} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Score Bands</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {!scoreBandChartData.length ? (
-                    <p className="py-12 text-center text-sm text-muted-foreground">No score data yet.</p>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <BarChart data={scoreBandChartData} margin={{ top: 4, right: 8, left: -12, bottom: 4 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="name" tick={chartTheme.axisTick} />
-                        <YAxis allowDecimals={false} tick={chartTheme.axisTick} />
-                        <Tooltip contentStyle={chartTheme.tooltipContent} />
-                        <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                          {scoreBandChartData.map((entry) => (
-                            <Cell key={entry.name} fill={entry.fill} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Cycle Completion</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {!cycleChartData.length ? (
-                    <p className="py-12 text-center text-sm text-muted-foreground">No cycle data yet.</p>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <BarChart data={cycleChartData} margin={{ top: 4, right: 16, left: -12, bottom: 4 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="name" tick={chartTheme.axisTick} />
-                        <YAxis allowDecimals={false} tick={chartTheme.axisTick} />
-                        <Tooltip contentStyle={chartTheme.tooltipContent} />
-                        <Legend iconType="circle" iconSize={8} />
-                        <Bar dataKey="total" name="Total" fill="#cbd5e1" radius={[6, 6, 0, 0]} />
-                        <Bar dataKey="completed" name="Completed" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+          <TabsContent value="pipeline">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Appraisal Pipeline</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PipelineView
+                  rows={pipelineRowsFiltered}
+                  isLoading={pipelineLoading}
+                  onOpen={handleOpenAppraisal}
+                  onNew={() => setShowCreate(true)}
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="records">
@@ -994,137 +1144,294 @@ function AppraisalsPage() {
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Staff Member</TableHead>
-                  <TableHead>Team</TableHead>
-                  <TableHead>Year</TableHead>
-                  <TableHead>Period</TableHead>
-                  <TableHead>Total Score</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Reviewer</TableHead>
-                  <TableHead className="w-28" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {appraisalsLoading ? (
-                  Array.from({ length: 5 }).map((_, rowIndex) => (
-                    <TableRow key={rowIndex}>
-                      {Array.from({ length: 8 }).map((_, cellIndex) => (
-                        <TableCell key={cellIndex}>
-                          <Skeleton className="h-4 w-full" />
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Staff Member</TableHead>
+                      <TableHead>Team</TableHead>
+                      <TableHead>Year</TableHead>
+                      <TableHead>Period</TableHead>
+                      <TableHead>Total Score</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Reviewer</TableHead>
+                      <TableHead className="w-28" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {appraisalsLoading ? (
+                      Array.from({ length: 5 }).map((_, rowIndex) => (
+                        <TableRow key={rowIndex}>
+                          {Array.from({ length: 8 }).map((_, cellIndex) => (
+                            <TableCell key={cellIndex}>
+                              <Skeleton className="h-4 w-full" />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : rows.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
+                          No appraisal records found for this filter.
                         </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
-                      No appraisal records found for this filter.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  rows.map((appraisal) => (
-                    <TableRow key={appraisal.id}>
-                      <TableCell className="font-medium">
-                        {appraisal.staffProfile?.user?.name ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {appraisal.staffProfile?.department?.name ?? "—"}
-                      </TableCell>
-                      <TableCell>{appraisal.year ?? "—"}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{formatPeriod(appraisal)}</TableCell>
-                      <TableCell>
-                        <ScoreBar score={appraisal.totalScore} />
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium ${
-                            STATUS_COLORS[appraisal.status as AppraisalStatus] ?? STATUS_COLORS.draft
-                          }`}
-                        >
-                          {appraisal.status.replace("_", " ")}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {appraisal.reviewer?.user?.name ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-7"
-                            title="Open appraisal detail"
-                            onClick={() => navigate({ to: "/appraisals/$appraisalId", params: { appraisalId: appraisal.id } })}
-                          >
-                            <Pencil className="size-3.5" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate({ to: "/appraisals/staff/$staffProfileId", params: { staffProfileId: appraisal.staffProfileId } })}
-                          >
-                            Staff
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
+                      </TableRow>
+                    ) : (
+                      rows.map((appraisal) => (
+                        <TableRow key={appraisal.id}>
+                          <TableCell className="font-medium">
+                            {appraisal.staffProfile?.user?.name ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {appraisal.staffProfile?.department?.name ?? "—"}
+                          </TableCell>
+                          <TableCell>{appraisal.year ?? "—"}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{formatPeriod(appraisal)}</TableCell>
+                          <TableCell>
+                            <ScoreBar score={appraisal.totalScore} />
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium ${
+                                STATUS_COLORS[appraisal.status as AppraisalStatus] ?? STATUS_COLORS.draft
+                              }`}
+                            >
+                              {appraisal.status.replace("_", " ")}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {appraisal.reviewer?.user?.name ?? "—"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-7"
+                                title="Open appraisal detail"
+                                onClick={() => navigate({ to: "/appraisals/$appraisalId", params: { appraisalId: appraisal.id } })}
+                              >
+                                <Pencil className="size-3.5" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate({ to: "/appraisals/staff/$staffProfileId", params: { staffProfileId: appraisal.staffProfileId } })}
+                              >
+                                Staff
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
                 </Table>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="pipeline">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Approval Pipeline</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {pipelineLoading ? (
+          <TabsContent value="tracker">
+            <div className="space-y-6">
+              {/* Tracker totals row */}
+              <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {trackerLoading ? (
                   Array.from({ length: 4 }).map((_, index) => (
-                    <Skeleton key={index} className="h-20 rounded-xl" />
+                    <Skeleton key={index} className="h-24 rounded-2xl" />
                   ))
-                ) : !pipelineRows?.length ? (
-                  <p className="text-sm text-muted-foreground">No appraisals in the approval pipeline.</p>
                 ) : (
-                  (pipelineRows ?? []).map((row: AppraisalListRow) => (
-                    <div key={row.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
-                      <div>
-                        <p className="font-medium">{row.staffProfile?.user?.name ?? "—"}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <p className="text-sm text-muted-foreground">{formatPeriod(row)} · {row.status}</p>
-                          <UrgencyBadge submittedAt={(row as AppraisalListRow & { submittedAt?: string | null }).submittedAt} />
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {(row.status === "Draft" || row.status === "draft") && (
-                          <Button size="sm" onClick={() => submitWorkflow.mutate({ id: row.id })}>
-                            <Send className="mr-1.5 size-3.5" />
-                            Submit for Approval
-                          </Button>
-                        )}
-                        {row.status === "submitted" && (
-                          <Button size="sm" onClick={() => approveWorkflow.mutate({ id: row.id })}>
-                            <ShieldCheck className="mr-1.5 size-3.5" />
-                            Approve
-                          </Button>
-                        )}
-                        {row.status === "approved" && (
-                          <Button size="sm" onClick={() => processWorkflow.mutate({ id: row.id })}>
-                            <Inbox className="mr-1.5 size-3.5" />
-                            Export &amp; Send to HR
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))
+                  <>
+                    <StatCard
+                      title="Total Evaluations"
+                      value={totals.totalCount.toString()}
+                      icon={<LayoutGrid className="size-4 text-blue-600" />}
+                      tone="bg-blue-50 dark:bg-blue-950/40"
+                    />
+                    <StatCard
+                      title="Approved / Completed"
+                      value={(totals.approvedCount + totals.completedCount).toString()}
+                      icon={<TrendingUp className="size-4 text-blue-600" />}
+                      tone="bg-blue-50 dark:bg-blue-950/40"
+                    />
+                    <StatCard
+                      title="Submitted"
+                      value={totals.submittedCount.toString()}
+                      icon={<ClipboardCheck className="size-4 text-amber-600" />}
+                      tone="bg-amber-50 dark:bg-amber-950/40"
+                    />
+                    <StatCard
+                      title="Overdue"
+                      value={totals.overdueCount.toString()}
+                      icon={<ClipboardCheck className="size-4 text-red-600" />}
+                      tone="bg-red-50 dark:bg-red-950/40"
+                    />
+                  </>
                 )}
-              </CardContent>
-            </Card>
+              </section>
+
+              {/* Tracker KPI cards */}
+              <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+                {kpiLoading ? (
+                  Array.from({ length: 6 }).map((_, index) => (
+                    <Skeleton key={index} className="h-24 rounded-2xl" />
+                  ))
+                ) : (
+                  <>
+                    <StatCard
+                      title="Total Evaluations"
+                      value={(kpis?.totalEvaluations ?? rows.length).toString()}
+                      icon={<LayoutGrid className="size-4 text-blue-600" />}
+                      tone="bg-blue-50 dark:bg-blue-950/40"
+                    />
+                    <StatCard
+                      title="Average Score"
+                      value={kpis?.averageScore != null ? `${kpis.averageScore}%` : "—"}
+                      icon={<TrendingUp className="size-4 text-blue-600" />}
+                      tone="bg-blue-50 dark:bg-blue-950/40"
+                    />
+                    <StatCard
+                      title="Completion Rate"
+                      value={`${kpis?.completionRate ?? 0}%`}
+                      icon={<ClipboardCheck className="size-4 text-indigo-600" />}
+                      tone="bg-indigo-50 dark:bg-indigo-950/40"
+                    />
+                    <StatCard
+                      title="Pending Approval"
+                      value={(kpis?.pendingCount ?? 0).toString()}
+                      icon={<Send className="size-4 text-amber-600" />}
+                      tone="bg-amber-50 dark:bg-amber-950/40"
+                    />
+                    <StatCard
+                      title="Follow-ups Due Soon"
+                      value={(kpis?.dueSoonFollowups ?? 0).toString()}
+                      icon={<ShieldCheck className="size-4 text-violet-600" />}
+                      tone="bg-violet-50 dark:bg-violet-950/40"
+                    />
+                    <StatCard
+                      title="Overdue Follow-ups"
+                      value={(kpis?.overdueFollowups ?? 0).toString()}
+                      icon={<ClipboardCheck className="size-4 text-red-600" />}
+                      tone="bg-red-50 dark:bg-red-950/40"
+                    />
+                  </>
+                )}
+              </section>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Tracked Teams</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {tracker.length > 0 ? (
+                        tracker.map((row) => (
+                          <Badge key={`${row.departmentCode}-${row.year}-${row.period}`} variant="outline">
+                            {row.departmentCode} {row.year}
+                          </Badge>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No tracker rows available yet.</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Average Total Score</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold">{averageScore != null ? `${averageScore}%` : "—"}</p>
+                    <p className="text-sm text-muted-foreground">Across the filtered appraisal set.</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Current Filter</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm font-medium">
+                      {team === "All" ? "All teams" : `${team} only`}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Showing appraisal records returned by the Hono API.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-3">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Workflow Status Mix</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {!statusChartData.length ? (
+                      <p className="py-12 text-center text-sm text-muted-foreground">No appraisal status data yet.</p>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={280}>
+                        <PieChart>
+                          <Pie data={statusChartData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
+                            {statusChartData.map((entry) => (
+                              <Cell key={entry.name} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={chartTheme.tooltipContent} />
+                          <Legend iconType="circle" iconSize={8} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Score Bands</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {!scoreBandChartData.length ? (
+                      <p className="py-12 text-center text-sm text-muted-foreground">No score data yet.</p>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={280}>
+                        <BarChart data={scoreBandChartData} margin={{ top: 4, right: 8, left: -12, bottom: 4 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="name" tick={chartTheme.axisTick} />
+                          <YAxis allowDecimals={false} tick={chartTheme.axisTick} />
+                          <Tooltip contentStyle={chartTheme.tooltipContent} />
+                          <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                            {scoreBandChartData.map((entry) => (
+                              <Cell key={entry.name} fill={entry.fill} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Cycle Completion</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {!cycleChartData.length ? (
+                      <p className="py-12 text-center text-sm text-muted-foreground">No cycle data yet.</p>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={280}>
+                        <BarChart data={cycleChartData} margin={{ top: 4, right: 16, left: -12, bottom: 4 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="name" tick={chartTheme.axisTick} />
+                          <YAxis allowDecimals={false} tick={chartTheme.axisTick} />
+                          <Tooltip contentStyle={chartTheme.tooltipContent} />
+                          <Legend iconType="circle" iconSize={8} />
+                          <Bar dataKey="total" name="Total" fill="#cbd5e1" radius={[6, 6, 0, 0]} />
+                          <Bar dataKey="completed" name="Completed" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="followups">
