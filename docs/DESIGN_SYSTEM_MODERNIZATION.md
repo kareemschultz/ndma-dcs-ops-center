@@ -22,16 +22,28 @@ theme, modern blocks, and a consistent form stack.
 - Registry directory: <https://ui.shadcn.com/docs/directory>
 - Forms: <https://ui.shadcn.com/docs/forms> · TanStack Form: <https://ui.shadcn.com/docs/forms/tanstack-form>
 - Theming: <https://ui.shadcn.com/docs/theming>
+- Component variants — Radix vs Base UI (example): <https://ui.shadcn.com/docs/components/radix/alert-dialog> · <https://ui.shadcn.com/docs/components/base/alert-dialog>
+- Print / PDF generation: <https://ds.shadcn.com/docs/examples/print> · PDFX component: <https://allshadcn.com/components/pdfx/>
 
-## ⚠️ Key decision to resolve FIRST
+### PDF / print generation note
+The appraisal report PDF and timesheet exports currently use `html2canvas` + `jsPDF`.
+shadcn/designer offers a purpose-built print path — `DesignerStaticFrame` for a static
+render + the `mql` package to produce the PDF, with DPI (96–600) and paper-size (A4/Letter/…)
+controls. During Phase 17, evaluate migrating PDF generation to that approach (or the PDFX
+component) for cleaner, higher-fidelity output than canvas snapshots.
 
-`packages/ui` currently uses **Base UI** (`@base-ui/react`) primitives, not Radix (see
-`CLAUDE.md` → "Base UI — `render` prop, NOT `asChild`"). Stock shadcn defaults to Radix.
-Before any component upgrade, decide:
-- **(A)** Keep Base UI — adopt only shadcn's Base-UI-compatible output / re-skin in place, or
-- **(B)** Migrate primitives to Radix to use shadcn blocks/components verbatim.
+## Primitive choice — RESOLVED
 
-This choice gates the whole effort. Escalate to Kareem if unclear. Do **not** mix both.
+`packages/ui` uses **Base UI** (`@base-ui/react`) primitives, not Radix (see `CLAUDE.md` →
+"Base UI — `render` prop, NOT `asChild`"). shadcn now ships **per-primitive component
+variants** — every component has a Radix version and a Base UI version, e.g.:
+- Radix: <https://ui.shadcn.com/docs/components/radix/alert-dialog>
+- Base UI: <https://ui.shadcn.com/docs/components/base/alert-dialog>
+
+**Decision: keep Base UI. Adopt shadcn's `base/` (Base UI) component variants** — no Radix
+migration. When pulling components via the shadcn CLI/MCP, always select the Base UI variant
+so it stays consistent with the existing `packages/ui` primitives. Do **not** mix Radix and
+Base UI versions of the same primitive.
 
 ## Workstreams
 
