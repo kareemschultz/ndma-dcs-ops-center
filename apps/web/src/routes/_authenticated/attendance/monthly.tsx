@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@ndma-dcs-staff-portal/ui/components/select";
 
+import { AttendanceSubNav } from "@/components/layout/attendance-sub-nav";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -184,6 +185,8 @@ function MonthlyAttendancePage() {
           <ThemeSwitch />
         </div>
       </Header>
+
+      <AttendanceSubNav activeView="monthly" />
 
       <Main className="space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4">

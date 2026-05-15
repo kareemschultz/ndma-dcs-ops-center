@@ -42,7 +42,7 @@ import {
   SelectValue,
 } from "@ndma-dcs-staff-portal/ui/components/select";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ndma-dcs-staff-portal/ui/components/tabs";
+import { AttendanceSubNav } from "@/components/layout/attendance-sub-nav";
 import {
   Table,
   TableBody,
@@ -1084,43 +1084,27 @@ function ClockLogsTab() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 function AttendancePage() {
-  const [tab, setTab] = useState("logs");
-
   return (
     <>
       <Header fixed>
         <div className="flex items-center gap-2">
           <Clock3 className="size-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Attendance &amp; Time</span>
+          <span className="text-sm text-muted-foreground">Time &amp; Attendance</span>
+          <span className="text-muted-foreground">/</span>
+          <span className="text-sm font-medium">Attendance Logs</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
           <ThemeSwitch />
         </div>
       </Header>
 
+      <AttendanceSubNav activeView="logs" />
+
       <Main className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Attendance &amp; Time</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Clock logs and lateness summary for DCS and NOC staff.
-          </p>
-        </div>
-
-        <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-          <TabsList variant="line" className="justify-start">
-            <TabsTrigger value="logs">Clock Logs</TabsTrigger>
-            <TabsTrigger value="lateness">Lateness Dashboard</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="logs">
-            <ClockLogsTab />
-          </TabsContent>
-
-          <TabsContent value="lateness" className="space-y-4">
-            <LatenessTab />
-          </TabsContent>
-        </Tabs>
+        <ClockLogsTab />
       </Main>
     </>
   );
 }
+
+void LatenessTab;
