@@ -80,8 +80,7 @@ interface LineCell {
 // column when its x falls inside [center - HALF, center + HALF].
 const COL_IN = 191;
 const COL_OUT = 301;
-const COL_HOURS = 402;
-const COL_TOLERANCE = 40; // generous; the In/Out/Work columns are ~110px apart.
+const COL_TOLERANCE = 40; // generous; the In/Out columns are ~110px apart.
 
 /** Pick the first cell whose x is within tolerance of a column centre. */
 function cellNear(cells: LineCell[], centre: number, tolerance = COL_TOLERANCE): string | null {
@@ -157,13 +156,9 @@ export async function parseTimesheetPdf(data: ArrayBuffer): Promise<ParsedTimesh
       else if (/Holiday/i.test(dayTypeCell) || /^Holiday/i.test(leaveCell)) dayType = "Holiday";
       else if (ABSENCE_KEYWORDS.test(leaveCell) && !clockIn && !clockOut) dayType = "Absent";
 
-      // Work hours — the decimal in the Work column (x≈402). Recompute from the
-      // punches when the device printed no value (e.g. only one punch present).
-      const hoursCell = cellNear(cells, COL_HOURS, 30);
-      const hoursWorked =
-        hoursCell && /^\d{1,2}\.\d{2}$/.test(hoursCell)
-          ? hoursCell
-          : calcHours(clockIn, clockOut);
+      // Work hours = clock-out − clock-in, always computed from the punches.
+      // (The device's printed Work column is ignored — punches are authoritative.)
+      const hoursWorked = calcHours(clockIn, clockOut);
 
       let minutesLate = 0;
       if (clockIn) {
