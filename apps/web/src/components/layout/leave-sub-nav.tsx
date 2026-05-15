@@ -8,7 +8,7 @@ import { Calendar, CalendarOff, Clock } from "lucide-react";
 const LEAVE_TABS = [
   { to: "/leave",          label: "Requests",   Icon: CalendarOff },
   { to: "/leave/calendar", label: "Calendar",   Icon: Calendar    },
-  { to: "/leave/tosd",     label: "TOSD",       Icon: Clock       },
+  { to: "/leave/tosd",     label: "Time-Off & Sick Days", Icon: Clock },
 ] as const;
 
 export function LeaveSubNav() {
