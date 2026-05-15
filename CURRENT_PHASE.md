@@ -37,6 +37,7 @@ Post-Phase-16 feature, UX and bug-fix work. Committed directly to `main` (not ph
 |---|---|---|
 | High | **Phase 17 — design system modernization** (latest shadcn `base/` variants, TanStack Form migration, consistent theming, Playwright visual QA, evaluate shadcn print/PDF) | `docs/DESIGN_SYSTEM_MODERNIZATION.md` |
 | Med | Visually verify this session's pages once Playwright is set up (Phase 17 step 0) | — |
+| Med | **Attendance integration audit** — confirm the two attendance data models reconcile: `daily_attendance` (roll-call 10-status, feeds Monthly Grid) vs `attendance_logs` (clock in/out, fed by the timesheet-PDF import). Verify PDF-imported lateness flows into the Lateness register (`lateness_records`) and that "Generate from Attendance" timesheets pull the right source | `packages/api/src/routers/attendance-time.ts` |
 | Med | "Other department" PR-tracking tool — review screenshots for anything worth borrowing | — |
 | Low (pre-existing) | Production deployment | `PRODUCTION_READINESS_CHECKLIST.md` |
 | Low (pre-existing) | Phase 14 seed stubs; Phase 3 legacy `rota.ts`/`roster.ts` cutover; 3 stub import handlers (`platform_accounts`/`attendance`/`callouts`) | `IMPLEMENTATION_PLAN.md` |
