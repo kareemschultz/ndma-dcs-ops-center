@@ -41,6 +41,7 @@ import { Badge } from "@ndma-dcs-staff-portal/ui/components/badge";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { orpc, queryClient } from "@/utils/orpc";
+import { departmentOptionLabel } from "@/lib/departments";
 import {
   StatusBadge,
   PriorityBadge,
@@ -278,7 +279,7 @@ function AssignmentPanel({ workItemId }: { workItemId: string }) {
                 >
                   <option value="">Department...</option>
                   {departments?.map((d) => (
-                    <option key={d.id} value={d.id}>{d.code} — {d.name}</option>
+                    <option key={d.id} value={d.id}>{departmentOptionLabel(d, { withCode: true })}</option>
                   ))}
                 </select>
                 <input

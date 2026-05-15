@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Users, Search, Plus, Eye, LayoutGrid, Table2, FileDown } from "lucide-react";
@@ -36,6 +36,7 @@ import { useTeamFilter } from "@/lib/team-filter";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
 import { authClient } from "@/lib/auth-client";
+import { departmentOptionLabel, departmentPillLabel } from "@/lib/departments";
 
 export const Route = createFileRoute("/_authenticated/staff/")({
   component: StaffPage,
@@ -56,15 +57,15 @@ const STATUS_COLORS: Record<string, string> = {
   terminated: "bg-muted text-muted-foreground line-through",
 };
 
-const BOARD_COLUMNS: Array<{
-  status: "" | "active" | "inactive" | "on_leave" | "terminated";
-  label: string;
-}> = [
-  { status: "active", label: "Active" },
-  { status: "on_leave", label: "On Leave" },
-  { status: "inactive", label: "Inactive" },
-  { status: "terminated", label: "Terminated" },
-];
+function initials(name?: string | null): string {
+  if (!name) return "?";
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("");
+}
 
 function StaffCard({
   staff,
@@ -91,12 +92,17 @@ function StaffCard({
       className="w-full rounded-2xl border bg-background p-4 text-left transition-colors hover:border-primary/50 hover:bg-accent/40"
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-medium truncate">{staff.user?.name ?? "—"}</p>
-          <p className="text-xs text-muted-foreground truncate">{staff.jobTitle}</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+            {initials(staff.user?.name)}
+          </div>
+          <div className="min-w-0">
+            <p className="font-semibold truncate">{staff.user?.name ?? "—"}</p>
+            <p className="text-xs text-muted-foreground truncate">{staff.jobTitle}</p>
+          </div>
         </div>
         <span
-          className={`inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-medium ${
+          className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
             STATUS_COLORS[staff.status] ?? "bg-muted text-muted-foreground"
           }`}
         >
@@ -104,36 +110,17 @@ function StaffCard({
         </span>
       </div>
 
-      <div className="mt-3 grid gap-2 text-xs text-muted-foreground">
-        <div className="flex items-center justify-between gap-2">
-          <span>Employee ID</span>
-          <span className="font-mono">{staff.employeeId}</span>
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Dept.</p>
+          <p className="mt-0.5 truncate text-sm">{staff.department?.name ?? "—"}</p>
         </div>
-        <div className="flex items-center justify-between gap-2">
-          <span>Phone</span>
-          <span>{staff.phoneNumber ?? "—"}</span>
+        <div>
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Type</p>
+          <p className="mt-0.5 truncate text-sm capitalize">
+            {staff.employmentType?.replace("_", " ") ?? "—"}
+          </p>
         </div>
-        <div className="flex items-center justify-between gap-2">
-          <span>Department</span>
-          <span>{staff.department?.name ?? "—"}</span>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <span>Type</span>
-          <span className="capitalize">{staff.employmentType?.replace("_", " ") ?? "—"}</span>
-        </div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {staff.isTeamLead && (
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-            Lead
-          </span>
-        )}
-        {staff.isOnCallEligible && (
-          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-            On-call
-          </span>
-        )}
       </div>
     </button>
   );
@@ -309,7 +296,7 @@ function NewStaffDialog({ onClose }: { onClose: () => void }) {
                   </SelectTrigger>
                   <SelectContent>
                     {departments?.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                      <SelectItem key={d.id} value={d.id}>{departmentOptionLabel(d)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -409,7 +396,7 @@ function StaffPage() {
   const [status, setStatus] = useState("");
   const [deptId, setDeptId] = useState("");
   const [showCreate, setShowCreate] = useState(false);
-  const [view, setView] = useState<"table" | "board">("table");
+  const [view, setView] = useState<"grid" | "table">("grid");
   const { team } = useTeamFilter();
 
   const { data, isLoading } = useQuery(
@@ -433,14 +420,7 @@ function StaffPage() {
     return true;
   });
 
-  const boardColumns = useMemo(
-    () =>
-      BOARD_COLUMNS.map((column) => ({
-        ...column,
-        staff: (filtered ?? []).filter((staff) => staff.status === column.status),
-      })),
-    [filtered],
-  );
+  const activeCount = data?.filter((s) => s.status === "active").length ?? 0;
 
   return (
     <>
@@ -457,10 +437,10 @@ function StaffPage() {
             disabled={!data?.length}
           >
             <FileDown className="size-4 mr-1.5" />
-            Export Excel
+            Export
           </Button>
           <Button size="sm" onClick={() => setShowCreate(true)}>
-            <Plus className="size-4 mr-1.5" /> New Staff
+            <Plus className="size-4 mr-1.5" /> Add staff
           </Button>
           <ThemeSwitch />
         </div>
@@ -468,9 +448,12 @@ function StaffPage() {
 
       <Main>
         <div className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight">Staff Directory</h1>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            People
+          </p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight">Staff Directory</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {data?.length ?? "—"} staff members
+            {data ? `${activeCount} active staff across DCS, NOC, Security, HR and Ops.` : "—"}
           </p>
         </div>
 
@@ -499,6 +482,18 @@ function StaffPage() {
           <div className="inline-flex rounded-xl border bg-background p-0.5">
             <button
               type="button"
+              onClick={() => setView("grid")}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                view === "grid"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <LayoutGrid className="size-3.5" />
+              Grid
+            </button>
+            <button
+              type="button"
               onClick={() => setView("table")}
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
                 view === "table"
@@ -508,18 +503,6 @@ function StaffPage() {
             >
               <Table2 className="size-3.5" />
               Table
-            </button>
-            <button
-              type="button"
-              onClick={() => setView("board")}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
-                view === "board"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <LayoutGrid className="size-3.5" />
-              Board
             </button>
           </div>
         </div>
@@ -548,17 +531,17 @@ function StaffPage() {
                   : "border-border bg-background text-muted-foreground hover:border-primary hover:text-foreground"
               }`}
             >
-              {d.name}
+              {departmentPillLabel(d, departments)}
             </button>
           ))}
         </div>
 
-        {view === "board" ? (
-          <div className="space-y-4">
+        {view === "grid" ? (
+          <div>
             {isLoading ? (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                {BOARD_COLUMNS.map((column) => (
-                  <Skeleton key={column.status} className="h-64 rounded-2xl" />
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <Skeleton key={i} className="h-36 rounded-2xl" />
                 ))}
               </div>
             ) : !filtered?.length ? (
@@ -566,27 +549,13 @@ function StaffPage() {
                 {search ? "No staff matching your search." : "No staff found."}
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                {boardColumns.map((column) => (
-                  <div key={column.status} className="rounded-2xl border bg-muted/20 p-3">
-                    <div className="mb-3 flex items-center justify-between">
-                      <h3 className="text-sm font-semibold">{column.label}</h3>
-                      <span className="rounded-full bg-background px-2 py-0.5 text-xs text-muted-foreground">
-                        {column.staff.length}
-                      </span>
-                    </div>
-                    <div className="space-y-3">
-                      {column.staff.length === 0 ? (
-                        <div className="rounded-xl border border-dashed p-4 text-center text-xs text-muted-foreground">
-                          No staff in this lane
-                        </div>
-                      ) : (
-                        column.staff.map((staff) => (
-                          <StaffCard key={staff.id} staff={staff} onOpen={(id) => navigate({ to: "/staff/$staffId", params: { staffId: id } })} />
-                        ))
-                      )}
-                    </div>
-                  </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {filtered.map((staff) => (
+                  <StaffCard
+                    key={staff.id}
+                    staff={staff}
+                    onOpen={(id) => navigate({ to: "/staff/$staffId", params: { staffId: id } })}
+                  />
                 ))}
               </div>
             )}

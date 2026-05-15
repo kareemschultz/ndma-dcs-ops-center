@@ -932,6 +932,16 @@ function AttendanceTab({ staffProfileId }: { staffProfileId: string }) {
 
 // ---------------------------------------------------------------------------
 
+function profileInitials(name?: string | null): string {
+  if (!name) return "?";
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 function StaffProfilePage() {
   const { staffId } = Route.useParams();
   const [editOpen, setEditOpen] = useState(false);
@@ -945,6 +955,22 @@ function StaffProfilePage() {
   const { data: staffContracts } = useQuery(
     orpc.contracts.list.queryOptions({ input: { staffProfileId: staffId, limit: 10 } }),
   );
+
+  const { data: attendanceYear } = useQuery(
+    orpc.attendanceDaily.getCard.queryOptions({
+      input: { staffProfileId: staffId, year: new Date().getFullYear() },
+    }),
+  );
+
+  const attendanceYtd = (() => {
+    const rows = attendanceYear ?? [];
+    const recorded = rows.filter((r) => r.status !== "holiday").length;
+    if (recorded === 0) return null;
+    const present = rows.filter(
+      (r) => r.status === "on_site" || r.status === "wfh" || r.status === "late" || r.status === "half_day",
+    ).length;
+    return Math.round((present / recorded) * 100);
+  })();
 
   const { data: staffAdvances, isLoading: advancesLoading } = useQuery({
     ...orpc.advances.list.queryOptions({ input: { staffProfileId: staffId, limit: 5 } }),
@@ -1006,31 +1032,99 @@ function StaffProfilePage() {
       </Header>
 
       <Main>
-        <div className="mb-6 flex items-center gap-3">
-          <Link to="/staff">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="size-4" />
-            </Button>
+        {/* Back link / breadcrumb */}
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <Link
+            to="/staff"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" />
+            Directory
           </Link>
-          <div className="flex items-center gap-4">
-            <div className="flex size-16 items-center justify-center rounded-full bg-muted text-2xl font-bold">
-              {profile.user?.name?.[0] ?? "?"}
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setEditOpen(true)}
+          >
+            <Pencil className="size-3.5" />
+            Edit
+          </Button>
+        </div>
+
+        {/* Header card */}
+        <div className="mb-6 rounded-xl border p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
+                {profileInitials(profile.user?.name)}
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">{profile.user?.name}</h1>
+                <p className="text-sm text-muted-foreground">
+                  {profile.jobTitle}
+                  {profile.department?.name ? ` · ${profile.department.name}` : ""}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <StaffStatusBadge status={profile.status} />
+                  {profile.isTeamLead && (
+                    <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                      Team Lead
+                    </span>
+                  )}
+                  {profile.isOnCallEligible && (
+                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                      On-Call
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                {attendanceYtd != null ? `${attendanceYtd}%` : "—"}
+              </p>
+              <p className="text-xs text-muted-foreground">attendance YTD</p>
+              <Link
+                to="/staff/$staffId"
+                params={{ staffId }}
+                hash="attendance"
+                className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                View roll-call
+                <ChevronRight className="size-3" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Four-field row */}
+          <div className="mt-5 grid grid-cols-2 gap-4 border-t pt-4 sm:grid-cols-4">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Employee ID
+              </p>
+              <p className="mt-0.5 font-mono text-sm font-medium">{profile.employeeId}</p>
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold">{profile.user?.name}</h1>
+              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Department
+              </p>
+              <p className="mt-0.5 text-sm">{profile.department?.name ?? "—"}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Team
+              </p>
+              <p className="mt-0.5 text-sm">{profile.isTeamLead ? "Team Lead" : "—"}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Status
+              </p>
+              <p className="mt-0.5">
                 <StaffStatusBadge status={profile.status} />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="ml-1 h-7 gap-1.5 px-2 text-xs"
-                  onClick={() => setEditOpen(true)}
-                >
-                  <Pencil className="size-3" />
-                  Edit
-                </Button>
-              </div>
-              <p className="text-muted-foreground">{profile.jobTitle}</p>
+              </p>
             </div>
           </div>
         </div>

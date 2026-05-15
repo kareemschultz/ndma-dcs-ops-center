@@ -368,8 +368,28 @@ export const staffRouter = {
   }),
 
   getDepartments: protectedProcedure.handler(async () => {
-    return db.query.departments.findMany({
+    // ASN / Enterprise / Core are sub-divisions of DCS — they have a non-null
+    // parentId. Return the list sorted hierarchically (each parent immediately
+    // followed by its children) so pickers can render the nesting correctly
+    // instead of showing the sub-divisions as peers of DCS.
+    const rows = await db.query.departments.findMany({
       where: eq(departments.isActive, true),
+      orderBy: (d, { asc }) => [asc(d.name)],
     });
+
+    const topLevel = rows.filter((d) => !d.parentId);
+    const childrenOf = (parentId: string) =>
+      rows.filter((d) => d.parentId === parentId);
+
+    const ordered: typeof rows = [];
+    for (const parent of topLevel) {
+      ordered.push(parent);
+      ordered.push(...childrenOf(parent.id));
+    }
+    // Include any orphans (child whose parent is inactive/missing) at the end.
+    for (const row of rows) {
+      if (!ordered.includes(row)) ordered.push(row);
+    }
+    return ordered;
   }),
 };

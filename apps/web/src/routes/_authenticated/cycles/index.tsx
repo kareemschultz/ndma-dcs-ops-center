@@ -43,6 +43,7 @@ import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
+import { departmentOptionLabel } from "@/lib/departments";
 
 export const Route = createFileRoute("/_authenticated/cycles/")({
   component: CyclesPage,
@@ -344,7 +345,7 @@ function NewCycleDialog({
                 <SelectContent>
                   <SelectItem value="_none">All departments</SelectItem>
                   {departments?.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    <SelectItem key={d.id} value={d.id}>{departmentOptionLabel(d)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

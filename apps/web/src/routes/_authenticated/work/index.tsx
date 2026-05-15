@@ -66,6 +66,7 @@ import { ThemeSwitch } from "@/components/theme-switch";
 import { useTeamFilter } from "@/lib/team-filter";
 import { orpc } from "@/utils/orpc";
 import { chartTheme } from "@/lib/chart-theme";
+import { departmentOptionLabel } from "@/lib/departments";
 import {
   StatusBadge,
   PriorityBadge,
@@ -1074,7 +1075,7 @@ function WorkPage() {
               <option value="">All Departments</option>
               {departments.map((d) => (
                 <option key={d.id} value={d.id}>
-                  {d.name}
+                  {departmentOptionLabel(d)}
                 </option>
               ))}
             </select>

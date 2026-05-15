@@ -11,6 +11,7 @@ import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc, queryClient } from "@/utils/orpc";
+import { departmentOptionLabel } from "@/lib/departments";
 
 export const Route = createFileRoute("/_authenticated/procurement/new")({
   component: NewPRPage,
@@ -146,7 +147,7 @@ function NewPRPage() {
                 >
                   <option value="">Select department</option>
                   {departments?.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
+                    <option key={d.id} value={d.id}>{departmentOptionLabel(d)}</option>
                   ))}
                 </select>
               </div>

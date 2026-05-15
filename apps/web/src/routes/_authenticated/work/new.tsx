@@ -14,6 +14,7 @@ import { Badge } from "@ndma-dcs-staff-portal/ui/components/badge";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { orpc, queryClient } from "@/utils/orpc";
+import { departmentOptionLabel } from "@/lib/departments";
 
 export const Route = createFileRoute("/_authenticated/work/new")({
   component: NewWorkItemPage,
@@ -197,7 +198,7 @@ function NewWorkItemPage() {
               >
                 <option value="">No department</option>
                 {departments?.map((d) => (
-                  <option key={d.id} value={d.id}>{d.code} — {d.name}</option>
+                  <option key={d.id} value={d.id}>{departmentOptionLabel(d, { withCode: true })}</option>
                 ))}
               </select>
             </div>
@@ -266,7 +267,7 @@ function NewWorkItemPage() {
                 >
                   <option value="">Select team...</option>
                   {departments?.map((d) => (
-                    <option key={d.id} value={d.id}>{d.code} — {d.name}</option>
+                    <option key={d.id} value={d.id}>{departmentOptionLabel(d, { withCode: true })}</option>
                   ))}
                 </select>
                 <input
