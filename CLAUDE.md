@@ -354,6 +354,18 @@ correlationId: context.requestId,
 - The pre-commit hook tries to run `bat` (a cat alternative) to show diffs — fails if not installed
 - **Fix:** `git commit -m "your message here"` using `-m` flag directly (NOT heredoc syntax with `cat <<'EOF'`)
 
+### Dev server hot-reload does NOT watch shared packages
+- `apps/server` runs `bun run --hot src/index.ts`; `--hot` only watches files inside `apps/server/`.
+- Edits to `packages/api` (routers) or `packages/db` (schema) do **NOT** hot-reload — the server keeps the old code, causing stale-API bugs (e.g. a 400/500 that "shouldn't" happen).
+- **After any `packages/api` or `packages/db` change, manually restart the server.** The web Vite dev server hot-reloads frontend changes fine.
+
+### DB migrations — `drizzle-kit push` is blocked; apply SQL directly
+- `bunx drizzle-kit push` aborts on a "duplicated view name" warning (`appraisal_tracker_view`, a `pgView().existing()`), so it cannot sync schema.
+- Migration files are idempotent (`ADD COLUMN IF NOT EXISTS` / `CREATE TABLE IF NOT EXISTS`). Apply a pending migration directly: connect with `bun -e` + `pg` to `DATABASE_URL` and run the `.sql` file.
+
+### Design system modernization is queued as Phase 17
+- A full-app shadcn/theming/TanStack-Form modernization is planned as the **final polish pass** — see `docs/DESIGN_SYSTEM_MODERNIZATION.md`. Do not start it ad-hoc; it runs after major feature work.
+
 ### Lateness records — month must be full name, exact match
 - The `lateness_records.month` column stores full month names: "January", "February", … "December"
 - The unique constraint is `(staff_profile_id, year, month)` — exact string match, case-sensitive

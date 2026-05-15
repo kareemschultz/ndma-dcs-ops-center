@@ -36,6 +36,11 @@
 | 14 | Final historical seed | 🟢 Done | `claude/inspiring-morse-bdf638` (merged PR #41) | Claude Code sonnet-4-6 + opus-4-7 | 54d0b09 | 2026-05-13 |
 | 15 | Hardening | 🟢 Done | `claude/inspiring-morse-bdf638` (merged PR #41) | Claude Code sonnet-4-6 + opus-4-7 | 54d0b09 | 2026-05-13 |
 | 16 | IA revamp + Part A-D closeout + Design | 🟢 Done | `claude/inspiring-morse-bdf638` (merged PR #41) | Claude Code opus-4-7 | 54d0b09 | 2026-05-13 |
+| 17 | Design system modernization (final polish) | ⬜ Queued | — | — | — | — |
+
+> **Phase 17** is the **final polish pass** — run it *after* the remaining major feature/page
+> work. Full research + plan: [`docs/DESIGN_SYSTEM_MODERNIZATION.md`](docs/DESIGN_SYSTEM_MODERNIZATION.md)
+> (latest shadcn/ui, TanStack Form migration, consistent theming, Playwright visual QA).
 
 **Legend:** ⬜ Queued · 🟡 Not Started · 🔵 In Progress · 🟠 Blocked · 🟢 Done · 🔴 Reverted
 
