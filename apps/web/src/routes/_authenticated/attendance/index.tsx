@@ -884,7 +884,7 @@ function TimesheetPdfPreviewDialog({
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o && !importing) onClose(); }}>
-      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl w-[min(96vw,72rem)] max-h-[88vh] flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle>Timesheet PDF — Import Preview</DialogTitle>
           <DialogDescription>
@@ -906,8 +906,25 @@ function TimesheetPdfPreviewDialog({
           </div>
         )}
 
-        <div className="rounded-md border overflow-hidden">
-          <table className="w-full text-xs">
+        <p className="text-xs text-muted-foreground">
+          Rows shown <span className="text-foreground/70 font-medium">dimmed</span> are non-work days
+          (rest days, holidays, absences) — they have no clock punch in the PDF, so the
+          <span className="font-medium"> Day Type</span> column shows the reason and they are not
+          imported as clock logs.
+        </p>
+
+        <div className="rounded-md border overflow-auto flex-1 min-h-0">
+          <table className="w-full text-xs table-fixed">
+            <colgroup>
+              <col className="w-[20%]" />
+              <col className="w-[20%]" />
+              <col className="w-[7rem]" />
+              <col className="w-[6rem]" />
+              <col className="w-[6rem]" />
+              <col className="w-[5rem]" />
+              <col className="w-[7rem]" />
+              <col className="w-[6rem]" />
+            </colgroup>
             <thead>
               <tr className="bg-muted border-b">
                 <th className="text-left px-3 py-2">Name in PDF</th>
@@ -916,33 +933,63 @@ function TimesheetPdfPreviewDialog({
                 <th className="text-right px-3 py-2">Clock In</th>
                 <th className="text-right px-3 py-2">Clock Out</th>
                 <th className="text-right px-3 py-2">Hours</th>
+                <th className="text-left px-3 py-2">Day Type</th>
                 <th className="text-center px-3 py-2">Late</th>
               </tr>
             </thead>
             <tbody>
               {enriched.slice(0, 200).map((row, i) => {
-                const skipped = !row.matchedStaffId || !(row.clockIn || row.clockOut);
+                const hasClock = Boolean(row.clockIn || row.clockOut);
+                const skipped = !row.matchedStaffId || !hasClock;
+                const dayTypeLabel =
+                  row.dayType === "Restday"
+                    ? "Rest Day"
+                    : row.dayType === "Holiday"
+                      ? "Holiday"
+                      : row.dayType === "Absent"
+                        ? "Absent"
+                        : hasClock
+                          ? "Workday"
+                          : "No clock data";
                 return (
                   <tr
                     key={i}
-                    className={`border-b last:border-0 ${skipped ? "opacity-40" : ""}`}
+                    className={`border-b last:border-0 ${skipped ? "opacity-50" : ""}`}
                   >
-                    <td className="px-3 py-1.5 font-medium">{row.staffName}</td>
-                    <td className="px-3 py-1.5 text-muted-foreground">
+                    <td className="px-3 py-1.5 font-medium truncate" title={row.staffName}>
+                      {row.staffName}
+                    </td>
+                    <td
+                      className="px-3 py-1.5 text-muted-foreground truncate"
+                      title={row.matchedName ?? "Not found"}
+                    >
                       {row.matchedName ?? (
                         <span className="text-amber-600">Not found</span>
                       )}
                     </td>
-                    <td className="px-3 py-1.5 font-mono">{row.date}</td>
-                    <td className="px-3 py-1.5 text-right font-mono">{row.clockIn ?? "—"}</td>
-                    <td className="px-3 py-1.5 text-right font-mono">{row.clockOut ?? "—"}</td>
-                    <td className="px-3 py-1.5 text-right font-mono">
+                    <td className="px-3 py-1.5 font-mono whitespace-nowrap">{row.date}</td>
+                    <td className="px-3 py-1.5 text-right font-mono whitespace-nowrap">
+                      {row.clockIn ?? "—"}
+                    </td>
+                    <td className="px-3 py-1.5 text-right font-mono whitespace-nowrap">
+                      {row.clockOut ?? "—"}
+                    </td>
+                    <td className="px-3 py-1.5 text-right font-mono whitespace-nowrap">
                       {row.hoursWorked ? `${row.hoursWorked}h` : "—"}
+                    </td>
+                    <td className="px-3 py-1.5">
+                      {hasClock && row.dayType === "Workday" ? (
+                        <span className="text-muted-foreground">Workday</span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 px-2 py-0.5 font-medium whitespace-nowrap">
+                          {dayTypeLabel}
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-1.5 text-center">
                       {row.clockIn ? (
                         row.isLate ? (
-                          <span className="inline-flex items-center rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 px-2 py-0.5 font-medium">
+                          <span className="inline-flex items-center rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 px-2 py-0.5 font-medium whitespace-nowrap">
                             +{row.minutesLate}m
                           </span>
                         ) : (
@@ -959,7 +1006,7 @@ function TimesheetPdfPreviewDialog({
               })}
               {enriched.length > 200 && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-2 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-3 py-2 text-center text-muted-foreground">
                     … and {enriched.length - 200} more rows (all will be imported)
                   </td>
                 </tr>
