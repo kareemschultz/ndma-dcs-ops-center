@@ -22,8 +22,12 @@ import {
   CircleAlert,
   ClipboardList,
   Clock,
+  Eye,
+  FileUp,
   Pencil,
   Plus,
+  Trash2,
+  Upload,
   X,
   XCircle,
 } from "lucide-react";
@@ -61,6 +65,12 @@ import {
   TableHeader,
   TableRow,
 } from "@ndma-dcs-staff-portal/ui/components/table";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@ndma-dcs-staff-portal/ui/components/tabs";
 import { Textarea } from "@ndma-dcs-staff-portal/ui/components/textarea";
 
 export const Route = createFileRoute("/_authenticated/timesheets/")({
@@ -1045,6 +1055,480 @@ function EntriesPanel({
   );
 }
 
+// ─── HR Timesheet Documents ───────────────────────────────────────────────────
+
+const OFFICE_LABEL: Record<string, string> = {
+  castellani: "Castellani",
+  liliendaal: "Liliendaal",
+};
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Failed to read file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function isPdfDataUrl(dataUrl: string): boolean {
+  return dataUrl.startsWith("data:application/pdf");
+}
+
+function openTimesheetDocument(storagePath: string, filename: string) {
+  if (!storagePath) {
+    toast.error("This document has no stored file.");
+    return;
+  }
+  if (isPdfDataUrl(storagePath)) {
+    window.open(storagePath, "_blank", "noopener,noreferrer");
+    return;
+  }
+  // Excel / other — trigger a download via a transient anchor.
+  const anchor = document.createElement("a");
+  anchor.href = storagePath;
+  anchor.download = filename || "timesheet";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+}
+
+// ─── Upload Timesheet Document Dialog ─────────────────────────────────────────
+
+function UploadDocumentDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const queryClient = useQueryClient();
+  const { data: staff } = useQuery(
+    orpc.staff.list.queryOptions({ input: { limit: 500, offset: 0 } }),
+  );
+  const now = new Date();
+  const [staffId, setStaffId] = useState("");
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [office, setOffice] = useState<"castellani" | "liliendaal">("castellani");
+  const [file, setFile] = useState<File | null>(null);
+  const [reading, setReading] = useState(false);
+
+  const yearOptions = [
+    now.getFullYear() - 2,
+    now.getFullYear() - 1,
+    now.getFullYear(),
+    now.getFullYear() + 1,
+  ];
+
+  function reset() {
+    setStaffId("");
+    setYear(now.getFullYear());
+    setMonth(now.getMonth() + 1);
+    setOffice("castellani");
+    setFile(null);
+  }
+
+  const mutation = useMutation(
+    orpc.timesheetDocuments.create.mutationOptions({
+      onSuccess: async () => {
+        toast.success("Timesheet document uploaded");
+        await queryClient.invalidateQueries({
+          queryKey: orpc.timesheetDocuments.list.key(),
+        });
+        onOpenChange(false);
+        reset();
+      },
+      onError: (error: Error & { code?: string }) => {
+        if (error.code === "CONFLICT") {
+          toast.error(
+            "A timesheet already exists for that staff/month/office — delete it first to replace.",
+          );
+        } else {
+          toast.error(error.message ?? "Failed to upload timesheet document.");
+        }
+      },
+    }),
+  );
+
+  async function submit() {
+    if (!staffId) {
+      toast.error("Select a staff member.");
+      return;
+    }
+    if (!file) {
+      toast.error("Choose a timesheet file to upload.");
+      return;
+    }
+    setReading(true);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setReading(false);
+      mutation.mutate({
+        staffId,
+        year,
+        month,
+        office,
+        filename: file.name,
+        storagePath: dataUrl,
+      });
+    } catch (err) {
+      setReading(false);
+      toast.error((err as Error).message ?? "Failed to read file.");
+    }
+  }
+
+  const busy = reading || mutation.isPending;
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!busy) onOpenChange(o); }}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Upload Timesheet</DialogTitle>
+          <DialogDescription>
+            Upload a monthly timesheet file (PDF or Excel) received from HR for a
+            staff member.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>Staff Member</Label>
+            <Select value={staffId} onValueChange={(v) => setStaffId(v ?? "")}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select staff member" />
+              </SelectTrigger>
+              <SelectContent>
+                {staff?.map((person) => (
+                  <SelectItem key={person.id} value={person.id}>
+                    {person.user?.name ?? person.id}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label>Year</Label>
+              <Select
+                value={String(year)}
+                onValueChange={(v) => v && setYear(Number(v))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {yearOptions.map((y) => (
+                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Month</Label>
+              <Select
+                value={String(month)}
+                onValueChange={(v) => v && setMonth(Number(v))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTH_NAMES.map((name, i) => (
+                    <SelectItem key={i + 1} value={String(i + 1)}>{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Office</Label>
+            <Select
+              value={office}
+              onValueChange={(v) =>
+                setOffice((v as "castellani" | "liliendaal") ?? "castellani")
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="castellani">Castellani</SelectItem>
+                <SelectItem value="liliendaal">Liliendaal</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="doc-file">Timesheet File</Label>
+            <Input
+              id="doc-file"
+              type="file"
+              accept=".pdf,.xlsx,.xls"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
+            {file && (
+              <p className="text-xs text-muted-foreground">
+                {file.name} · {(file.size / 1024).toFixed(0)} KB
+              </p>
+            )}
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={busy}
+          >
+            Cancel
+          </Button>
+          <Button onClick={submit} disabled={busy}>
+            {busy ? "Uploading…" : "Upload Timesheet"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Delete Document Dialog ───────────────────────────────────────────────────
+
+function DeleteDocumentDialog({
+  document: doc,
+  onClose,
+}: {
+  document: { id: number; filename: string };
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const mutation = useMutation(
+    orpc.timesheetDocuments.delete.mutationOptions({
+      onSuccess: async () => {
+        toast.success("Timesheet document deleted");
+        await queryClient.invalidateQueries({
+          queryKey: orpc.timesheetDocuments.list.key(),
+        });
+        onClose();
+      },
+      onError: (e: Error) => toast.error(e.message),
+    }),
+  );
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o && !mutation.isPending) onClose(); }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete Timesheet Document</DialogTitle>
+          <DialogDescription>
+            This will permanently remove <span className="font-medium">{doc.filename}</span>.
+            This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={mutation.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={mutation.isPending}
+            onClick={() => mutation.mutate({ id: doc.id })}
+          >
+            {mutation.isPending ? "Deleting…" : "Delete"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── HR Timesheet Documents Tab ───────────────────────────────────────────────
+
+function TimesheetDocumentsTab() {
+  const now = new Date();
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [deleteDoc, setDeleteDoc] = useState<{
+    id: number;
+    filename: string;
+  } | null>(null);
+  const [yearFilter, setYearFilter] = useState<string>("all");
+  const [monthFilter, setMonthFilter] = useState<string>("all");
+
+  const yearOptions = [
+    now.getFullYear() - 2,
+    now.getFullYear() - 1,
+    now.getFullYear(),
+    now.getFullYear() + 1,
+  ];
+
+  const { data, isLoading } = useQuery(
+    orpc.timesheetDocuments.list.queryOptions({
+      input: {
+        year: yearFilter !== "all" ? Number(yearFilter) : undefined,
+        month: monthFilter !== "all" ? Number(monthFilter) : undefined,
+        limit: 500,
+        offset: 0,
+      },
+    }),
+  );
+
+  const documents = data ?? [];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Year</span>
+            <Select value={yearFilter} onValueChange={(v) => setYearFilter(v ?? "all")}>
+              <SelectTrigger className="w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All years</SelectItem>
+                {yearOptions.map((y) => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Month</span>
+            <Select value={monthFilter} onValueChange={(v) => setMonthFilter(v ?? "all")}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All months</SelectItem>
+                {MONTH_NAMES.map((name, i) => (
+                  <SelectItem key={i + 1} value={String(i + 1)}>{name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <Button size="sm" onClick={() => setUploadOpen(true)}>
+          <Upload className="mr-1.5 size-4" />
+          Upload Timesheet
+        </Button>
+      </div>
+
+      <div className="rounded-xl border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Staff</TableHead>
+              <TableHead>Period</TableHead>
+              <TableHead>Office</TableHead>
+              <TableHead>Filename</TableHead>
+              <TableHead>Uploaded by</TableHead>
+              <TableHead>Uploaded</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  {Array.from({ length: 7 }).map((_, j) => (
+                    <TableCell key={j}>
+                      <Skeleton className="h-4 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : documents.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={7}
+                  className="py-12 text-center text-muted-foreground"
+                >
+                  <FileUp className="mx-auto mb-2 size-8 opacity-40" />
+                  No timesheet documents uploaded yet.
+                  <div className="mt-1 text-xs">
+                    Use “Upload Timesheet” to add a file received from HR.
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              documents.map((doc) => (
+                <TableRow key={doc.id} className="hover:bg-muted/40">
+                  <TableCell className="font-medium">
+                    {doc.staffProfile?.user?.name ?? "—"}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                    {MONTH_NAMES[doc.month - 1] ?? doc.month} {doc.year}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {OFFICE_LABEL[doc.office] ?? doc.office}
+                  </TableCell>
+                  <TableCell className="max-w-xs truncate text-sm">
+                    {doc.filename}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {doc.uploader?.name ?? "—"}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                    {doc.uploadedAt
+                      ? format(parseISO(String(doc.uploadedAt)), "dd MMM yyyy")
+                      : "—"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs"
+                        onClick={() =>
+                          openTimesheetDocument(doc.storagePath ?? "", doc.filename)
+                        }
+                      >
+                        <Eye className="mr-1 size-3" />
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10"
+                        onClick={() =>
+                          setDeleteDoc({ id: doc.id, filename: doc.filename })
+                        }
+                      >
+                        <Trash2 className="mr-1 size-3" />
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {!isLoading && documents.length > 0 && (
+        <div className="text-xs text-muted-foreground">
+          {documents.length} document{documents.length === 1 ? "" : "s"}
+        </div>
+      )}
+
+      <UploadDocumentDialog open={uploadOpen} onOpenChange={setUploadOpen} />
+      {deleteDoc && (
+        <DeleteDocumentDialog
+          document={deleteDoc}
+          onClose={() => setDeleteDoc(null)}
+        />
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 function TimesheetsPage() {
@@ -1150,6 +1634,13 @@ function TimesheetsPage() {
           </p>
         </div>
 
+        <Tabs defaultValue="records">
+          <TabsList className="mb-4">
+            <TabsTrigger value="records">Timesheet Records</TabsTrigger>
+            <TabsTrigger value="documents">HR Timesheet Documents</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="records">
         {/* Filters */}
         <div className="mb-4 flex flex-wrap gap-3">
           <div className="flex flex-col gap-1">
@@ -1405,6 +1896,12 @@ function TimesheetsPage() {
             </span>
           </div>
         )}
+          </TabsContent>
+
+          <TabsContent value="documents">
+            <TimesheetDocumentsTab />
+          </TabsContent>
+        </Tabs>
       </Main>
 
       {/* Dialogs */}
