@@ -946,6 +946,11 @@ function StaffProfilePage() {
     orpc.contracts.list.queryOptions({ input: { staffProfileId: staffId, limit: 10 } }),
   );
 
+  const { data: staffAdvances, isLoading: advancesLoading } = useQuery({
+    ...orpc.advances.list.queryOptions({ input: { staffProfileId: staffId, limit: 5 } }),
+    enabled: advancesOpen,
+  });
+
   function dismissAlert(key: string) {
     setDismissedAlerts((prev) => new Set([...prev, key]));
   }
@@ -1260,13 +1265,45 @@ function StaffProfilePage() {
                     )}
                   </button>
                   {advancesOpen && (
-                    <div className="border-t px-4 py-4">
-                      <p className="text-sm text-muted-foreground">
-                        Advance request tracking is not yet available. This panel will show salary and other advance requests once the Advances module is configured.
-                      </p>
-                      <Button variant="outline" size="sm" className="mt-3" disabled>
-                        View All Advances
-                      </Button>
+                    <div className="border-t px-4 py-4 space-y-3">
+                      {advancesLoading ? (
+                        <div className="space-y-2">
+                          {[1, 2].map((i) => (
+                            <Skeleton key={i} className="h-10 w-full" />
+                          ))}
+                        </div>
+                      ) : !staffAdvances || staffAdvances.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No advance requests on file.</p>
+                      ) : (
+                        <div className="divide-y rounded-lg border overflow-hidden">
+                          {staffAdvances.map((adv) => (
+                            <div key={adv.id} className="flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/30">
+                              <div className="min-w-0">
+                                <p className="font-medium truncate">{adv.purpose}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {adv.dateRequested ? format(parseISO(adv.dateRequested), "d MMM yyyy") : "—"}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-3 ml-3 shrink-0">
+                                <span className="font-mono text-sm">${Number(adv.totalAmount ?? 0).toLocaleString()}</span>
+                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                  adv.status === "cleared"
+                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                                    : adv.status === "partial"
+                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                                    : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                }`}>
+                                  {adv.status === "cleared" ? "Cleared" : adv.status === "partial" ? "Partial" : "Pending"}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <Link to="/advances" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                        View all advances
+                        <ChevronRight className="size-3" />
+                      </Link>
                     </div>
                   )}
                 </div>

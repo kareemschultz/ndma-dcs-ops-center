@@ -11,7 +11,7 @@
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format, parseISO } from "date-fns";
+import { format, getDaysInMonth, parseISO } from "date-fns";
 import { useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -98,6 +98,11 @@ const ENTRY_CATEGORIES = [
   "Other",
 ] as const;
 
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
 // ─── Create Timesheet Dialog ──────────────────────────────────────────────────
 
 function CreateTimesheetDialog({
@@ -111,12 +116,18 @@ function CreateTimesheetDialog({
   const { data: staff } = useQuery(
     orpc.staff.list.queryOptions({ input: { limit: 200, offset: 0 } }),
   );
-  const [form, setForm] = useState({
-    staffProfileId: "",
-    title: "",
-    periodStart: "",
-    periodEnd: "",
-  });
+  const now = new Date();
+  const [staffProfileId, setStaffProfileId] = useState("");
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
+
+  const title = `${MONTH_NAMES[month - 1]} ${year}`;
+  const periodStart = `${year}-${String(month).padStart(2, "0")}-01`;
+  const periodEnd = `${year}-${String(month).padStart(2, "0")}-${String(
+    getDaysInMonth(new Date(year, month - 1)),
+  ).padStart(2, "0")}`;
+
+  const yearOptions = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1];
 
   const mutation = useMutation(
     orpc.timesheets.create.mutationOptions({
@@ -126,7 +137,9 @@ function CreateTimesheetDialog({
           queryKey: orpc.timesheets.list.key(),
         });
         onOpenChange(false);
-        setForm({ staffProfileId: "", title: "", periodStart: "", periodEnd: "" });
+        setStaffProfileId("");
+        setYear(now.getFullYear());
+        setMonth(now.getMonth() + 1);
       },
       onError: (error: Error) =>
         toast.error(error.message ?? "Failed to create timesheet"),
@@ -134,21 +147,11 @@ function CreateTimesheetDialog({
   );
 
   function submit() {
-    if (
-      !form.staffProfileId ||
-      !form.title ||
-      !form.periodStart ||
-      !form.periodEnd
-    ) {
-      toast.error("All fields are required.");
+    if (!staffProfileId) {
+      toast.error("Select a staff member.");
       return;
     }
-    mutation.mutate({
-      staffProfileId: form.staffProfileId,
-      title: form.title,
-      periodStart: form.periodStart,
-      periodEnd: form.periodEnd,
-    });
+    mutation.mutate({ staffProfileId, title, periodStart, periodEnd });
   }
 
   return (
@@ -157,7 +160,7 @@ function CreateTimesheetDialog({
         <DialogHeader>
           <DialogTitle>New Timesheet</DialogTitle>
           <DialogDescription>
-            Create a timesheet record for a staff member.
+            Create a monthly timesheet record for a staff member.
           </DialogDescription>
         </DialogHeader>
 
@@ -165,10 +168,8 @@ function CreateTimesheetDialog({
           <div className="space-y-1.5">
             <Label>Staff Member</Label>
             <Select
-              value={form.staffProfileId}
-              onValueChange={(v) =>
-                setForm((c) => ({ ...c, staffProfileId: v ?? "" }))
-              }
+              value={staffProfileId}
+              onValueChange={(v) => setStaffProfileId(v ?? "")}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select staff member" />
@@ -183,41 +184,44 @@ function CreateTimesheetDialog({
             </Select>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="ts-title">Title</Label>
-            <Input
-              id="ts-title"
-              value={form.title}
-              onChange={(e) =>
-                setForm((c) => ({ ...c, title: e.target.value }))
-              }
-              placeholder="e.g. April Operations"
-            />
-          </div>
-
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="ts-start">Period Start</Label>
-              <Input
-                id="ts-start"
-                type="date"
-                value={form.periodStart}
-                onChange={(e) =>
-                  setForm((c) => ({ ...c, periodStart: e.target.value }))
-                }
-              />
+              <Label>Year</Label>
+              <Select
+                value={String(year)}
+                onValueChange={(v) => v && setYear(Number(v))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {yearOptions.map((y) => (
+                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ts-end">Period End</Label>
-              <Input
-                id="ts-end"
-                type="date"
-                value={form.periodEnd}
-                onChange={(e) =>
-                  setForm((c) => ({ ...c, periodEnd: e.target.value }))
-                }
-              />
+              <Label>Month</Label>
+              <Select
+                value={String(month)}
+                onValueChange={(v) => v && setMonth(Number(v))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTH_NAMES.map((name, i) => (
+                    <SelectItem key={i + 1} value={String(i + 1)}>{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+          </div>
+
+          <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+            Timesheet: <span className="font-medium text-foreground">{title}</span>
+            &nbsp;·&nbsp;{format(parseISO(periodStart), "d MMM")} – {format(parseISO(periodEnd), "d MMM yyyy")}
           </div>
         </div>
 
@@ -248,11 +252,17 @@ function EditTimesheetDialog({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({
-    title: timesheet.title,
-    periodStart: timesheet.periodStart,
-    periodEnd: timesheet.periodEnd,
-  });
+  const parsed = timesheet.periodStart ? parseISO(timesheet.periodStart) : new Date();
+  const [year, setYear] = useState(parsed.getFullYear());
+  const [month, setMonth] = useState(parsed.getMonth() + 1);
+  const now = new Date();
+  const yearOptions = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1];
+
+  const title = `${MONTH_NAMES[month - 1]} ${year}`;
+  const periodStart = `${year}-${String(month).padStart(2, "0")}-01`;
+  const periodEnd = `${year}-${String(month).padStart(2, "0")}-${String(
+    getDaysInMonth(new Date(year, month - 1)),
+  ).padStart(2, "0")}`;
 
   const mutation = useMutation(
     orpc.timesheets.update.mutationOptions({
@@ -278,37 +288,44 @@ function EditTimesheetDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-title">Title</Label>
-            <Input
-              id="edit-title"
-              value={form.title}
-              onChange={(e) => setForm((c) => ({ ...c, title: e.target.value }))}
-            />
-          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="edit-start">Period Start</Label>
-              <Input
-                id="edit-start"
-                type="date"
-                value={form.periodStart}
-                onChange={(e) =>
-                  setForm((c) => ({ ...c, periodStart: e.target.value }))
-                }
-              />
+              <Label>Year</Label>
+              <Select
+                value={String(year)}
+                onValueChange={(v) => v && setYear(Number(v))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {yearOptions.map((y) => (
+                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="edit-end">Period End</Label>
-              <Input
-                id="edit-end"
-                type="date"
-                value={form.periodEnd}
-                onChange={(e) =>
-                  setForm((c) => ({ ...c, periodEnd: e.target.value }))
-                }
-              />
+              <Label>Month</Label>
+              <Select
+                value={String(month)}
+                onValueChange={(v) => v && setMonth(Number(v))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTH_NAMES.map((name, i) => (
+                    <SelectItem key={i + 1} value={String(i + 1)}>{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+          </div>
+
+          <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+            Timesheet: <span className="font-medium text-foreground">{title}</span>
+            &nbsp;·&nbsp;{format(parseISO(periodStart), "d MMM")} – {format(parseISO(periodEnd), "d MMM yyyy")}
           </div>
         </div>
 
@@ -318,7 +335,7 @@ function EditTimesheetDialog({
           </Button>
           <Button
             onClick={() =>
-              mutation.mutate({ id: timesheet.id, ...form })
+              mutation.mutate({ id: timesheet.id, title, periodStart, periodEnd })
             }
             disabled={mutation.isPending}
           >
@@ -1035,6 +1052,9 @@ function TimesheetsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [teamFilter, setTeamFilter] = useState<string>("all");
+  const now = new Date();
+  const [yearFilter, setYearFilter] = useState<string>(String(now.getFullYear()));
+  const [monthFilter, setMonthFilter] = useState<string>("all");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [editTimesheet, setEditTimesheet] = useState<{
     id: string;
@@ -1055,6 +1075,7 @@ function TimesheetsPage() {
       },
     }),
   );
+  const yearOptions = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1];
 
   const submitMutation = useMutation(
     orpc.timesheets.submit.mutationOptions({
@@ -1092,7 +1113,18 @@ function TimesheetsPage() {
     });
   }
 
-  const timesheets = data ?? [];
+  const timesheets = useMemo(() => {
+    const all = data ?? [];
+    return all.filter((ts) => {
+      const start = ts.periodStart ?? "";
+      if (yearFilter !== "all" && !start.startsWith(yearFilter)) return false;
+      if (monthFilter !== "all") {
+        const monthPrefix = `${yearFilter}-${String(monthFilter).padStart(2, "0")}`;
+        if (!start.startsWith(monthPrefix)) return false;
+      }
+      return true;
+    });
+  }, [data, yearFilter, monthFilter]);
 
   return (
     <>
@@ -1120,6 +1152,33 @@ function TimesheetsPage() {
 
         {/* Filters */}
         <div className="mb-4 flex flex-wrap gap-3">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Year</span>
+            <Select value={yearFilter} onValueChange={(v) => { setYearFilter(v ?? String(now.getFullYear())); setMonthFilter("all"); }}>
+              <SelectTrigger className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {yearOptions.map((y) => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Month</span>
+            <Select value={monthFilter} onValueChange={(v) => setMonthFilter(v ?? "all")}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All months</SelectItem>
+                {MONTH_NAMES.map((name, i) => (
+                  <SelectItem key={i + 1} value={String(i + 1)}>{name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="flex flex-col gap-1">
             <span className="text-xs text-muted-foreground">Status</span>
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v ?? "all")}>
