@@ -425,6 +425,8 @@ correlationId: context.requestId,
 
 ## Database Schema Files (packages/db/src/schema/)
 
+> **Full per-file table/router inventory:** [`docs/architecture/schema-and-routers.md`](docs/architecture/schema-and-routers.md)
+
 ~50 schema files — **browse `packages/db/src/schema/` for the full inventory**; every file's
 tables/enums are re-exported via `schema/index.ts`. Only the non-obvious bits live here:
 
@@ -447,6 +449,8 @@ tables/enums are re-exported via `schema/index.ts`. Only the non-obvious bits li
 ---
 
 ## API Routers (packages/api/src/routers/)
+
+> **Full router/procedure inventory:** [`docs/architecture/schema-and-routers.md`](docs/architecture/schema-and-routers.md)
 
 ~41 routers — **browse `packages/api/src/routers/`**; all registered in `routers/index.ts`,
 and each procedure's signature is the source of truth. Only the non-obvious bits here:
