@@ -36,7 +36,12 @@ import { useTeamFilter } from "@/lib/team-filter";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
 import { authClient } from "@/lib/auth-client";
-import { departmentOptionLabel, departmentPillLabel } from "@/lib/departments";
+import {
+  departmentOptionLabel,
+  departmentPillLabel,
+  descendantDepartmentIds,
+  isSubDepartment,
+} from "@/lib/departments";
 
 export const Route = createFileRoute("/_authenticated/staff/")({
   component: StaffPage,
@@ -406,9 +411,17 @@ function StaffPage() {
   );
   const { data: departments } = useQuery(orpc.staff.getDepartments.queryOptions());
 
+  // Selecting a department includes that department + all of its descendant
+  // sub-divisions (e.g. picking DCS includes ASN / Enterprise / Core staff).
+  const deptFilterIds =
+    deptId && departments
+      ? new Set(descendantDepartmentIds(deptId, departments))
+      : null;
+
   const filtered = data?.filter((s) => {
     if (status && s.status !== status) return false;
-    if (deptId && s.departmentId !== deptId) return false;
+    if (deptFilterIds && !(s.departmentId && deptFilterIds.has(s.departmentId)))
+      return false;
     if (search) {
       const q = search.toLowerCase();
       return (
@@ -520,20 +533,30 @@ function StaffPage() {
           >
             All
           </button>
-          {departments?.map((d) => (
-            <button
-              key={d.id}
-              type="button"
-              onClick={() => setDeptId(d.id === deptId ? "" : d.id)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                deptId === d.id
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background text-muted-foreground hover:border-primary hover:text-foreground"
-              }`}
-            >
-              {departmentPillLabel(d, departments)}
-            </button>
-          ))}
+          {departments?.map((d) => {
+            const child = isSubDepartment(d);
+            return (
+              <button
+                key={d.id}
+                type="button"
+                onClick={() => setDeptId(d.id === deptId ? "" : d.id)}
+                title={
+                  child
+                    ? "Sub-division — filters to this division only"
+                    : "Department — includes all sub-divisions"
+                }
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  child ? "border-dashed" : ""
+                } ${
+                  deptId === d.id
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-muted-foreground hover:border-primary hover:text-foreground"
+                }`}
+              >
+                {departmentPillLabel(d, departments)}
+              </button>
+            );
+          })}
         </div>
 
         {view === "grid" ? (

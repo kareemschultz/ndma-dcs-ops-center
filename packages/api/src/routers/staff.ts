@@ -17,6 +17,10 @@ export const staffRouter = {
     .input(
       z.object({
         departmentId: z.string().optional(),
+        // Hierarchical filter — selecting a parent department should include
+        // staff in all of its descendant sub-divisions. Pass the full set of
+        // {parent + descendant} department IDs and they are matched with inArray.
+        departmentIds: z.array(z.string()).optional(),
         team: z.enum(["DCS", "NOC"]).optional(),
         status: z
           .enum(["active", "inactive", "on_leave", "terminated"])
@@ -28,8 +32,13 @@ export const staffRouter = {
     .handler(async ({ input }) => {
       const conditions = [];
       if (input.status) conditions.push(eq(staffProfiles.status, input.status));
-      if (input.departmentId)
+      if (input.departmentIds && input.departmentIds.length > 0) {
+        conditions.push(
+          inArray(staffProfiles.departmentId, input.departmentIds),
+        );
+      } else if (input.departmentId) {
         conditions.push(eq(staffProfiles.departmentId, input.departmentId));
+      }
       if (input.team) {
         const teamStaffIds = await getTeamStaffIds(input.team);
         if (teamStaffIds.length === 0) return [];

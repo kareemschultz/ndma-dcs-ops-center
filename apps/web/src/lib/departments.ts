@@ -44,3 +44,27 @@ export function departmentPillLabel(
   const parent = all.find((d) => d.id === dept.parentId);
   return parent ? `${parent.code} / ${dept.name}` : dept.name;
 }
+
+/**
+ * Resolve a selected department to the set of IDs that should be matched when
+ * filtering staff: the department itself plus *all* of its descendant
+ * sub-divisions (recursive). Selecting a parent (e.g. DCS) therefore includes
+ * everyone in DCS and every DCS sub-division (ASN / Enterprise / Core …).
+ */
+export function descendantDepartmentIds(
+  rootId: string,
+  all: DepartmentOption[],
+): string[] {
+  const ids = new Set<string>([rootId]);
+  let added = true;
+  while (added) {
+    added = false;
+    for (const d of all) {
+      if (d.parentId && ids.has(d.parentId) && !ids.has(d.id)) {
+        ids.add(d.id);
+        added = true;
+      }
+    }
+  }
+  return [...ids];
+}
