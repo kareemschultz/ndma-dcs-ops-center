@@ -8,8 +8,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import {
+  AlertTriangle,
   ClipboardList,
   Clock3,
+  FileText,
   Pencil,
   Plus,
   SortAsc,
@@ -56,6 +58,11 @@ import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
+import {
+  type ParsedTimesheetRow,
+  dayTypeToStatus,
+  parseTimesheetPdf,
+} from "@/lib/timesheet-pdf";
 
 export const Route = createFileRoute("/_authenticated/attendance/")({
   component: AttendancePage,
@@ -762,6 +769,220 @@ function LatenessTab() {
   );
 }
 
+// ─── Timesheet PDF Import Preview Dialog ──────────────────────────────────────
+
+type StaffLite = {
+  id: string;
+  employeeId?: string | null;
+  user?: { name?: string | null } | null;
+};
+
+interface EnrichedTimesheetRow extends ParsedTimesheetRow {
+  matchedStaffId?: string;
+  matchedName?: string;
+}
+
+/** Normalise a name for fuzzy matching: lowercase, collapse whitespace. */
+function normName(s: string): string {
+  return s.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function matchStaff(row: ParsedTimesheetRow, staffList: StaffLite[]): StaffLite | undefined {
+  const target = normName(row.staffName);
+  // Exact name match first.
+  let hit = staffList.find((s) => normName(s.user?.name ?? "") === target);
+  if (hit) return hit;
+  // Employee ID equals the PDF "User ID".
+  if (row.userId) {
+    hit = staffList.find((s) => (s.employeeId ?? "").trim() === row.userId.trim());
+    if (hit) return hit;
+  }
+  // Fall back to first+last token containment (handles spelling like "Shultz"/"Schultz").
+  const parts = target.split(" ").filter(Boolean);
+  if (parts.length >= 2) {
+    const first = parts[0]!;
+    const last = parts[parts.length - 1]!;
+    hit = staffList.find((s) => {
+      const n = normName(s.user?.name ?? "");
+      return n.includes(first) || n.includes(last);
+    });
+  }
+  return hit;
+}
+
+function TimesheetPdfPreviewDialog({
+  rows,
+  staffList,
+  onClose,
+}: {
+  rows: ParsedTimesheetRow[];
+  staffList: StaffLite[];
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const [importing, setImporting] = useState(false);
+
+  const enriched: EnrichedTimesheetRow[] = useMemo(
+    () =>
+      rows.map((row) => {
+        const match = matchStaff(row, staffList);
+        return {
+          ...row,
+          matchedStaffId: match?.id,
+          matchedName: match?.user?.name ?? match?.employeeId ?? undefined,
+        };
+      }),
+    [rows, staffList],
+  );
+
+  // Only persist rows that matched a staff profile AND have a clock-in
+  // (Restday / Absent rows with no times add no value as attendance logs).
+  const importable = useMemo(
+    () => enriched.filter((r) => r.matchedStaffId && (r.clockIn || r.clockOut)),
+    [enriched],
+  );
+  const unmatchedNames = useMemo(
+    () => [...new Set(enriched.filter((r) => !r.matchedStaffId).map((r) => r.staffName))],
+    [enriched],
+  );
+  const lateCount = useMemo(() => importable.filter((r) => r.isLate).length, [importable]);
+
+  const bulkMut = useMutation(orpc.attendanceTime.logs.bulkCreate.mutationOptions());
+
+  async function runImport() {
+    if (importable.length === 0) {
+      toast.error("No matchable rows with clock times to import.");
+      return;
+    }
+    setImporting(true);
+    try {
+      const result = await bulkMut.mutateAsync({
+        rows: importable.map((r) => ({
+          staffProfileId: r.matchedStaffId!,
+          date: r.date,
+          status: dayTypeToStatus(r.dayType),
+          clockIn: r.clockIn ?? undefined,
+          clockOut: r.clockOut ?? undefined,
+          workHours: r.hoursWorked ?? undefined,
+        })),
+      });
+      await qc.invalidateQueries({ queryKey: orpc.attendanceTime.logs.list.key() });
+      if (result.skipped > 0) {
+        toast.success(
+          `Imported ${result.inserted} clock log${result.inserted !== 1 ? "s" : ""} · skipped ${result.skipped} existing`,
+        );
+      } else {
+        toast.success(`Imported ${result.inserted} clock log${result.inserted !== 1 ? "s" : ""}`);
+      }
+      onClose();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Import failed");
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o && !importing) onClose(); }}>
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Timesheet PDF — Import Preview</DialogTitle>
+          <DialogDescription>
+            {enriched.length} day rows parsed · {importable.length} importable (matched staff with
+            clock times) · {lateCount} flagged late (after 08:15) · {unmatchedNames.length} unmatched
+            name{unmatchedNames.length !== 1 ? "s" : ""}.
+          </DialogDescription>
+        </DialogHeader>
+
+        {unmatchedNames.length > 0 && (
+          <div className="rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-800 dark:text-amber-300 mb-1">
+              <AlertTriangle className="size-3.5" />
+              Unmatched names (these rows will be skipped):
+            </p>
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              {unmatchedNames.join(", ")}
+            </p>
+          </div>
+        )}
+
+        <div className="rounded-md border overflow-hidden">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-muted border-b">
+                <th className="text-left px-3 py-2">Name in PDF</th>
+                <th className="text-left px-3 py-2">Matched Staff</th>
+                <th className="text-left px-3 py-2">Date</th>
+                <th className="text-right px-3 py-2">Clock In</th>
+                <th className="text-right px-3 py-2">Clock Out</th>
+                <th className="text-right px-3 py-2">Hours</th>
+                <th className="text-center px-3 py-2">Late</th>
+              </tr>
+            </thead>
+            <tbody>
+              {enriched.slice(0, 200).map((row, i) => {
+                const skipped = !row.matchedStaffId || !(row.clockIn || row.clockOut);
+                return (
+                  <tr
+                    key={i}
+                    className={`border-b last:border-0 ${skipped ? "opacity-40" : ""}`}
+                  >
+                    <td className="px-3 py-1.5 font-medium">{row.staffName}</td>
+                    <td className="px-3 py-1.5 text-muted-foreground">
+                      {row.matchedName ?? (
+                        <span className="text-amber-600">Not found</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-1.5 font-mono">{row.date}</td>
+                    <td className="px-3 py-1.5 text-right font-mono">{row.clockIn ?? "—"}</td>
+                    <td className="px-3 py-1.5 text-right font-mono">{row.clockOut ?? "—"}</td>
+                    <td className="px-3 py-1.5 text-right font-mono">
+                      {row.hoursWorked ? `${row.hoursWorked}h` : "—"}
+                    </td>
+                    <td className="px-3 py-1.5 text-center">
+                      {row.clockIn ? (
+                        row.isLate ? (
+                          <span className="inline-flex items-center rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 px-2 py-0.5 font-medium">
+                            +{row.minutesLate}m
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-2 py-0.5 font-medium">
+                            On time
+                          </span>
+                        )
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {enriched.length > 200 && (
+                <tr>
+                  <td colSpan={7} className="px-3 py-2 text-center text-muted-foreground">
+                    … and {enriched.length - 200} more rows (all will be imported)
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={importing}>
+            Cancel
+          </Button>
+          <Button onClick={runImport} disabled={importing || importable.length === 0}>
+            {importing
+              ? "Importing…"
+              : `Import ${importable.length} clock log${importable.length !== 1 ? "s" : ""}`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Clock Logs Tab ───────────────────────────────────────────────────────────
 
 function ClockLogsTab() {
@@ -788,7 +1009,12 @@ function ClockLogsTab() {
     | null
   >(null);
 
-  const staffQuery = useQuery(orpc.staff.list.queryOptions({ input: { limit: 200, offset: 0 } }));
+  const [pdfRows, setPdfRows] = useState<ParsedTimesheetRow[] | null>(null);
+  const [parsingPdf, setParsingPdf] = useState(false);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+
+  // Full staff list for PDF name matching (limit 500 per task spec).
+  const staffQuery = useQuery(orpc.staff.list.queryOptions({ input: { limit: 500, offset: 0 } }));
 
   const { data: logs, isLoading } = useQuery(
     orpc.attendanceTime.logs.list.queryOptions({
@@ -841,8 +1067,44 @@ function ClockLogsTab() {
     return draftByStaffMonth.get(`${staffId}|${yyyyMm}`) ?? null;
   }
 
+  async function handlePdfChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setParsingPdf(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const rows = await parseTimesheetPdf(buf);
+      if (rows.length === 0) {
+        toast.error("No timesheet rows found. Is this an Electronic Time Card PDF?");
+      } else {
+        setPdfRows(rows);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to parse PDF.");
+    } finally {
+      setParsingPdf(false);
+      if (pdfInputRef.current) pdfInputRef.current.value = "";
+    }
+  }
+
   return (
     <>
+      <input
+        ref={pdfInputRef}
+        type="file"
+        accept="application/pdf,.pdf"
+        className="hidden"
+        onChange={handlePdfChange}
+      />
+
+      {pdfRows && (
+        <TimesheetPdfPreviewDialog
+          rows={pdfRows}
+          staffList={(staffQuery.data ?? []) as StaffLite[]}
+          onClose={() => setPdfRows(null)}
+        />
+      )}
+
       {/* Filters bar */}
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">
@@ -918,9 +1180,16 @@ function ClockLogsTab() {
 
         <Button
           size="sm"
-          className="ml-auto"
-          onClick={() => setDialog({ mode: "create" })}
+          variant="outline"
+          className="ml-auto gap-1.5"
+          disabled={parsingPdf}
+          onClick={() => pdfInputRef.current?.click()}
         >
+          <FileText className="size-4" />
+          {parsingPdf ? "Reading PDF…" : "Upload Timesheet PDF"}
+        </Button>
+
+        <Button size="sm" onClick={() => setDialog({ mode: "create" })}>
           <Plus className="size-4 mr-1.5" />
           Add Log
         </Button>

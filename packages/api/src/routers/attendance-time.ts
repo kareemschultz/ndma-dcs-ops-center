@@ -118,6 +118,72 @@ export const attendanceTimeRouter = {
         return row;
       }),
 
+    bulkCreate: requireRole("timesheet", "create")
+      .input(
+        z.object({
+          rows: z
+            .array(
+              z.object({
+                staffProfileId: z.string(),
+                date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+                status: attendanceStatusSchema,
+                clockIn: z.string().optional(),
+                clockOut: z.string().optional(),
+                workHours: z.string().optional(),
+              }),
+            )
+            .min(1)
+            .max(2000),
+        }),
+      )
+      .handler(async ({ input, context }) => {
+        // Skip rows that already have a log for the same (staff, date) so the
+        // import can be safely re-run without creating duplicates.
+        const staffIds = [...new Set(input.rows.map((r) => r.staffProfileId))];
+        const dates = [...new Set(input.rows.map((r) => r.date))];
+        const existing = await db.query.attendanceLogs.findMany({
+          where: and(
+            inArray(attendanceLogs.staffId, staffIds),
+            inArray(attendanceLogs.date, dates),
+          ),
+          columns: { staffId: true, date: true },
+        });
+        const existingKeys = new Set(existing.map((e) => `${e.staffId}|${e.date}`));
+
+        const toInsert = input.rows
+          .filter((r) => !existingKeys.has(`${r.staffProfileId}|${r.date}`))
+          .map((r) => ({
+            staffId: r.staffProfileId,
+            date: r.date,
+            status: r.status,
+            clockIn: r.clockIn ?? null,
+            clockOut: r.clockOut ?? null,
+            workHours: (r.workHours ?? calcWorkHours(r.clockIn, r.clockOut)) ?? null,
+          }));
+
+        if (toInsert.length === 0) {
+          return { inserted: 0, skipped: input.rows.length };
+        }
+
+        const created = await db.insert(attendanceLogs).values(toInsert).returning();
+
+        await logAudit({
+          actorId: context.session.user.id,
+          actorName: context.session.user.name,
+          actorRole: context.userRole ?? undefined,
+          action: "attendance_log.bulk_create",
+          module: "operations",
+          resourceType: "attendance_log",
+          resourceId: "bulk",
+          afterValue: { inserted: created.length, dates } as Record<string, unknown>,
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+          correlationId: context.requestId,
+        });
+
+        return { inserted: created.length, skipped: input.rows.length - toInsert.length };
+      }),
+
     update: requireRole("timesheet", "update")
       .input(
         z.object({
