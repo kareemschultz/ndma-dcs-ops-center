@@ -882,9 +882,13 @@ function TimesheetPdfPreviewDialog({
     }
   }
 
+  // Shared 7-column grid template: Staff · Date · Clock In · Clock Out · Hours · Late · Day Type.
+  // Header and every body row use this identical template so columns always align.
+  const GRID = "grid grid-cols-[minmax(0,1.6fr)_7rem_6rem_6rem_5rem_6.5rem_8rem]";
+
   return (
     <Dialog open onOpenChange={(o) => { if (!o && !importing) onClose(); }}>
-      <DialogContent className="max-w-5xl w-[min(96vw,72rem)] max-h-[88vh] flex flex-col gap-4">
+      <DialogContent className="w-[min(96vw,68rem)] sm:max-w-[68rem] max-h-[88vh] flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle>Timesheet PDF — Import Preview</DialogTitle>
           <DialogDescription>
@@ -895,7 +899,7 @@ function TimesheetPdfPreviewDialog({
         </DialogHeader>
 
         {unmatchedNames.length > 0 && (
-          <div className="rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
+          <div className="shrink-0 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
             <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-800 dark:text-amber-300 mb-1">
               <AlertTriangle className="size-3.5" />
               Unmatched names (these rows will be skipped):
@@ -906,116 +910,108 @@ function TimesheetPdfPreviewDialog({
           </div>
         )}
 
-        <p className="text-xs text-muted-foreground">
+        <p className="shrink-0 text-xs text-muted-foreground">
           Rows shown <span className="text-foreground/70 font-medium">dimmed</span> are non-work days
           (rest days, holidays, absences) — they have no clock punch in the PDF, so the
           <span className="font-medium"> Day Type</span> column shows the reason and they are not
           imported as clock logs.
         </p>
 
-        <div className="rounded-md border overflow-auto flex-1 min-h-0">
-          <table className="w-full text-xs table-fixed">
-            <colgroup>
-              <col className="w-[20%]" />
-              <col className="w-[20%]" />
-              <col className="w-[7rem]" />
-              <col className="w-[6rem]" />
-              <col className="w-[6rem]" />
-              <col className="w-[5rem]" />
-              <col className="w-[7rem]" />
-              <col className="w-[6rem]" />
-            </colgroup>
-            <thead>
-              <tr className="bg-muted border-b">
-                <th className="text-left px-3 py-2">Name in PDF</th>
-                <th className="text-left px-3 py-2">Matched Staff</th>
-                <th className="text-left px-3 py-2">Date</th>
-                <th className="text-right px-3 py-2">Clock In</th>
-                <th className="text-right px-3 py-2">Clock Out</th>
-                <th className="text-right px-3 py-2">Hours</th>
-                <th className="text-left px-3 py-2">Day Type</th>
-                <th className="text-center px-3 py-2">Late</th>
-              </tr>
-            </thead>
-            <tbody>
-              {enriched.slice(0, 200).map((row, i) => {
-                const hasClock = Boolean(row.clockIn || row.clockOut);
-                const skipped = !row.matchedStaffId || !hasClock;
-                const dayTypeLabel =
-                  row.dayType === "Restday"
-                    ? "Rest Day"
-                    : row.dayType === "Holiday"
-                      ? "Holiday"
-                      : row.dayType === "Absent"
-                        ? "Absent"
-                        : hasClock
-                          ? "Workday"
-                          : "No clock data";
-                return (
-                  <tr
-                    key={i}
-                    className={`border-b last:border-0 ${skipped ? "opacity-50" : ""}`}
-                  >
-                    <td className="px-3 py-1.5 font-medium truncate" title={row.staffName}>
-                      {row.staffName}
-                    </td>
-                    <td
-                      className="px-3 py-1.5 text-muted-foreground truncate"
-                      title={row.matchedName ?? "Not found"}
-                    >
-                      {row.matchedName ?? (
-                        <span className="text-amber-600">Not found</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-1.5 font-mono whitespace-nowrap">{row.date}</td>
-                    <td className="px-3 py-1.5 text-right font-mono whitespace-nowrap">
-                      {row.clockIn ?? "—"}
-                    </td>
-                    <td className="px-3 py-1.5 text-right font-mono whitespace-nowrap">
-                      {row.clockOut ?? "—"}
-                    </td>
-                    <td className="px-3 py-1.5 text-right font-mono whitespace-nowrap">
-                      {row.hoursWorked ? `${row.hoursWorked}h` : "—"}
-                    </td>
-                    <td className="px-3 py-1.5">
-                      {hasClock && row.dayType === "Workday" ? (
-                        <span className="text-muted-foreground">Workday</span>
-                      ) : (
-                        <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 px-2 py-0.5 font-medium whitespace-nowrap">
-                          {dayTypeLabel}
+        {/* Table — fixed header, vertically-scrolling body, no horizontal scroll. */}
+        <div className="flex-1 min-h-0 flex flex-col rounded-md border overflow-hidden">
+          <div
+            className={`${GRID} shrink-0 border-b bg-muted text-[11px] font-semibold uppercase tracking-wide text-muted-foreground`}
+          >
+            <div className="px-3 py-2">Staff</div>
+            <div className="px-3 py-2">Date</div>
+            <div className="px-3 py-2 text-right">Clock In</div>
+            <div className="px-3 py-2 text-right">Clock Out</div>
+            <div className="px-3 py-2 text-right">Hours</div>
+            <div className="px-3 py-2 text-center">Late</div>
+            <div className="px-3 py-2">Day Type</div>
+          </div>
+
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            {enriched.slice(0, 300).map((row, i) => {
+              const hasClock = Boolean(row.clockIn || row.clockOut);
+              const skipped = !row.matchedStaffId || !hasClock;
+              const dayTypeLabel =
+                row.dayType === "Restday"
+                  ? "Rest Day"
+                  : row.dayType === "Holiday"
+                    ? "Holiday"
+                    : row.dayType === "Absent"
+                      ? "Absent"
+                      : hasClock
+                        ? "Workday"
+                        : "No clock data";
+              return (
+                <div
+                  key={i}
+                  className={`${GRID} items-center border-b last:border-0 text-xs ${skipped ? "opacity-55" : ""}`}
+                >
+                  {/* Staff — matched profile, or the PDF name flagged amber if unmatched. */}
+                  <div className="min-w-0 px-3 py-1.5">
+                    {row.matchedStaffId ? (
+                      <span className="block truncate font-medium" title={row.matchedName}>
+                        {row.matchedName}
+                      </span>
+                    ) : (
+                      <span
+                        className="flex items-center gap-1 truncate font-medium text-amber-600 dark:text-amber-400"
+                        title={`"${row.staffName}" — no matching staff profile`}
+                      >
+                        <AlertTriangle className="size-3 shrink-0" />
+                        <span className="truncate">{row.staffName}</span>
+                      </span>
+                    )}
+                  </div>
+                  <div className="px-3 py-1.5 font-mono whitespace-nowrap">{row.date}</div>
+                  <div className="px-3 py-1.5 text-right font-mono whitespace-nowrap">
+                    {row.clockIn ?? "—"}
+                  </div>
+                  <div className="px-3 py-1.5 text-right font-mono whitespace-nowrap">
+                    {row.clockOut ?? "—"}
+                  </div>
+                  <div className="px-3 py-1.5 text-right font-mono whitespace-nowrap">
+                    {row.hoursWorked ? `${row.hoursWorked}h` : "—"}
+                  </div>
+                  <div className="px-3 py-1.5 text-center">
+                    {row.clockIn ? (
+                      row.isLate ? (
+                        <span className="inline-flex items-center rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 px-2 py-0.5 font-medium whitespace-nowrap">
+                          +{row.minutesLate}m
                         </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-1.5 text-center">
-                      {row.clockIn ? (
-                        row.isLate ? (
-                          <span className="inline-flex items-center rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 px-2 py-0.5 font-medium whitespace-nowrap">
-                            +{row.minutesLate}m
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-2 py-0.5 font-medium">
-                            On time
-                          </span>
-                        )
                       ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-              {enriched.length > 200 && (
-                <tr>
-                  <td colSpan={8} className="px-3 py-2 text-center text-muted-foreground">
-                    … and {enriched.length - 200} more rows (all will be imported)
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                        <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-2 py-0.5 font-medium">
+                          On time
+                        </span>
+                      )
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </div>
+                  <div className="px-3 py-1.5">
+                    {hasClock && row.dayType === "Workday" ? (
+                      <span className="text-muted-foreground">Workday</span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 px-2 py-0.5 font-medium whitespace-nowrap">
+                        {dayTypeLabel}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            {enriched.length > 300 && (
+              <div className="px-3 py-2 text-center text-xs text-muted-foreground">
+                … and {enriched.length - 300} more rows (all matched rows will be imported)
+              </div>
+            )}
+          </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0">
           <Button variant="outline" onClick={onClose} disabled={importing}>
             Cancel
           </Button>

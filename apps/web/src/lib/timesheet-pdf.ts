@@ -2,10 +2,16 @@
 //
 // PDF structure (one staff member spans several pages):
 //   - A header line per page:  "User ID : 220   Name : Ataybia Williams   Department : Data Centre   Date : 03/01/2026 - 04/30/2026"
-//   - One row per calendar day: "MM-DD-YYYY Day  DayType  Sche  [In time]  [Out time]  [WorkHours]"
-//     e.g.  "03-05-2026 Thu  Workday  1  08:53 AM  04:35 PM  7.62"
-//   - In / Out times are 12-hour "hh:mm AM/PM". WorkHours is a decimal printed by the device.
-//   - Restday / Holiday rows and "Absent" rows have no clock times.
+//   - One row per calendar day. The device lays the columns out at FIXED x positions:
+//       Date  x≈22   ·  Day Type  x≈86   ·  Sche  x≈146
+//       In time   x≈191  ·  Out time  x≈301  ·  Work hours  x≈402
+//       Late In / Diff OT / Early Out  x≈511   ·  Leave Taken  x≈551   ·  Remark  x≈636
+//   - In / Out times are 12-hour "hh:mm AM/PM". Work hours is a decimal printed by the device.
+//   - A row can have ONLY an Out punch (no In) or ONLY an In punch — so In/Out MUST be
+//     assigned by x-coordinate, never by left-to-right match order.
+//   - The "Day Type" column itself only ever holds Workday / Restday / Holiday. The reason a
+//     work day has no punches (Absent / Annual / sick leave / Out of Office …) lives in the
+//     separate "Leave Taken" column at x≈551.
 //
 // DCS staff start at 08:00; a clock-in after 08:15 (15-min grace) counts as late.
 
@@ -70,9 +76,29 @@ interface LineCell {
   s: string;
 }
 
+// Fixed column x-coordinates from the device layout. A cell is assigned to a
+// column when its x falls inside [center - HALF, center + HALF].
+const COL_IN = 191;
+const COL_OUT = 301;
+const COL_HOURS = 402;
+const COL_TOLERANCE = 40; // generous; the In/Out/Work columns are ~110px apart.
+
+/** Pick the first cell whose x is within tolerance of a column centre. */
+function cellNear(cells: LineCell[], centre: number, tolerance = COL_TOLERANCE): string | null {
+  const hit = cells.find((c) => Math.abs(c.x - centre) <= tolerance);
+  return hit ? hit.s.trim() : null;
+}
+
+/** Day-type / leave-taken keywords that mean "no expected clock punch". */
+const ABSENCE_KEYWORDS =
+  /^(Absent|Annual|Certified Sick|Uncert\. Sick|Out of Office|Out of Town|Leave|Holiday)\b/i;
+
 /**
  * Parse the timesheet PDF ArrayBuffer into per-day rows.
- * Lines are reconstructed by grouping text items that share a y-coordinate.
+ *
+ * Lines are reconstructed by grouping text items that share a y-coordinate;
+ * In / Out / Work columns are then resolved by each item's x-coordinate so a
+ * row with only an Out punch (or only an In punch) is never mis-attributed.
  */
 export async function parseTimesheetPdf(data: ArrayBuffer): Promise<ParsedTimesheetRow[]> {
   const doc = await getDocument({ data: new Uint8Array(data) }).promise;
@@ -106,28 +132,38 @@ export async function parseTimesheetPdf(data: ArrayBuffer): Promise<ParsedTimesh
       const uidM = text.match(/User ID\s*:\s*(\S+)/);
       if (uidM) currentUserId = uidM[1]!.trim();
 
-      // Day row — starts with MM-DD-YYYY.
-      const dateM = text.match(/^(\d{2})-(\d{2})-(\d{4})\b/);
+      // Day row — the FIRST cell must start with MM-DD-YYYY. (Per-staff summary
+      // tables at the foot of each section start with "Workday"/"Total" — those
+      // contain decimals at column-ish x positions and must NOT be parsed.)
+      const firstCell = cells[0]?.s.trim() ?? "";
+      const dateM = firstCell.match(/^(\d{2})-(\d{2})-(\d{4})\b/);
       if (!dateM || !currentName) continue;
 
       const isoDate = `${dateM[3]}-${dateM[1]}-${dateM[2]}`;
 
-      // Day type.
+      // Clock In / Out — resolved strictly by x-coordinate.
+      const inRaw = cellNear(cells, COL_IN);
+      const outRaw = cellNear(cells, COL_OUT);
+      const clockIn = inRaw ? to24h(inRaw) : null;
+      const clockOut = outRaw ? to24h(outRaw) : null;
+
+      // Day Type column (x≈86) — only ever Workday / Restday / Holiday.
+      const dayTypeCell = cellNear(cells, 86, 30) ?? "";
+      // Leave Taken column (x≈551) — Absent / Annual / sick leave / Out of Office…
+      const leaveCell = cells.find((c) => c.x >= 530 && c.x <= 615)?.s.trim() ?? "";
+
       let dayType = "Workday";
-      if (/\bRestday\b/.test(text)) dayType = "Restday";
-      else if (/\bHoliday\b/.test(text)) dayType = "Holiday";
-      else if (/\bAbsent\b/.test(text)) dayType = "Absent";
+      if (/Restday/i.test(dayTypeCell)) dayType = "Restday";
+      else if (/Holiday/i.test(dayTypeCell) || /^Holiday/i.test(leaveCell)) dayType = "Holiday";
+      else if (ABSENCE_KEYWORDS.test(leaveCell) && !clockIn && !clockOut) dayType = "Absent";
 
-      // Clock times: 12-hour times appear in column order — first = In, second = Out.
-      const timeMatches = [...text.matchAll(/(\d{1,2}:\d{2}\s*(?:AM|PM))/gi)].map((m) =>
-        to24h(m[1]!),
-      );
-      const clockIn = timeMatches[0] ?? null;
-      const clockOut = timeMatches[1] ?? null;
-
-      // Work hours: the device prints a decimal like "7.62" / "8.50".
-      const hoursM = text.match(/\b(\d{1,2}\.\d{2})\b/);
-      const hoursWorked = hoursM ? hoursM[1]! : calcHours(clockIn, clockOut);
+      // Work hours — the decimal in the Work column (x≈402). Recompute from the
+      // punches when the device printed no value (e.g. only one punch present).
+      const hoursCell = cellNear(cells, COL_HOURS, 30);
+      const hoursWorked =
+        hoursCell && /^\d{1,2}\.\d{2}$/.test(hoursCell)
+          ? hoursCell
+          : calcHours(clockIn, clockOut);
 
       let minutesLate = 0;
       if (clockIn) {
