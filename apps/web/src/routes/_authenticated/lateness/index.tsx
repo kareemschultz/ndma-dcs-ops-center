@@ -401,7 +401,7 @@ function UpsertDialog({
                             (x: { id: string; employeeId: string; user?: { name?: string } | null }) =>
                               x.id === form.staffId,
                           );
-                          return s?.user?.name ?? s?.employeeId ?? form.staffId;
+                          return s?.user?.name ?? s?.employeeId ?? "Unnamed";
                         })()
                       : "Select staff"}
                   </SelectValue>

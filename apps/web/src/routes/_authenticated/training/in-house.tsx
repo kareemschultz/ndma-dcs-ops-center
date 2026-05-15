@@ -221,7 +221,7 @@ export default function InHouseTrainingLogPage() {
                   {logs.map((l) => (
                     <TableRow key={l.id}>
                       <TableCell className="font-medium">
-                        {l.staffProfile?.user?.name ?? l.staffId}
+                        {l.staffProfile?.user?.name ?? l.staffProfile?.employeeId ?? "Unknown"}
                       </TableCell>
                       <TableCell>{l.trainingName}</TableCell>
                       <TableCell className="text-sm">{l.date}</TableCell>
@@ -284,7 +284,7 @@ export default function InHouseTrainingLogPage() {
                 <SelectTrigger>
                   <SelectValue>
                     {form.staffId
-                      ? (staff?.find(s => s.id === form.staffId)?.user?.name ?? staff?.find(s => s.id === form.staffId)?.employeeId ?? form.staffId)
+                      ? (staff?.find(s => s.id === form.staffId)?.user?.name ?? staff?.find(s => s.id === form.staffId)?.employeeId ?? "Unnamed")
                       : "Select staff…"}
                   </SelectValue>
                 </SelectTrigger>

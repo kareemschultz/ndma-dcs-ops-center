@@ -372,7 +372,7 @@ export default function ExamVouchersPage() {
                 <SelectTrigger>
                   <SelectValue>
                     {assignStaffId
-                      ? (staff?.find((s) => s.id === assignStaffId)?.user?.name ?? staff?.find((s) => s.id === assignStaffId)?.employeeId ?? assignStaffId)
+                      ? (staff?.find((s) => s.id === assignStaffId)?.user?.name ?? staff?.find((s) => s.id === assignStaffId)?.employeeId ?? "Unnamed")
                       : "Select staff…"}
                   </SelectValue>
                 </SelectTrigger>

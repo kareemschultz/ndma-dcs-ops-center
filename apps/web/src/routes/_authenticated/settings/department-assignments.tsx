@@ -211,7 +211,7 @@ function DepartmentAssignmentsPage() {
                   : assignmentRows.map((assignment) => (
                     <TableRow key={assignment.id} className={!assignment.isActive ? "opacity-60" : ""}>
                       <TableCell className="font-medium">
-                        {assignment.staffProfile?.user?.name ?? assignment.staffProfileId}
+                        {assignment.staffProfile?.user?.name ?? assignment.staffProfile?.employeeId ?? "Unnamed"}
                         <div className="text-xs text-muted-foreground">
                           {assignment.staffProfile?.employeeId ?? ""}
                         </div>

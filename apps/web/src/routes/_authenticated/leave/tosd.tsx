@@ -160,7 +160,7 @@ function AddTosdDialog({
               <SelectTrigger>
                 <SelectValue>
                   {form.staffId
-                    ? (staffList.find(s => s.id === form.staffId)?.user?.name ?? staffList.find(s => s.id === form.staffId)?.employeeId ?? form.staffId)
+                    ? (staffList.find(s => s.id === form.staffId)?.user?.name ?? staffList.find(s => s.id === form.staffId)?.employeeId ?? "Unnamed")
                     : "Select staff…"}
                 </SelectValue>
               </SelectTrigger>
@@ -435,7 +435,7 @@ function TosdPage() {
               <SelectTrigger className="w-[220px]">
                 <SelectValue>
                   {selectedStaffId
-                    ? (staffList.find(s => s.id === selectedStaffId)?.user?.name ?? staffList.find(s => s.id === selectedStaffId)?.employeeId ?? selectedStaffId)
+                    ? (staffList.find(s => s.id === selectedStaffId)?.user?.name ?? staffList.find(s => s.id === selectedStaffId)?.employeeId ?? "Unnamed")
                     : staffLoading ? "Loading…" : "All staff"}
                 </SelectValue>
               </SelectTrigger>

@@ -85,7 +85,7 @@ type ContractRecord = {
   endDate: string | null;
   status: string;
   renewalStatus: string;
-  staffProfile?: { user?: { name?: string | null } | null } | null;
+  staffProfile?: { employeeId?: string; user?: { name?: string | null } | null } | null;
 };
 
 type CreateForm = {
@@ -306,7 +306,7 @@ function CreateContractDialog({ onClose }: { onClose: () => void }) {
             <SelectContent>
               {staffData?.map((s) => (
                 <SelectItem key={s.id} value={s.id}>
-                  {s.user?.name ?? s.id}
+                  {s.user?.name ?? s.employeeId ?? "Unnamed"}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -405,7 +405,7 @@ function EditContractDialog({
         <div className="space-y-1.5">
           <Label>Staff Member</Label>
           <Input
-            value={contract.staffProfile?.user?.name ?? contract.staffProfileId}
+            value={contract.staffProfile?.user?.name ?? contract.staffProfile?.employeeId ?? "Unnamed"}
             disabled
             className="bg-muted"
           />

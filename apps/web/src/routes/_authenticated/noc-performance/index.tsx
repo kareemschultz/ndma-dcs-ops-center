@@ -152,7 +152,7 @@ function MetricsTab({ year, month }: { year: number; month: number }) {
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
                         {getInitials(r.staffName ?? undefined)}
                       </div>
-                      {r.staffName ?? r.staffId}
+                      {r.staffName ?? r.employeeId ?? "Unknown"}
                     </div>
                   </TableCell>
                   {METRIC_COLS.map((col) => (
@@ -284,7 +284,7 @@ function JournalTab({ year, month }: { year: number; month: number }) {
   const staffNames: Record<string, string> = {};
   const matrix: Record<string, Record<string, number>> = {};
   for (const row of rows) {
-    if (row.staff?.user?.name) staffNames[row.staffProfileId] = row.staff.user.name;
+    staffNames[row.staffProfileId] = row.staff?.user?.name ?? row.staff?.employeeId ?? "Unnamed";
     if (!matrix[row.staffProfileId]) matrix[row.staffProfileId] = {};
     matrix[row.staffProfileId][row.category] = (matrix[row.staffProfileId][row.category] ?? 0) + row.count;
   }
@@ -325,7 +325,7 @@ function JournalTab({ year, month }: { year: number; month: number }) {
                 return (
                   <TableRow key={sid}>
                     <TableCell className="sticky left-0 bg-background font-medium">
-                      {staffNames[sid] ?? sid}
+                      {staffNames[sid] ?? "Unknown"}
                     </TableCell>
                     {JOURNAL_CATEGORIES.map((c) => {
                       const n = matrix[sid][c.key] ?? 0;
@@ -353,7 +353,7 @@ type CommendationRow = {
   year: number;
   month: number;
   narrative: string;
-  staff?: { user?: { name?: string | null } | null } | null;
+  staff?: { employeeId?: string; user?: { name?: string | null } | null } | null;
 };
 
 function commendationInitials(name?: string | null) {
@@ -367,7 +367,7 @@ function CreateCommendationDialog({
 }: {
   open: boolean; onOpenChange: (v: boolean) => void;
   year: number; month: number;
-  staffList: Array<{ id: string; user?: { name?: string | null } | null }>;
+  staffList: Array<{ id: string; employeeId?: string; user?: { name?: string | null } | null }>;
 }) {
   const queryClient = useQueryClient();
   const [staffId, setStaffId] = useState("");
@@ -398,7 +398,7 @@ function CreateCommendationDialog({
               <SelectTrigger><SelectValue placeholder="Select staff…" /></SelectTrigger>
               <SelectContent>
                 {staffList.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.user?.name ?? s.id}</SelectItem>
+                  <SelectItem key={s.id} value={s.id}>{s.user?.name ?? s.employeeId ?? "Unnamed"}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -446,7 +446,7 @@ function CommendationsTab({ year, month }: { year: number; month: number }) {
 
   const allRows = (data ?? []) as CommendationRow[];
   const rows = allRows.filter((r) => r.month === month);
-  const staffList = (staffData ?? []) as Array<{ id: string; user?: { name?: string | null } | null }>;
+  const staffList = (staffData ?? []) as Array<{ id: string; employeeId?: string; user?: { name?: string | null } | null }>;
 
   return (
     <div className="space-y-4">
@@ -476,7 +476,7 @@ function CommendationsTab({ year, month }: { year: number; month: number }) {
                   {commendationInitials(row.staff?.user?.name)}
                 </div>
                 <div>
-                  <div className="font-semibold">{row.staff?.user?.name ?? row.staffProfileId}</div>
+                  <div className="font-semibold">{row.staff?.user?.name ?? row.staff?.employeeId ?? "Unnamed"}</div>
                   <div className="text-xs text-muted-foreground">{MONTHS[row.month - 1]} {row.year}</div>
                 </div>
               </div>

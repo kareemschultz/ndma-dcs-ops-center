@@ -66,7 +66,7 @@ function RegistryStaffDetailPage() {
     orpc.accessRegistry.listByStaff.queryOptions({ input: { staffId } }),
   );
 
-  const staffName = rows?.[0]?.staff?.user?.name;
+  const staffName = rows?.[0]?.staff?.user?.name ?? rows?.[0]?.staff?.employeeId;
   const staffDept = rows?.[0]?.staff?.department?.name;
 
   return (
@@ -82,7 +82,7 @@ function RegistryStaffDetailPage() {
           </Link>
           <span className="text-muted-foreground">/</span>
           <span className="text-sm font-medium">
-            {isLoading ? "Loading…" : (staffName ?? staffId)}
+            {isLoading ? "Loading…" : (staffName ?? "Unnamed")}
           </span>
         </div>
         <div className="ml-auto flex items-center gap-2">

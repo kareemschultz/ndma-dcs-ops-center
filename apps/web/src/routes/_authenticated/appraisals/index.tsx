@@ -483,7 +483,7 @@ function CreateAppraisalDialog({ open, onClose }: { open: boolean; onClose: () =
 
   const openCycles = (cyclesData as Array<{ id: string; status: string; year: number; half: string }> | undefined)?.filter((c) => c.status === "open") ?? [];
   const allCycles = (cyclesData as Array<{ id: string; status: string; year: number; half: string }> | undefined) ?? [];
-  const staffList = (Array.isArray(staffData) ? staffData : []) as Array<{ id: string; user?: { name?: string | null } | null }>;
+  const staffList = (Array.isArray(staffData) ? staffData : []) as Array<{ id: string; employeeId?: string; user?: { name?: string | null } | null }>;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -501,13 +501,13 @@ function CreateAppraisalDialog({ open, onClose }: { open: boolean; onClose: () =
               <SelectTrigger>
                 <SelectValue>
                   {form.staffProfileId
-                    ? (staffList.find(s => s.id === form.staffProfileId)?.user?.name ?? form.staffProfileId)
+                    ? (() => { const s = staffList.find(s => s.id === form.staffProfileId); return s?.user?.name ?? s?.employeeId ?? "Unnamed"; })()
                     : "Select staff member…"}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {staffList.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.user?.name ?? s.id}</SelectItem>
+                  <SelectItem key={s.id} value={s.id}>{s.user?.name ?? s.employeeId ?? "Unnamed"}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -543,14 +543,14 @@ function CreateAppraisalDialog({ open, onClose }: { open: boolean; onClose: () =
               <SelectTrigger>
                 <SelectValue>
                   {form.reviewerId
-                    ? (staffList.find(s => s.id === form.reviewerId)?.user?.name ?? form.reviewerId)
+                    ? (() => { const s = staffList.find(s => s.id === form.reviewerId); return s?.user?.name ?? s?.employeeId ?? "Unnamed"; })()
                     : "Select reviewer…"}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">None</SelectItem>
                 {staffList.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.user?.name ?? s.id}</SelectItem>
+                  <SelectItem key={s.id} value={s.id}>{s.user?.name ?? s.employeeId ?? "Unnamed"}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

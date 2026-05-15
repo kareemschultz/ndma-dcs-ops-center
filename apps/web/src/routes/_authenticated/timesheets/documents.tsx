@@ -98,7 +98,7 @@ function CreateDocumentDialog({ open, onClose }: { open: boolean; onClose: () =>
               <SelectTrigger id="tsd-staff">
                 <SelectValue>
                   {staffId
-                    ? (() => { const s = staffList.find((x: { id: string; employeeId: string; user?: { name?: string } | null }) => x.id === staffId); return s?.user?.name ?? s?.employeeId ?? staffId; })()
+                    ? (() => { const s = staffList.find((x: { id: string; employeeId: string; user?: { name?: string } | null }) => x.id === staffId); return s?.user?.name ?? s?.employeeId ?? "Unnamed"; })()
                     : "Select staff"}
                 </SelectValue>
               </SelectTrigger>
@@ -274,7 +274,7 @@ function TimesheetDocumentsPage() {
                 {(docs ?? []).map((doc) => (
                   <TableRow key={doc.id}>
                     <TableCell className="font-medium">
-                      {doc.staffProfile?.user?.name ?? doc.staffId}
+                      {doc.staffProfile?.user?.name ?? doc.staffProfile?.employeeId ?? "Unknown"}
                     </TableCell>
                     <TableCell>{doc.year}</TableCell>
                     <TableCell>{MONTH_NAMES[doc.month - 1]}</TableCell>

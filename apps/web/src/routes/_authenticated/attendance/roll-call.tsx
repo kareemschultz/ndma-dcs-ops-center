@@ -346,7 +346,7 @@ function RollCallPage() {
       }
       groups.get(deptId)!.staff.push({
         id: s.id,
-        name: s.user?.name ?? s.employeeId ?? s.id,
+        name: s.user?.name ?? s.employeeId ?? "Unnamed",
       });
     }
     return [...groups.values()].sort((a, b) => a.deptName.localeCompare(b.deptName));

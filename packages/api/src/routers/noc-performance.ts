@@ -129,6 +129,7 @@ export const nocPerformanceRouter = {
             createdAt: nocMonthlyMetrics.createdAt,
             updatedAt: nocMonthlyMetrics.updatedAt,
             staffName: user.name,
+            employeeId: staffProfiles.employeeId,
           })
           .from(nocMonthlyMetrics)
           .leftJoin(staffProfiles, eq(nocMonthlyMetrics.staffId, staffProfiles.id))

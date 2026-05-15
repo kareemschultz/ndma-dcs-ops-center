@@ -635,7 +635,7 @@ export default function TrainingEventsPage() {
                   {participantsEvent.participants.map((p) => (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">
-                        {p.staffProfile?.user?.name ?? p.staffId}
+                        {p.staffProfile?.user?.name ?? p.staffProfile?.employeeId ?? "Unknown"}
                       </TableCell>
                       <TableCell>
                         <Badge

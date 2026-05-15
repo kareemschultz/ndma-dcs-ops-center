@@ -105,7 +105,7 @@ export const latenessRouter = {
         if (!staffMap.has(rec.staffId)) {
           staffMap.set(rec.staffId, {
             staffId: rec.staffId,
-            staffName: rec.staffProfile?.user?.name ?? rec.staffId,
+            staffName: rec.staffProfile?.user?.name ?? rec.staffProfile?.employeeId ?? "Unknown",
             department: rec.staffProfile?.departmentId ?? null,
             months: {},
           });
@@ -270,7 +270,7 @@ export const latenessRouter = {
       for (const r of rows) {
         if (!staffTotals.has(r.staffId)) {
           staffTotals.set(r.staffId, {
-            name: r.staffProfile?.user?.name ?? r.staffId,
+            name: r.staffProfile?.user?.name ?? r.staffProfile?.employeeId ?? "Unknown",
             totalDaysLate: 0,
           });
         }

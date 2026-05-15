@@ -203,7 +203,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 // ── Account dialog ────────────────────────────────────────────────────────
 
-type StaffItem = { id: string; user: { name: string } | null };
+type StaffItem = { id: string; employeeId?: string; user: { name: string } | null };
 type ContactItem = { id: string; name: string };
 
 type AccountDialogProps = {
@@ -297,7 +297,7 @@ function AccountDialog({ open, onClose, staff, contacts, onSave, isPending, edit
               >
                 <option value="">— Select staff —</option>
                 {staff.map((s) => (
-                  <option key={s.id} value={s.id}>{s.user?.name ?? s.id}</option>
+                  <option key={s.id} value={s.id}>{s.user?.name ?? s.employeeId ?? "Unnamed"}</option>
                 ))}
               </select>
             </Field>
@@ -1089,6 +1089,7 @@ function PlatformAccountsPage() {
 
   const staffForPicker: StaffItem[] = (staffList ?? []).map((s) => ({
     id: s.id,
+    employeeId: (s as Record<string, unknown>).employeeId as string | undefined,
     user: (s as Record<string, unknown>).user as { name: string } | null,
   }));
 

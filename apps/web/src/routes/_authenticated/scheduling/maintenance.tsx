@@ -92,7 +92,7 @@ function AddTaskDialog({
 }: {
   open: boolean; onOpenChange: (v: boolean) => void;
   defaultYear: number; defaultQuarter: number;
-  staffList: Array<{ id: string; user?: { name?: string | null } | null }>;
+  staffList: Array<{ id: string; employeeId?: string; user?: { name?: string | null } | null }>;
   editTask?: MaintenanceTask | null;
 }) {
   const queryClient = useQueryClient();
@@ -209,7 +209,7 @@ function AddTaskDialog({
                 <span className="text-sm text-muted-foreground">Loading staff…</span>
               )}
               {staffList.map((s) => {
-                const name = s.user?.name ?? s.id;
+                const name = s.user?.name ?? s.employeeId ?? "Unnamed";
                 const selected = form.assignedStaffIds.includes(s.id);
                 return (
                   <button

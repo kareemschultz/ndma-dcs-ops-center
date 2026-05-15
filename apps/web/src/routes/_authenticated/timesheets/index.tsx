@@ -187,7 +187,7 @@ function CreateTimesheetDialog({
               <SelectContent>
                 {staff?.map((person) => (
                   <SelectItem key={person.id} value={person.id}>
-                    {person.user?.name ?? person.id}
+                    {person.user?.name ?? person.employeeId ?? "Unnamed"}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1201,7 +1201,7 @@ function UploadDocumentDialog({
               <SelectContent>
                 {staff?.map((person) => (
                   <SelectItem key={person.id} value={person.id}>
-                    {person.user?.name ?? person.id}
+                    {person.user?.name ?? person.employeeId ?? "Unnamed"}
                   </SelectItem>
                 ))}
               </SelectContent>

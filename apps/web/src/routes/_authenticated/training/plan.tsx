@@ -247,7 +247,7 @@ export default function TrainingPlanPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              Edit Training Plan — {editingStaff?.user?.name ?? editingStaffId} ({year})
+              Edit Training Plan — {editingStaff?.user?.name ?? editingStaff?.employeeId ?? "Unnamed"} ({year})
             </DialogTitle>
             <DialogDescription>
               Set planned training areas, target quarter, and current status for this staff member.

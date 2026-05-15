@@ -153,7 +153,7 @@ function MonthlyAttendancePage() {
   const sortedStaff = useMemo(
     () =>
       [...staffAll].sort((a, b) =>
-        (a.user?.name ?? a.id).localeCompare(b.user?.name ?? b.id),
+        (a.user?.name ?? a.employeeId ?? "").localeCompare(b.user?.name ?? b.employeeId ?? ""),
       ),
     [staffAll],
   );
@@ -296,7 +296,7 @@ function MonthlyAttendancePage() {
                   return (
                     <tr key={s.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
                       <td className="sticky left-0 z-10 bg-background px-3 py-1.5 font-medium border-r truncate max-w-[10rem]">
-                        {s.user?.name ?? s.employeeId ?? s.id}
+                        {s.user?.name ?? s.employeeId ?? "Unnamed"}
                       </td>
                       {dayNumbers.map((d) => (
                         <Cell key={d} status={staffMap.get(d) ?? null} />

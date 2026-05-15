@@ -268,7 +268,7 @@ function AttendanceAnalyticsPage() {
       totalDaysLate += r.daysLate;
       totalMinutes += mins;
 
-      const name = r.staffProfile?.user?.name ?? r.staffId;
+      const name = r.staffProfile?.user?.name ?? r.staffProfile?.employeeId ?? "Unknown";
       const s = staffAgg.get(r.staffId) ?? { name, daysLate: 0, minutes: 0 };
       s.daysLate += r.daysLate;
       s.minutes += mins;

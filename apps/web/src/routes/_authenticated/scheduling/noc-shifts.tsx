@@ -421,7 +421,7 @@ function NocShiftsPage() {
 
   // Supplement names from staff list query
   for (const sp of staffData ?? []) {
-    if (!staffNames[sp.id]) staffNames[sp.id] = sp.user?.name ?? sp.id;
+    if (!staffNames[sp.id]) staffNames[sp.id] = sp.user?.name ?? sp.employeeId ?? "Unnamed";
   }
 
   const allStaffIds = Object.keys(shiftMap);
@@ -686,7 +686,7 @@ function NocShiftsPage() {
     const head = [["Staff", ...dayHeaders, "D", "N", "S"]];
 
     const body = filteredStaffIds.map((staffId) => {
-      const name = staffNames[staffId] ?? staffId;
+      const name = staffNames[staffId] ?? "Unknown";
       const cells = days.map((d) => {
         const t = shiftMap[staffId]?.[d.day]?.type;
         return t ? (SHIFT_CHIP[t]?.short ?? "") : "";
@@ -976,7 +976,7 @@ function NocShiftsPage() {
                   filteredStaffIds.map((staffId) => {
                     const isMyRow = staffId === myStaffId;
                     const sum = summarise(staffId);
-                    const displayName = staffNames[staffId] ?? staffId;
+                    const displayName = staffNames[staffId] ?? "Unknown";
                     return (
                       <tr
                         key={staffId}

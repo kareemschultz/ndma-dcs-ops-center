@@ -338,7 +338,7 @@ function LeavePage() {
                         <Button
                           size="icon" variant="ghost"
                           className="size-7 text-destructive hover:text-destructive/80"
-                          onClick={() => setDeleteTarget({ id: r.id, name: r.staffProfile?.user?.name ?? r.id })}
+                          onClick={() => setDeleteTarget({ id: r.id, name: r.staffProfile?.user?.name ?? r.staffProfile?.employeeId ?? "Unnamed" })}
                           title="Delete leave request"
                         >
                           <Trash2 className="size-4" />

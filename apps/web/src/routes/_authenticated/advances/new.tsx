@@ -217,7 +217,7 @@ function NewAdvancePage() {
                     <SelectContent>
                       {staffData?.map((s) => (
                         <SelectItem key={s.id} value={s.id}>
-                          {s.user?.name ?? s.id}
+                          {s.user?.name ?? s.employeeId ?? "Unnamed"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -268,7 +268,7 @@ function NewAdvancePage() {
                         ?.filter((s) => !recipients.includes(s.user?.name ?? ""))
                         .map((s) => (
                           <SelectItem key={s.id} value={s.id}>
-                            {s.user?.name ?? s.id}
+                            {s.user?.name ?? s.employeeId ?? "Unnamed"}
                           </SelectItem>
                         ))}
                     </SelectContent>

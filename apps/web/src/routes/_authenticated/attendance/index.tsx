@@ -246,9 +246,9 @@ function LogDialog({ mode, existing, onClose }: LogDialogProps) {
                   <SelectValue placeholder="Select staff…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {staffList.map((s: { id: string; user?: { name?: string } | null }) => (
+                  {staffList.map((s: { id: string; employeeId?: string; user?: { name?: string } | null }) => (
                     <SelectItem key={s.id} value={s.id}>
-                      {s.user?.name ?? s.id}
+                      {s.user?.name ?? s.employeeId ?? "Unnamed"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1162,9 +1162,9 @@ function ClockLogsTab() {
             <SelectContent>
               <SelectItem value="all">All staff</SelectItem>
               {(staffQuery.data ?? []).map(
-                (s: { id: string; user?: { name?: string } | null }) => (
+                (s: { id: string; employeeId?: string; user?: { name?: string } | null }) => (
                   <SelectItem key={s.id} value={s.id}>
-                    {s.user?.name ?? s.id}
+                    {s.user?.name ?? s.employeeId ?? "Unnamed"}
                   </SelectItem>
                 ),
               )}
