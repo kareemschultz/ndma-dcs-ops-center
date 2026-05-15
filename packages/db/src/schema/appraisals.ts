@@ -93,6 +93,14 @@ export const appraisals = pgTable(
     objectives: jsonb("objectives").$type<
       { title: string; rating?: number; comments?: string }[]
     >(),
+    // Official NDMA Performance Evaluation Form fields (migration 0037)
+    categoryComments: jsonb("category_comments").$type<Record<string, string>>(),
+    responsibilitiesComment: text("responsibilities_comment"),
+    areasOfStrength: text("areas_of_strength"),
+    improvementsMade: text("improvements_made"),
+    areasForDevelopment: text("areas_for_development"),
+    developmentActions: text("development_actions"),
+    goalIndicators: jsonb("goal_indicators").$type<string[]>(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

@@ -363,6 +363,271 @@ export function exportAppraisalPDF(appraisal: AppraisalDetail) {
   doc.save(filename);
 }
 
+// ─── Official NDMA Performance Evaluation report ─────────────────────────────────
+
+const OFFICIAL_CATEGORIES_PDF: { key: string; label: string }[] = [
+  { key: "organisational_skills", label: "Organisational Skills" },
+  { key: "quality_of_work", label: "Quality of Work" },
+  { key: "dependability", label: "Dependability" },
+  { key: "communication_skills", label: "Communication Skills" },
+  { key: "cooperation", label: "Cooperation" },
+  { key: "initiative", label: "Initiative" },
+  { key: "technical_skills", label: "Problem Solving" },
+  { key: "attendance_punctuality", label: "Overall Professionalism" },
+];
+
+const RATING_WORD_PDF: Record<number, string> = {
+  5: "Excellent",
+  4: "Good",
+  3: "Acceptable",
+  2: "Needs Improvement",
+  1: "Unsatisfactory",
+};
+
+export type OfficialAppraisalPdf = {
+  employeeName: string;
+  jobTitle: string;
+  supervisor: string;
+  department: string;
+  location: string;
+  typeOfReview: string;
+  periodStart: string;
+  periodEnd: string;
+  status: string;
+  ratingMatrix: Record<string, number>;
+  categoryComments: Record<string, string>;
+  responsibilities: { title: string; rating: number }[];
+  responsibilitiesComment: string;
+  areasOfStrength: string;
+  improvementsMade: string;
+  areasForDevelopment: string;
+  developmentActions: string;
+  achievements: string[];
+  goals: { goal: string; indicator: string }[];
+};
+
+function sectionTitle(doc: jsPDF, text: string, y: number): number {
+  let yy = y;
+  if (yy > 262) {
+    doc.addPage();
+    yy = 20;
+  }
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...BRAND_BLUE);
+  doc.text(text, 10, yy);
+  return yy + 5;
+}
+
+function afterTable(doc: jsPDF): number {
+  return (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 7;
+}
+
+export function exportOfficialAppraisalPDF(
+  data: OfficialAppraisalPdf,
+  filename = "Performance_Evaluation.pdf",
+) {
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  const period = [data.periodStart, data.periodEnd]
+    .filter(Boolean)
+    .join(" to ");
+  let y = addHeader(
+    doc,
+    "Performance Evaluation Form",
+    `${data.employeeName} · ${period}`,
+  );
+  y += 3;
+
+  // 1. Employee information
+  y = sectionTitle(doc, "EMPLOYEE INFORMATION", y);
+  autoTable(doc, {
+    startY: y,
+    body: [
+      ["Employee Name", data.employeeName, "Job Title", data.jobTitle],
+      ["Supervisor", data.supervisor, "Department", data.department],
+      ["Location", data.location, "Type of Review", data.typeOfReview || "Biannually"],
+      ["Period From", data.periodStart, "Period To", data.periodEnd],
+      ["Status", data.status, "", ""],
+    ],
+    theme: "grid",
+    styles: { fontSize: 8.5, cellPadding: 1.8 },
+    columnStyles: {
+      0: { fontStyle: "bold", textColor: BRAND_MID as [number, number, number], cellWidth: 32 },
+      2: { fontStyle: "bold", textColor: BRAND_MID as [number, number, number], cellWidth: 32 },
+    },
+    margin: { left: 10, right: 10 },
+  });
+  y = afterTable(doc);
+
+  // 2. Rating categories
+  let categoryTotal = 0;
+  const categoryBody = OFFICIAL_CATEGORIES_PDF.map((cat, i) => {
+    const r = data.ratingMatrix[cat.key] ?? 0;
+    categoryTotal += r;
+    return [
+      String(i + 1),
+      cat.label,
+      r ? String(r) : "—",
+      r ? RATING_WORD_PDF[r] ?? "" : "—",
+      data.categoryComments[cat.key] ?? "",
+    ];
+  });
+  y = sectionTitle(doc, "PERFORMANCE RATING CATEGORIES", y);
+  autoTable(doc, {
+    startY: y,
+    head: [["#", "Category", "Rating", "Level", "Comments"]],
+    body: categoryBody,
+    foot: [["", "General Performance Subtotal", String(categoryTotal), "/ 40", ""]],
+    theme: "striped",
+    headStyles: { fillColor: BRAND_BLUE as [number, number, number], fontSize: 8.5, fontStyle: "bold" },
+    footStyles: { fillColor: BRAND_LIGHT as [number, number, number], textColor: BRAND_DARK as [number, number, number], fontStyle: "bold", fontSize: 8.5 },
+    styles: { fontSize: 8, cellPadding: 1.8 },
+    columnStyles: {
+      0: { cellWidth: 8, halign: "center" },
+      1: { cellWidth: 38 },
+      2: { cellWidth: 14, halign: "center" },
+      3: { cellWidth: 30 },
+    },
+    margin: { left: 10, right: 10 },
+  });
+  y = afterTable(doc);
+
+  // 3. Core responsibilities
+  let respTotal = 0;
+  const respBody = Array.from({ length: 5 }, (_, i) => {
+    const r = data.responsibilities[i];
+    const rating = r?.rating ?? 0;
+    respTotal += rating;
+    return [
+      String(i + 1),
+      r?.title ?? "—",
+      rating ? String(rating) : "—",
+      rating ? RATING_WORD_PDF[rating] ?? "" : "—",
+    ];
+  });
+  y = sectionTitle(doc, "CORE RESPONSIBILITIES", y);
+  autoTable(doc, {
+    startY: y,
+    head: [["#", "Responsibility", "Rating", "Level"]],
+    body: respBody,
+    foot: [["", "Core Responsibilities Subtotal", String(respTotal), "/ 25"]],
+    theme: "striped",
+    headStyles: { fillColor: BRAND_BLUE as [number, number, number], fontSize: 8.5, fontStyle: "bold" },
+    footStyles: { fillColor: BRAND_LIGHT as [number, number, number], textColor: BRAND_DARK as [number, number, number], fontStyle: "bold", fontSize: 8.5 },
+    styles: { fontSize: 8, cellPadding: 1.8 },
+    columnStyles: {
+      0: { cellWidth: 8, halign: "center" },
+      2: { cellWidth: 16, halign: "center" },
+      3: { cellWidth: 34 },
+    },
+    margin: { left: 10, right: 10 },
+  });
+  y = afterTable(doc);
+  if (data.responsibilitiesComment) {
+    autoTable(doc, {
+      startY: y,
+      body: [["Comments", data.responsibilitiesComment]],
+      theme: "plain",
+      styles: { fontSize: 8, cellPadding: 1.8 },
+      columnStyles: { 0: { fontStyle: "bold", textColor: BRAND_MID as [number, number, number], cellWidth: 30 } },
+      margin: { left: 10, right: 10 },
+    });
+    y = afterTable(doc);
+  }
+
+  // 4. Score summary
+  const rawTotal = categoryTotal + respTotal;
+  const pct = Math.round((rawTotal / 65) * 100);
+  const increment = pct <= 60 ? 1 : pct <= 70 ? 2 : pct <= 80 ? 3 : pct <= 90 ? 4 : 5;
+  y = sectionTitle(doc, "SCORE SUMMARY", y);
+  autoTable(doc, {
+    startY: y,
+    head: [["Total Score", "Max Score", "Percentage", "Salary Increment"]],
+    body: [[String(rawTotal), "65", `${pct}%`, `${increment}%`]],
+    theme: "grid",
+    headStyles: { fillColor: BRAND_BLUE as [number, number, number], fontSize: 9, fontStyle: "bold" },
+    styles: { fontSize: 10, halign: "center", fontStyle: "bold" },
+    margin: { left: 10, right: 10 },
+  });
+  y = afterTable(doc);
+
+  // 5. Development summary
+  y = sectionTitle(doc, "SUMMARY & DEVELOPMENT", y);
+  autoTable(doc, {
+    startY: y,
+    body: [
+      ["Areas of Strength", data.areasOfStrength || "—"],
+      ["Improvements Made Over the Past Year", data.improvementsMade || "—"],
+      ["Areas for Development", data.areasForDevelopment || "—"],
+      ["Actions Planned to Address Development", data.developmentActions || "—"],
+    ],
+    theme: "grid",
+    styles: { fontSize: 8.5, cellPadding: 2 },
+    columnStyles: {
+      0: { fontStyle: "bold", textColor: BRAND_MID as [number, number, number], cellWidth: 60 },
+    },
+    margin: { left: 10, right: 10 },
+  });
+  y = afterTable(doc);
+
+  // 6. Achievements
+  const achRows = data.achievements.filter((a) => a.trim());
+  if (achRows.length > 0) {
+    y = sectionTitle(doc, "KEY ACHIEVEMENTS", y);
+    autoTable(doc, {
+      startY: y,
+      head: [["#", "Achievement"]],
+      body: achRows.map((a, i) => [String(i + 1), a]),
+      theme: "striped",
+      headStyles: { fillColor: BRAND_BLUE as [number, number, number], fontSize: 8.5, fontStyle: "bold" },
+      styles: { fontSize: 8.5 },
+      columnStyles: { 0: { cellWidth: 10, halign: "center" } },
+      margin: { left: 10, right: 10 },
+    });
+    y = afterTable(doc);
+  }
+
+  // 7. Goals + indicators
+  const goalRows = data.goals.filter((g) => g.goal.trim());
+  if (goalRows.length > 0) {
+    y = sectionTitle(doc, "GOALS FOR NEXT PERIOD", y);
+    autoTable(doc, {
+      startY: y,
+      head: [["#", "Goal to be Accomplished", "Performance Indicator"]],
+      body: goalRows.map((g, i) => [String(i + 1), g.goal, g.indicator || "—"]),
+      theme: "striped",
+      headStyles: { fillColor: BRAND_BLUE as [number, number, number], fontSize: 8.5, fontStyle: "bold" },
+      styles: { fontSize: 8.5 },
+      columnStyles: { 0: { cellWidth: 10, halign: "center" } },
+      margin: { left: 10, right: 10 },
+    });
+    y = afterTable(doc);
+  }
+
+  // 8. Signatures
+  y = sectionTitle(doc, "SIGNATURES", y);
+  autoTable(doc, {
+    startY: y,
+    head: [["Role", "Signature", "Date"]],
+    body: [
+      ["Employee", "", ""],
+      ["Manager / Director", "", ""],
+      ["Human Resources Manager", "", ""],
+      ["Deputy General Manager, Administration", "", ""],
+      ["General Manager", "", ""],
+    ],
+    theme: "grid",
+    headStyles: { fillColor: BRAND_BLUE as [number, number, number], fontSize: 8.5, fontStyle: "bold" },
+    styles: { fontSize: 9, minCellHeight: 10 },
+    columnStyles: { 1: { cellWidth: 70 }, 2: { cellWidth: 40 } },
+    margin: { left: 10, right: 10 },
+  });
+
+  addFooter(doc);
+  doc.save(filename);
+}
+
 // ─── Generic list report ────────────────────────────────────────────────────────
 
 export function exportListPDF(

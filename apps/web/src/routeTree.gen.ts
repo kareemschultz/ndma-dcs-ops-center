@@ -105,6 +105,7 @@ import { Route as AuthenticatedRotaFairnessIndexRouteImport } from './routes/_au
 import { Route as AuthenticatedRotaCalendarIndexRouteImport } from './routes/_authenticated/rota/calendar/index'
 import { Route as AuthenticatedStaffStaffIdAttendanceRouteImport } from './routes/_authenticated/staff.$staffId.attendance'
 import { Route as AuthenticatedAppraisalsStaffStaffProfileIdRouteImport } from './routes/_authenticated/appraisals/staff/$staffProfileId'
+import { Route as AuthenticatedAppraisalsAppraisalIdReportRouteImport } from './routes/_authenticated/appraisals/$appraisalId.report'
 import { Route as AuthenticatedAccessRegistryStaffIdRouteImport } from './routes/_authenticated/access/registry.$staffId'
 
 const LoginRoute = LoginRouteImport.update({
@@ -665,6 +666,12 @@ const AuthenticatedAppraisalsStaffStaffProfileIdRoute =
     path: '/appraisals/staff/$staffProfileId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAppraisalsAppraisalIdReportRoute =
+  AuthenticatedAppraisalsAppraisalIdReportRouteImport.update({
+    id: '/report',
+    path: '/report',
+    getParentRoute: () => AuthenticatedAppraisalsAppraisalIdRoute,
+  } as any)
 const AuthenticatedAccessRegistryStaffIdRoute =
   AuthenticatedAccessRegistryStaffIdRouteImport.update({
     id: '/$staffId',
@@ -681,7 +688,7 @@ export interface FileRoutesByFullPath {
   '/access/registry': typeof AuthenticatedAccessRegistryRouteWithChildren
   '/advances/$advanceId': typeof AuthenticatedAdvancesAdvanceIdRoute
   '/advances/new': typeof AuthenticatedAdvancesNewRoute
-  '/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRoute
+  '/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRouteWithChildren
   '/appraisals/inbox': typeof AuthenticatedAppraisalsInboxRoute
   '/attendance/holidays': typeof AuthenticatedAttendanceHolidaysRoute
   '/attendance/monthly': typeof AuthenticatedAttendanceMonthlyRoute
@@ -764,6 +771,7 @@ export interface FileRoutesByFullPath {
   '/training/': typeof AuthenticatedTrainingIndexRoute
   '/work/': typeof AuthenticatedWorkIndexRoute
   '/access/registry/$staffId': typeof AuthenticatedAccessRegistryStaffIdRoute
+  '/appraisals/$appraisalId/report': typeof AuthenticatedAppraisalsAppraisalIdReportRoute
   '/appraisals/staff/$staffProfileId': typeof AuthenticatedAppraisalsStaffStaffProfileIdRoute
   '/staff/$staffId/attendance': typeof AuthenticatedStaffStaffIdAttendanceRoute
   '/rota/calendar/': typeof AuthenticatedRotaCalendarIndexRoute
@@ -779,7 +787,7 @@ export interface FileRoutesByTo {
   '/access/registry': typeof AuthenticatedAccessRegistryRouteWithChildren
   '/advances/$advanceId': typeof AuthenticatedAdvancesAdvanceIdRoute
   '/advances/new': typeof AuthenticatedAdvancesNewRoute
-  '/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRoute
+  '/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRouteWithChildren
   '/appraisals/inbox': typeof AuthenticatedAppraisalsInboxRoute
   '/attendance/holidays': typeof AuthenticatedAttendanceHolidaysRoute
   '/attendance/monthly': typeof AuthenticatedAttendanceMonthlyRoute
@@ -862,6 +870,7 @@ export interface FileRoutesByTo {
   '/training': typeof AuthenticatedTrainingIndexRoute
   '/work': typeof AuthenticatedWorkIndexRoute
   '/access/registry/$staffId': typeof AuthenticatedAccessRegistryStaffIdRoute
+  '/appraisals/$appraisalId/report': typeof AuthenticatedAppraisalsAppraisalIdReportRoute
   '/appraisals/staff/$staffProfileId': typeof AuthenticatedAppraisalsStaffStaffProfileIdRoute
   '/staff/$staffId/attendance': typeof AuthenticatedStaffStaffIdAttendanceRoute
   '/rota/calendar': typeof AuthenticatedRotaCalendarIndexRoute
@@ -879,7 +888,7 @@ export interface FileRoutesById {
   '/_authenticated/access/registry': typeof AuthenticatedAccessRegistryRouteWithChildren
   '/_authenticated/advances/$advanceId': typeof AuthenticatedAdvancesAdvanceIdRoute
   '/_authenticated/advances/new': typeof AuthenticatedAdvancesNewRoute
-  '/_authenticated/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRoute
+  '/_authenticated/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRouteWithChildren
   '/_authenticated/appraisals/inbox': typeof AuthenticatedAppraisalsInboxRoute
   '/_authenticated/attendance/holidays': typeof AuthenticatedAttendanceHolidaysRoute
   '/_authenticated/attendance/monthly': typeof AuthenticatedAttendanceMonthlyRoute
@@ -962,6 +971,7 @@ export interface FileRoutesById {
   '/_authenticated/training/': typeof AuthenticatedTrainingIndexRoute
   '/_authenticated/work/': typeof AuthenticatedWorkIndexRoute
   '/_authenticated/access/registry/$staffId': typeof AuthenticatedAccessRegistryStaffIdRoute
+  '/_authenticated/appraisals/$appraisalId/report': typeof AuthenticatedAppraisalsAppraisalIdReportRoute
   '/_authenticated/appraisals/staff/$staffProfileId': typeof AuthenticatedAppraisalsStaffStaffProfileIdRoute
   '/_authenticated/staff/$staffId/attendance': typeof AuthenticatedStaffStaffIdAttendanceRoute
   '/_authenticated/rota/calendar/': typeof AuthenticatedRotaCalendarIndexRoute
@@ -1062,6 +1072,7 @@ export interface FileRouteTypes {
     | '/training/'
     | '/work/'
     | '/access/registry/$staffId'
+    | '/appraisals/$appraisalId/report'
     | '/appraisals/staff/$staffProfileId'
     | '/staff/$staffId/attendance'
     | '/rota/calendar/'
@@ -1160,6 +1171,7 @@ export interface FileRouteTypes {
     | '/training'
     | '/work'
     | '/access/registry/$staffId'
+    | '/appraisals/$appraisalId/report'
     | '/appraisals/staff/$staffProfileId'
     | '/staff/$staffId/attendance'
     | '/rota/calendar'
@@ -1259,6 +1271,7 @@ export interface FileRouteTypes {
     | '/_authenticated/training/'
     | '/_authenticated/work/'
     | '/_authenticated/access/registry/$staffId'
+    | '/_authenticated/appraisals/$appraisalId/report'
     | '/_authenticated/appraisals/staff/$staffProfileId'
     | '/_authenticated/staff/$staffId/attendance'
     | '/_authenticated/rota/calendar/'
@@ -1945,6 +1958,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppraisalsStaffStaffProfileIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/appraisals/$appraisalId/report': {
+      id: '/_authenticated/appraisals/$appraisalId/report'
+      path: '/report'
+      fullPath: '/appraisals/$appraisalId/report'
+      preLoaderRoute: typeof AuthenticatedAppraisalsAppraisalIdReportRouteImport
+      parentRoute: typeof AuthenticatedAppraisalsAppraisalIdRoute
+    }
     '/_authenticated/access/registry/$staffId': {
       id: '/_authenticated/access/registry/$staffId'
       path: '/$staffId'
@@ -1970,6 +1990,21 @@ const AuthenticatedAccessRegistryRouteWithChildren =
     AuthenticatedAccessRegistryRouteChildren,
   )
 
+interface AuthenticatedAppraisalsAppraisalIdRouteChildren {
+  AuthenticatedAppraisalsAppraisalIdReportRoute: typeof AuthenticatedAppraisalsAppraisalIdReportRoute
+}
+
+const AuthenticatedAppraisalsAppraisalIdRouteChildren: AuthenticatedAppraisalsAppraisalIdRouteChildren =
+  {
+    AuthenticatedAppraisalsAppraisalIdReportRoute:
+      AuthenticatedAppraisalsAppraisalIdReportRoute,
+  }
+
+const AuthenticatedAppraisalsAppraisalIdRouteWithChildren =
+  AuthenticatedAppraisalsAppraisalIdRoute._addFileChildren(
+    AuthenticatedAppraisalsAppraisalIdRouteChildren,
+  )
+
 interface AuthenticatedStaffStaffIdRouteChildren {
   AuthenticatedStaffStaffIdAttendanceRoute: typeof AuthenticatedStaffStaffIdAttendanceRoute
 }
@@ -1993,7 +2028,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccessRegistryRoute: typeof AuthenticatedAccessRegistryRouteWithChildren
   AuthenticatedAdvancesAdvanceIdRoute: typeof AuthenticatedAdvancesAdvanceIdRoute
   AuthenticatedAdvancesNewRoute: typeof AuthenticatedAdvancesNewRoute
-  AuthenticatedAppraisalsAppraisalIdRoute: typeof AuthenticatedAppraisalsAppraisalIdRoute
+  AuthenticatedAppraisalsAppraisalIdRoute: typeof AuthenticatedAppraisalsAppraisalIdRouteWithChildren
   AuthenticatedAppraisalsInboxRoute: typeof AuthenticatedAppraisalsInboxRoute
   AuthenticatedAttendanceHolidaysRoute: typeof AuthenticatedAttendanceHolidaysRoute
   AuthenticatedAttendanceMonthlyRoute: typeof AuthenticatedAttendanceMonthlyRoute
@@ -2091,7 +2126,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdvancesAdvanceIdRoute: AuthenticatedAdvancesAdvanceIdRoute,
   AuthenticatedAdvancesNewRoute: AuthenticatedAdvancesNewRoute,
   AuthenticatedAppraisalsAppraisalIdRoute:
-    AuthenticatedAppraisalsAppraisalIdRoute,
+    AuthenticatedAppraisalsAppraisalIdRouteWithChildren,
   AuthenticatedAppraisalsInboxRoute: AuthenticatedAppraisalsInboxRoute,
   AuthenticatedAttendanceHolidaysRoute: AuthenticatedAttendanceHolidaysRoute,
   AuthenticatedAttendanceMonthlyRoute: AuthenticatedAttendanceMonthlyRoute,

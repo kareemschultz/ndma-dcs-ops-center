@@ -1,57 +1,57 @@
-import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import {
-  ArrowLeft,
-  ClipboardCheck,
-  Plus,
-  Trash2,
-  CheckCircle2,
-  XCircle,
   AlertCircle,
-  ChevronRight,
+  ArrowLeft,
+  BarChart3,
+  CheckCircle2,
+  ClipboardCheck,
   FileDown,
   FileSpreadsheet,
+  Plus,
   Send,
-  Eraser,
-  PenLine,
+  Trash2,
+  XCircle,
 } from "lucide-react";
-import { exportAppraisalPDF } from "@/utils/pdf-export";
-import * as XLSX from "xlsx";
 import { toast } from "sonner";
+
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
-import { Textarea } from "@ndma-dcs-staff-portal/ui/components/textarea";
 import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
 import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
+import { Textarea } from "@ndma-dcs-staff-portal/ui/components/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@ndma-dcs-staff-portal/ui/components/dialog";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@ndma-dcs-staff-portal/ui/components/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@ndma-dcs-staff-portal/ui/components/dialog";
+
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
 import { authClient } from "@/lib/auth-client";
+import { exportOfficialAppraisalExcel } from "@/utils/excel-export";
+import { exportOfficialAppraisalPDF } from "@/utils/pdf-export";
 
 export const Route = createFileRoute("/_authenticated/appraisals/$appraisalId")({
-  component: AppraisalDetailPage,
+  component: AppraisalEditPage,
 });
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Official form structure ──────────────────────────────────────────────────
 
-type RatingKey =
+type CategoryKey =
   | "organisational_skills"
   | "quality_of_work"
   | "dependability"
@@ -61,15 +61,51 @@ type RatingKey =
   | "technical_skills"
   | "attendance_punctuality";
 
-const RATING_CATEGORIES: { key: RatingKey; label: string }[] = [
-  { key: "organisational_skills", label: "Organisational Skills" },
-  { key: "quality_of_work", label: "Quality of Work" },
-  { key: "dependability", label: "Dependability" },
-  { key: "communication_skills", label: "Communication Skills" },
-  { key: "cooperation", label: "Cooperation" },
-  { key: "initiative", label: "Initiative" },
-  { key: "technical_skills", label: "Technical Skills" },
-  { key: "attendance_punctuality", label: "Attendance & Punctuality" },
+const CATEGORIES: { key: CategoryKey; label: string; question: string }[] = [
+  {
+    key: "organisational_skills",
+    label: "Organisational Skills",
+    question: "How well does the employee organise his/her work?",
+  },
+  {
+    key: "quality_of_work",
+    label: "Quality of Work",
+    question:
+      "Does the employee produce effective work of a professional quality in a timely fashion?",
+  },
+  {
+    key: "dependability",
+    label: "Dependability",
+    question: "How dependable is this employee?",
+  },
+  {
+    key: "communication_skills",
+    label: "Communication Skills",
+    question:
+      "How well does the employee communicate with others in and outside the organisation?",
+  },
+  {
+    key: "cooperation",
+    label: "Cooperation",
+    question:
+      "How well does the employee assist, motivate and cooperate with team workers?",
+  },
+  {
+    key: "initiative",
+    label: "Initiative",
+    question:
+      "How well does the employee take action to accomplish programme goals and objectives?",
+  },
+  {
+    key: "technical_skills",
+    label: "Problem Solving",
+    question: "How well does the employee identify and solve problems?",
+  },
+  {
+    key: "attendance_punctuality",
+    label: "Overall Professionalism",
+    question: "To what extent does the employee exhibit overall professionalism?",
+  },
 ];
 
 const RATING_LABELS: Record<number, string> = {
@@ -80,8 +116,7 @@ const RATING_LABELS: Record<number, string> = {
   1: "Unsatisfactory",
 };
 
-// Increment table per DESIGN_HANDOFF.md §11: pct≤60→1, ≤70→2, ≤80→3, ≤90→4, >90→5
-const INCREMENT_TABLE: { lo: number; hi: number; inc: number }[] = [
+const INCREMENT_TABLE = [
   { lo: 0, hi: 60, inc: 1 },
   { lo: 61, hi: 70, inc: 2 },
   { lo: 71, hi: 80, inc: 3 },
@@ -90,13 +125,11 @@ const INCREMENT_TABLE: { lo: number; hi: number; inc: number }[] = [
 ];
 
 function getIncrement(pct: number): number {
-  const row = INCREMENT_TABLE.find(({ hi }) => pct <= hi);
-  return row?.inc ?? 5;
+  return INCREMENT_TABLE.find(({ hi }) => pct <= hi)?.inc ?? 5;
 }
 
 type AppraisalStatus =
   | "draft"
-  | "scheduled"
   | "in_progress"
   | "submitted"
   | "approved"
@@ -104,109 +137,59 @@ type AppraisalStatus =
   | "completed"
   | "overdue";
 
-type SignatureRole =
-  | "employee"
-  | "manager_director"
-  | "hr_manager"
-  | "deputy_gm"
-  | "gm";
-
-const SIGNATURE_ROLES: { role: SignatureRole; label: string; subtitle: string }[] = [
-  { role: "employee", label: "Employee", subtitle: "Confirms appraisal contents." },
-  { role: "manager_director", label: "Manager / Director", subtitle: "Reviewing supervisor." },
-  { role: "hr_manager", label: "HR Manager", subtitle: "HR validation." },
-  { role: "deputy_gm", label: "Deputy General Manager", subtitle: "Senior approval." },
-  { role: "gm", label: "General Manager", subtitle: "Final endorsement." },
-];
-
-// ─── Status badge ─────────────────────────────────────────────────────────────
-
-const STATUS_STYLES: Record<AppraisalStatus, string> = {
+const STATUS_STYLES: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
-  scheduled: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   in_progress: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  submitted: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  submitted: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
   approved: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  rejected: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   completed: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  rejected: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   overdue: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const cls = STATUS_STYLES[status as AppraisalStatus] ?? "bg-muted text-muted-foreground";
   return (
-    <span className={`inline-flex items-center rounded-lg px-2.5 py-0.5 text-xs font-medium capitalize ${cls}`}>
-      {status.replace("_", " ")}
+    <span
+      className={`inline-flex items-center rounded-lg px-2.5 py-0.5 text-xs font-medium capitalize ${
+        STATUS_STYLES[status] ?? "bg-muted text-muted-foreground"
+      }`}
+    >
+      {status.replace(/_/g, " ")}
     </span>
   );
 }
 
-// ─── Score progress bar ───────────────────────────────────────────────────────
+// ─── 5-button rating selector (Excellent…Unsatisfactory) ────────────────────────
 
-function ScoreBar({ score }: { score: number | null | undefined }) {
-  if (score === null || score === undefined) {
-    return <span className="text-sm text-muted-foreground">No ratings entered yet.</span>;
-  }
-  const color =
-    score >= 80
-      ? "bg-blue-500"
-      : score >= 60
-        ? "bg-amber-500"
-        : "bg-red-500";
-  return (
-    <div className="flex items-center gap-3">
-      <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
-        <div
-          className={`h-full rounded-full ${color} transition-all`}
-          style={{ width: `${score}%` }}
-        />
-      </div>
-      <span
-        className={`text-sm font-semibold tabular-nums ${
-          score >= 80
-            ? "text-blue-600 dark:text-blue-400"
-            : score >= 60
-              ? "text-amber-600 dark:text-amber-400"
-              : "text-red-600 dark:text-red-400"
-        }`}
-      >
-        {score}%
-      </span>
-    </div>
-  );
-}
-
-// ─── Rating toggle (1-5 buttons) ─────────────────────────────────────────────
-
-function RatingToggle({
+function RatingSelector({
   value,
   onChange,
   disabled,
 }: {
-  value: number | null | undefined;
-  onChange: (value: number) => void;
+  value: number;
+  onChange: (v: number) => void;
   disabled?: boolean;
 }) {
   return (
-    <div className="inline-flex gap-1">
-      {[1, 2, 3, 4, 5].map((v) => {
-        const active = value === v;
+    <div className="flex flex-wrap gap-1.5">
+      {[5, 4, 3, 2, 1].map((n) => {
+        const active = value === n;
         return (
           <button
-            key={v}
+            key={n}
             type="button"
             disabled={disabled}
-            onClick={() => onChange(v)}
-            title={RATING_LABELS[v]}
-            className={`w-7 h-7 rounded-md text-xs font-semibold tabular-nums transition-colors
+            onClick={() => onChange(active ? 0 : n)}
+            className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors
               ${
                 active
-                  ? "bg-primary text-primary-foreground border border-primary"
-                  : "bg-card border border-input text-foreground hover:border-primary hover:text-primary"
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-input bg-card text-muted-foreground hover:border-primary hover:text-primary"
               }
-              ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+              ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
           >
-            {v}
+            <span className="tabular-nums">{n}</span>
+            <span className="ml-1 hidden sm:inline">{RATING_LABELS[n]}</span>
           </button>
         );
       })}
@@ -214,622 +197,306 @@ function RatingToggle({
   );
 }
 
-// ─── Dynamic list editor ──────────────────────────────────────────────────────
+// ─── Section card shell ─────────────────────────────────────────────────────────
 
-function DynamicList({
-  label,
-  items,
-  onChange,
-  readOnly,
-  minItems,
-  maxItems,
+function SectionCard({
+  title,
+  description,
+  badge,
+  children,
 }: {
-  label: string;
-  items: string[];
-  onChange: (items: string[]) => void;
-  readOnly: boolean;
-  minItems?: number;
-  maxItems?: number;
+  title: string;
+  description?: string;
+  badge?: React.ReactNode;
+  children: React.ReactNode;
 }) {
-  function update(index: number, value: string) {
-    const next = [...items];
-    next[index] = value;
-    onChange(next);
-  }
-
-  function addItem() {
-    if (maxItems && items.length >= maxItems) return;
-    onChange([...items, ""]);
-  }
-
-  function removeItem(index: number) {
-    if (minItems && items.length <= minItems) return;
-    onChange(items.filter((_, i) => i !== index));
-  }
-
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <Label className="text-sm font-semibold">
-          {label}
-          {(minItems || maxItems) && !readOnly && (
-            <span className="ml-1 text-muted-foreground font-normal">
-              ({minItems ? `minimum ${minItems}` : ""}
-              {minItems && maxItems ? ", " : ""}
-              {maxItems ? `maximum ${maxItems}` : ""})
-            </span>
+    <div className="rounded-xl border bg-card shadow-sm">
+      <div className="flex items-center justify-between gap-4 border-b px-6 py-4">
+        <div>
+          <h2 className="font-semibold">{title}</h2>
+          {description && (
+            <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
           )}
-        </Label>
+        </div>
+        {badge}
       </div>
-      {items.length === 0 && readOnly && (
-        <p className="text-sm text-muted-foreground italic">None recorded.</p>
-      )}
-      {items.map((item, i) => (
-        <div key={i} className="flex gap-2 items-start">
-          <span className="text-xs text-muted-foreground font-semibold w-4 pt-2.5">{i + 1}.</span>
-          <div className="flex-1">
-            {readOnly ? (
-              <div className="flex items-start gap-2 text-sm py-1">
-                <ChevronRight className="size-4 shrink-0 mt-0.5 text-muted-foreground" />
-                <span>{item || <span className="text-muted-foreground italic">Empty</span>}</span>
-              </div>
-            ) : (
-              <Input
-                value={item}
-                onChange={(e) => update(i, e.target.value)}
-                placeholder={`${label} ${i + 1}…`}
-              />
-            )}
-          </div>
-          {!readOnly && (!minItems || items.length > minItems) && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-9 shrink-0 text-muted-foreground hover:text-destructive"
-              onClick={() => removeItem(i)}
-              title="Remove"
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          )}
-        </div>
-      ))}
-      {!readOnly && (!maxItems || items.length < maxItems) && (
-        <Button variant="outline" size="sm" onClick={addItem} className="mt-1">
-          <Plus className="size-4 mr-1.5" />
-          Add {label.replace(/s$/, "")}
-        </Button>
-      )}
+      <div className="px-6 py-5">{children}</div>
     </div>
   );
 }
 
-// ─── Responsibilities editor ──────────────────────────────────────────────────
+// ─── Form state ─────────────────────────────────────────────────────────────────
 
-type Responsibility = { seq: number; title: string; description: string; rating: number | null };
+type Responsibility = { title: string; rating: number };
+type Goal = { goal: string; indicator: string };
 
-function ResponsibilitiesEditor({
-  items,
-  onChange,
-  readOnly,
-}: {
-  items: Responsibility[];
-  onChange: (items: Responsibility[]) => void;
-  readOnly: boolean;
-}) {
-  function update(index: number, patch: Partial<Responsibility>) {
-    onChange(items.map((r, i) => (i === index ? { ...r, ...patch } : r)));
-  }
-  function addRow() {
-    if (items.length >= 5) return;
-    onChange([
-      ...items,
-      { seq: items.length + 1, title: "", description: "", rating: null },
-    ]);
-  }
-  function removeRow(index: number) {
-    if (items.length <= 1) return;
-    onChange(items.filter((_, i) => i !== index).map((r, i) => ({ ...r, seq: i + 1 })));
-  }
-
-  return (
-    <div className="space-y-3">
-      {items.map((r, i) => (
-        <div key={i} className="rounded-lg border bg-card p-3 space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground font-semibold w-4">{i + 1}.</span>
-            <div className="flex-1">
-              {readOnly ? (
-                <p className="text-sm font-medium">
-                  {r.title || <span className="text-muted-foreground italic">Empty</span>}
-                </p>
-              ) : (
-                <Input
-                  value={r.title}
-                  onChange={(e) => update(i, { title: e.target.value })}
-                  placeholder={`Responsibility ${i + 1}…`}
-                />
-              )}
-            </div>
-            <RatingToggle
-              value={r.rating}
-              onChange={(v) => update(i, { rating: v })}
-              disabled={readOnly}
-            />
-            <span className="tabular-nums w-6 text-right text-sm font-semibold text-muted-foreground">
-              {r.rating ?? "—"}
-            </span>
-            {!readOnly && items.length > 1 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 text-muted-foreground hover:text-destructive"
-                onClick={() => removeRow(i)}
-                title="Remove"
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            )}
-          </div>
-          {!readOnly && (
-            <Textarea
-              value={r.description}
-              onChange={(e) => update(i, { description: e.target.value })}
-              placeholder="Optional details / context"
-              rows={2}
-              className="text-sm"
-            />
-          )}
-          {readOnly && r.description && (
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{r.description}</p>
-          )}
-        </div>
-      ))}
-      {!readOnly && items.length < 5 && (
-        <Button variant="outline" size="sm" onClick={addRow}>
-          <Plus className="size-4 mr-1.5" />
-          Add Responsibility
-        </Button>
-      )}
-    </div>
-  );
-}
-
-// ─── Main page ────────────────────────────────────────────────────────────────
-
-function AppraisalDetailPage() {
+function AppraisalEditPage() {
   const { appraisalId } = Route.useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
+  const userRole = (session?.user as Record<string, unknown> | undefined)
+    ?.role as string | undefined;
+  const isManager =
+    !!userRole && ["admin", "hrAdminOps", "manager"].includes(userRole);
 
-  const userRole = (session?.user as Record<string, unknown> | undefined)?.role as string | undefined;
-  const isManager = !!userRole && ["admin", "hrAdminOps", "manager"].includes(userRole);
-
-  // Query — getDetail returns appraisal + responsibilities + achievements + goals + signatures + ratings
   const { data: appraisal, isLoading, isError } = useQuery(
-    orpc.appraisals.getDetail.queryOptions({ input: { id: appraisalId } })
+    orpc.appraisals.getDetail.queryOptions({ input: { id: appraisalId } }),
   );
 
-  // Local form state — seeded from appraisal when loaded
-  const [ratings, setRatings] = useState<Partial<Record<RatingKey, number>>>({});
-  const [responsibilities, setResponsibilities] = useState<Responsibility[]>([
-    { seq: 1, title: "", description: "", rating: null },
-    { seq: 2, title: "", description: "", rating: null },
-    { seq: 3, title: "", description: "", rating: null },
-    { seq: 4, title: "", description: "", rating: null },
-    { seq: 5, title: "", description: "", rating: null },
-  ]);
-  const [achievements, setAchievements] = useState<string[]>(["", "", ""]);
-  const [goals, setGoals] = useState<string[]>(["", "", ""]);
-  const [staffFeedback, setStaffFeedback] = useState("");
-  const [supervisorComments, setSupervisorComments] = useState("");
+  // ── Form state ──
   const [seeded, setSeeded] = useState(false);
-
-  // Reject dialog state
-  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [ratings, setRatings] = useState<Record<CategoryKey, number>>({
+    organisational_skills: 0,
+    quality_of_work: 0,
+    dependability: 0,
+    communication_skills: 0,
+    cooperation: 0,
+    initiative: 0,
+    technical_skills: 0,
+    attendance_punctuality: 0,
+  });
+  const [categoryComments, setCategoryComments] = useState<
+    Record<string, string>
+  >({});
+  const [responsibilities, setResponsibilities] = useState<Responsibility[]>([
+    { title: "", rating: 0 },
+    { title: "", rating: 0 },
+    { title: "", rating: 0 },
+    { title: "", rating: 0 },
+    { title: "", rating: 0 },
+  ]);
+  const [respComment, setRespComment] = useState("");
+  const [areasOfStrength, setAreasOfStrength] = useState("");
+  const [improvementsMade, setImprovementsMade] = useState("");
+  const [areasForDevelopment, setAreasForDevelopment] = useState("");
+  const [developmentActions, setDevelopmentActions] = useState("");
+  const [achievements, setAchievements] = useState<string[]>(["", "", ""]);
+  const [goals, setGoals] = useState<Goal[]>([
+    { goal: "", indicator: "" },
+    { goal: "", indicator: "" },
+    { goal: "", indicator: "" },
+  ]);
+  const [location, setLocation] = useState("");
+  const [typeOfReview, setTypeOfReview] = useState("");
+  const [tab, setTab] = useState("categories");
+  const [showReject, setShowReject] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
-  // Active tab
-  const [activeTab, setActiveTab] = useState<string>("info");
-
-  // Seed local state from fetched appraisal once
+  // ── Seed once from server data ──
   if (appraisal && !seeded) {
-    const matrix = appraisal.ratingMatrix as Record<string, number> | null | undefined;
+    const matrix = appraisal.ratingMatrix as Record<string, number> | null;
     if (matrix) {
-      const seededRatings: Partial<Record<RatingKey, number>> = {};
-      for (const cat of RATING_CATEGORIES) {
-        if (typeof matrix[cat.key] === "number") {
-          seededRatings[cat.key] = matrix[cat.key] as number;
+      setRatings((prev) => {
+        const next = { ...prev };
+        for (const cat of CATEGORIES) {
+          if (typeof matrix[cat.key] === "number") next[cat.key] = matrix[cat.key];
         }
-      }
-      setRatings(seededRatings);
+        return next;
+      });
     }
+    const cc = appraisal.categoryComments as Record<string, string> | null;
+    if (cc) setCategoryComments(cc);
 
-    // Responsibilities (from sub-table) + ratings table
-    const respRows = (appraisal.responsibilities as Array<{ seq: number; title: string; description: string | null }> | undefined) ?? [];
-    const ratingsRows = (appraisal.ratings as Array<{ kind: string; responsibilitySeq: number | null; rating: number }> | undefined) ?? [];
-    const respRatingsBySeq = new Map<number, number>();
-    for (const rr of ratingsRows) {
-      if (rr.kind === "responsibility" && rr.responsibilitySeq != null) {
-        respRatingsBySeq.set(rr.responsibilitySeq, rr.rating);
-      }
-    }
-    if (respRows.length > 0) {
-      const seededResp: Responsibility[] = respRows.map((r) => ({
-        seq: r.seq,
-        title: r.title,
-        description: r.description ?? "",
-        rating: respRatingsBySeq.get(r.seq) ?? null,
+    const objectives = appraisal.objectives as
+      | { title: string; rating?: number }[]
+      | null;
+    if (objectives && objectives.length > 0) {
+      const seededResp: Responsibility[] = objectives.map((o) => ({
+        title: o.title ?? "",
+        rating: o.rating ?? 0,
       }));
-      // Pad up to at least 5 rows for an editable form
-      while (seededResp.length < 5) {
-        seededResp.push({ seq: seededResp.length + 1, title: "", description: "", rating: null });
-      }
-      setResponsibilities(seededResp);
+      while (seededResp.length < 5) seededResp.push({ title: "", rating: 0 });
+      setResponsibilities(seededResp.slice(0, 5));
     }
+    setRespComment(appraisal.responsibilitiesComment ?? "");
+    setAreasOfStrength(appraisal.areasOfStrength ?? "");
+    setImprovementsMade(appraisal.improvementsMade ?? "");
+    setAreasForDevelopment(appraisal.areasForDevelopment ?? "");
+    setDevelopmentActions(appraisal.developmentActions ?? "");
 
-    // Achievements — could be subtable rows OR a JSONB string[] on the parent record
+    // getDetail overrides achievements/goals with sub-table rows ({ text }).
     const achRows = appraisal.achievements as
-      | Array<{ text: string; seq?: number }>
+      | Array<{ text: string }>
       | string[]
-      | null
-      | undefined;
-    if (Array.isArray(achRows) && achRows.length > 0) {
-      const arr =
-        typeof achRows[0] === "string"
-          ? (achRows as string[])
-          : (achRows as Array<{ text: string }>).map((a) => a.text);
-      setAchievements(arr.length >= 3 ? arr : [...arr, ...Array(3 - arr.length).fill("")]);
+      | null;
+    const ach = (achRows ?? []).map((a) => (typeof a === "string" ? a : a.text));
+    if (ach.length > 0) {
+      setAchievements(ach.length >= 3 ? ach : [...ach, ...Array(3 - ach.length).fill("")]);
     }
-
     const goalRows = appraisal.goals as
-      | Array<{ text: string; seq?: number }>
+      | Array<{ text: string }>
       | string[]
-      | null
-      | undefined;
-    if (Array.isArray(goalRows) && goalRows.length > 0) {
-      const arr =
-        typeof goalRows[0] === "string"
-          ? (goalRows as string[])
-          : (goalRows as Array<{ text: string }>).map((g) => g.text);
-      setGoals(arr.length >= 3 ? arr : [...arr, ...Array(3 - arr.length).fill("")]);
+      | null;
+    const goalArr = (goalRows ?? []).map((g) =>
+      typeof g === "string" ? g : g.text,
+    );
+    const indicators = appraisal.goalIndicators as string[] | null;
+    if (goalArr.length > 0) {
+      const seededGoals: Goal[] = goalArr.map((g, i) => ({
+        goal: g,
+        indicator: indicators?.[i] ?? "",
+      }));
+      while (seededGoals.length < 3) seededGoals.push({ goal: "", indicator: "" });
+      setGoals(seededGoals);
     }
-
-    setStaffFeedback(appraisal.staffFeedback ?? "");
-    setSupervisorComments(appraisal.supervisorComments ?? "");
+    setLocation(appraisal.location ?? "");
+    setTypeOfReview(appraisal.typeOfReview ?? "Biannually");
     setSeeded(true);
   }
 
+  // ── Derived score ──
+  const categoryTotal = useMemo(
+    () => CATEGORIES.reduce((sum, c) => sum + (ratings[c.key] ?? 0), 0),
+    [ratings],
+  );
+  const respTotal = useMemo(
+    () => responsibilities.reduce((sum, r) => sum + r.rating, 0),
+    [responsibilities],
+  );
+  const rawTotal = categoryTotal + respTotal;
+  const percentage = Math.round((rawTotal / 65) * 100);
+  const increment = getIncrement(percentage);
+
+  // ── Mutations ──
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: orpc.appraisals.getDetail.key() });
-    queryClient.invalidateQueries({ queryKey: orpc.appraisals.get.key() });
     queryClient.invalidateQueries({ queryKey: orpc.appraisals.list.key() });
+    queryClient.invalidateQueries({ queryKey: orpc.appraisals.workflow.list.key() });
   }
 
-  // Mutations
-  const saveDraftMutation = useMutation(
-    orpc.appraisals.update.mutationOptions({
+  const saveMutation = useMutation(
+    orpc.appraisals.setOfficialForm.mutationOptions({
       onSuccess: () => {
         invalidate();
-        toast.success("Draft saved.");
+        toast.success("Appraisal saved.");
       },
-      onError: (err) => toast.error(err.message ?? "Failed to save draft."),
-    })
+      onError: (e: Error) => toast.error(e.message ?? "Failed to save appraisal."),
+    }),
   );
-
-  const saveRatingsMutation = useMutation(
-    orpc.appraisals.setRatings.mutationOptions({
-      onSuccess: () => {
-        invalidate();
-        toast.success("Ratings saved.");
-      },
-      onError: (err) => toast.error(err.message ?? "Failed to save ratings."),
-    })
-  );
-
-  const setResponsibilitiesMutation = useMutation(
-    orpc.appraisals.setResponsibilities.mutationOptions({
-      onSuccess: () => {
-        invalidate();
-        toast.success("Responsibilities saved.");
-      },
-      onError: (err) => toast.error(err.message ?? "Failed to save responsibilities."),
-    })
-  );
-
-  const setAchievementsMutation = useMutation(
-    orpc.appraisals.setAchievements.mutationOptions({
-      onSuccess: () => {
-        invalidate();
-        toast.success("Achievements saved.");
-      },
-      onError: (err) => toast.error(err.message ?? "Failed to save achievements."),
-    })
-  );
-
-  const setGoalsMutation = useMutation(
-    orpc.appraisals.setGoals.mutationOptions({
-      onSuccess: () => {
-        invalidate();
-        toast.success("Goals saved.");
-      },
-      onError: (err) => toast.error(err.message ?? "Failed to save goals."),
-    })
-  );
-
   const submitMutation = useMutation(
     orpc.appraisals.submit.mutationOptions({
       onSuccess: () => {
         invalidate();
         toast.success("Appraisal submitted for approval.");
       },
-      onError: (err) => toast.error(err.message ?? "Failed to submit appraisal."),
-    })
+      onError: (e: Error) => toast.error(e.message ?? "Failed to submit."),
+    }),
   );
-
   const approveMutation = useMutation(
     orpc.appraisals.approve.mutationOptions({
       onSuccess: () => {
         invalidate();
         toast.success("Appraisal approved.");
       },
-      onError: (err) => toast.error(err.message ?? "Failed to approve appraisal."),
-    })
+      onError: (e: Error) => toast.error(e.message ?? "Failed to approve."),
+    }),
   );
-
   const rejectMutation = useMutation(
     orpc.appraisals.reject.mutationOptions({
       onSuccess: () => {
         invalidate();
-        setShowRejectDialog(false);
+        setShowReject(false);
         setRejectReason("");
         toast.success("Appraisal rejected.");
       },
-      onError: (err) => toast.error(err.message ?? "Failed to reject appraisal."),
-    })
+      onError: (e: Error) => toast.error(e.message ?? "Failed to reject."),
+    }),
   );
 
-  const signMutation = useMutation(
-    orpc.appraisals.sign.mutationOptions({
-      onSuccess: () => {
-        invalidate();
-        toast.success("Signature recorded.");
-      },
-      onError: (err) => toast.error(err.message ?? "Failed to sign."),
-    })
-  );
-
-  // ─── Handlers ───────────────────────────────────────────────────────────────
-
-  function handleSaveDraft() {
-    if (!appraisal) return;
-    saveDraftMutation.mutate({
-      id: appraisal.id,
-      achievements: achievements.filter((a) => a.trim()),
-      goals: goals.filter((g) => g.trim()),
-      staffFeedback: staffFeedback || undefined,
-      supervisorComments: supervisorComments || undefined,
-    });
-  }
-
-  function handleSaveRatings() {
-    if (!appraisal) return;
-    const allFilled = RATING_CATEGORIES.every((c) => typeof ratings[c.key] === "number");
-    if (!allFilled) {
-      toast.error("Please rate all 8 categories before saving ratings.");
-      return;
-    }
-    saveRatingsMutation.mutate({
-      id: appraisal.id,
-      ratingMatrix: ratings as Record<RatingKey, number>,
-      achievements: achievements.filter((a) => a.trim()),
-      goals: goals.filter((g) => g.trim()),
-      staffFeedback: staffFeedback || undefined,
-      supervisorComments: supervisorComments || undefined,
-    });
-  }
-
-  function handleSaveResponsibilities() {
-    if (!appraisal) return;
-    const filled = responsibilities
-      .filter((r) => r.title.trim())
-      .map((r, i) => ({
-        seq: i + 1,
-        title: r.title.trim(),
-        description: r.description.trim() || undefined,
-      }));
-    if (filled.length === 0) {
-      toast.error("Please add at least one responsibility.");
-      return;
-    }
-    setResponsibilitiesMutation.mutate({
-      appraisalId: appraisal.id,
-      responsibilities: filled,
-    });
-  }
-
-  function handleSaveAchievements() {
-    if (!appraisal) return;
-    const filled = achievements.map((a) => a.trim()).filter(Boolean);
-    if (filled.length < 3) {
-      toast.error("Please add at least 3 achievements.");
-      return;
-    }
-    setAchievementsMutation.mutate({
-      appraisalId: appraisal.id,
-      achievements: filled,
-    });
-  }
-
-  function handleSaveGoals() {
-    if (!appraisal) return;
-    const filled = goals.map((g) => g.trim()).filter(Boolean);
-    if (filled.length < 3) {
-      toast.error("Please add at least 3 goals.");
-      return;
-    }
-    setGoalsMutation.mutate({
-      appraisalId: appraisal.id,
-      goals: filled,
-    });
-  }
-
-  function handleSubmit() {
-    if (!appraisal) return;
-    if (achievements.filter((a) => a.trim()).length < 3) {
-      toast.error("Please add at least 3 achievements before submitting.");
-      return;
-    }
-    if (goals.filter((g) => g.trim()).length < 3) {
-      toast.error("Please add at least 3 goals before submitting.");
-      return;
-    }
-    submitMutation.mutate({
-      id: appraisal.id,
-      staffFeedback: staffFeedback || undefined,
-      supervisorComments: supervisorComments || undefined,
-    });
-  }
-
-  function handleApprove() {
-    if (!appraisal) return;
-    approveMutation.mutate({ id: appraisal.id });
-  }
-
-  function handleReject() {
-    if (!rejectReason.trim()) {
-      toast.error("Please provide a rejection reason.");
-      return;
-    }
-    if (!appraisal) return;
-    rejectMutation.mutate({ id: appraisal.id, rejectionReason: rejectReason.trim() });
-  }
-
-  function handleSign(role: SignatureRole) {
-    if (!appraisal) return;
-    signMutation.mutate({
-      appraisalId: appraisal.id,
-      role,
-      signatureSvg: undefined,
-    });
-  }
-
-  // ─── Derived state ───────────────────────────────────────────────────────────
-
+  // ── Status / permissions ──
   const status = appraisal?.status as AppraisalStatus | undefined;
   const isReadOnly = status === "approved" || status === "completed";
   const canEdit =
     status === "draft" || status === "in_progress" || status === "rejected";
-  const canSubmit = canEdit;
   const canApproveReject = isManager && status === "submitted";
 
-  // Live computed scores
-  const generalRatingValues = RATING_CATEGORIES.map((c) => ratings[c.key]).filter(
-    (v): v is number => typeof v === "number"
-  );
-  const generalScore = generalRatingValues.reduce((a, b) => a + b, 0); // out of 40
-  const respScore = responsibilities.reduce((s, r) => s + (r.rating ?? 0), 0); // out of 25
-  const totalScore = generalScore + respScore; // out of 65
-  const percentage = Math.round((totalScore / 65) * 100);
-  const increment = getIncrement(percentage);
-
-  // ─── Exports ───────────────────────────────────────────────────────────────
-
-  function exportToExcel() {
-    if (!appraisal) return;
-    const staffName =
-      (appraisal.staffProfile as { user?: { name?: string | null } | null } | null)?.user?.name ?? "Unknown";
-    const reviewerName =
-      (appraisal.reviewer as { user?: { name?: string | null } | null } | null)?.user?.name ?? "—";
-    const departmentName =
-      (appraisal.staffProfile as { department?: { name: string } | null } | null)?.department?.name ?? "—";
-
-    const wb = XLSX.utils.book_new();
-
-    // Sheet 1: Summary
-    const summaryRows: (string | number)[][] = [
-      ["NDMA · DCS — Staff Appraisal"],
-      [],
-      ["Employee", staffName],
-      ["Department", departmentName],
-      ["Reviewer", reviewerName],
-      ["Period", appraisal.period ?? ""],
-      ["Type of Review", appraisal.typeOfReview ?? ""],
-      ["Status", appraisal.status],
-      [],
-      ["General Performance", `${generalScore} / 40`],
-      ["Core Responsibilities", `${respScore} / 25`],
-      ["Total Score", `${totalScore} / 65`],
-      ["Percentage", `${percentage}%`],
-      ["Salary Increment", `${increment}%`],
-    ];
-    const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
-    XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
-
-    // Sheet 2: Ratings
-    const ratingRows: (string | number)[][] = [["Category", "Rating", "Label"]];
-    for (const cat of RATING_CATEGORIES) {
-      const v = ratings[cat.key];
-      ratingRows.push([cat.label, v ?? "", v ? RATING_LABELS[v] : ""]);
-    }
-    ratingRows.push([]);
-    ratingRows.push(["Responsibility", "Rating", "Label"]);
-    for (const r of responsibilities.filter((x) => x.title.trim())) {
-      ratingRows.push([r.title, r.rating ?? "", r.rating ? RATING_LABELS[r.rating] : ""]);
-    }
-    const wsRatings = XLSX.utils.aoa_to_sheet(ratingRows);
-    XLSX.utils.book_append_sheet(wb, wsRatings, "Ratings");
-
-    // Sheet 3: Development
-    const devRows: (string | number)[][] = [["Section", "Content"]];
-    devRows.push(["Achievements", achievements.filter((a) => a.trim()).join("\n")]);
-    devRows.push(["Goals", goals.filter((g) => g.trim()).join("\n")]);
-    devRows.push(["Staff Feedback", staffFeedback]);
-    devRows.push(["Supervisor Comments", supervisorComments]);
-    const wsDev = XLSX.utils.aoa_to_sheet(devRows);
-    XLSX.utils.book_append_sheet(wb, wsDev, "Development");
-
-    XLSX.writeFile(wb, `Appraisal_${staffName.replace(/\s+/g, "_")}.xlsx`, { bookType: "xlsx" });
+  // ── Save handler ──
+  function buildPayload() {
+    return {
+      id: appraisalId,
+      location: location || undefined,
+      typeOfReview: typeOfReview || undefined,
+      ratingMatrix: ratings,
+      categoryComments,
+      responsibilities: responsibilities.map((r, i) => ({
+        seq: i + 1,
+        title: r.title.trim(),
+        rating: r.rating,
+      })),
+      responsibilitiesComment: respComment || undefined,
+      areasOfStrength: areasOfStrength || undefined,
+      improvementsMade: improvementsMade || undefined,
+      areasForDevelopment: areasForDevelopment || undefined,
+      developmentActions: developmentActions || undefined,
+      achievements: achievements.map((a) => a.trim()),
+      goals: goals.map((g) => ({
+        goal: g.goal.trim(),
+        indicator: g.indicator.trim(),
+      })),
+    };
   }
 
-  function exportToPDF() {
-    if (!appraisal) return;
-    const matrix = appraisal.ratingMatrix as Record<string, number> | null | undefined;
-    const { responsibilities: _resp, ratings: _r, signatures: _s, ...rest } = appraisal;
-    exportAppraisalPDF({
-      ...rest,
-      staffProfile: appraisal.staffProfile as Parameters<typeof exportAppraisalPDF>[0]["staffProfile"],
-      reviewer: appraisal.reviewer as Parameters<typeof exportAppraisalPDF>[0]["reviewer"],
-      cycle: appraisal.cycle as Parameters<typeof exportAppraisalPDF>[0]["cycle"],
-      ratings: matrix
-        ? Object.entries(matrix).map(([category, score]) => ({ category, score }))
-        : [],
-      achievements: achievements
-        .filter((a) => a.trim())
-        .map((text, seq) => ({ text, seq })),
-      goals: goals.filter((g) => g.trim()).map((text, seq) => ({ text, seq })),
-      responsibilities: responsibilities
-        .filter((r) => r.title.trim())
-        .map((r) => ({ text: r.title, seq: r.seq })),
+  function handleSave() {
+    saveMutation.mutate(buildPayload());
+  }
+
+  function handleSubmit() {
+    if (achievements.filter((a) => a.trim()).length < 3) {
+      toast.error("List at least 3 achievements before submitting.");
+      return;
+    }
+    if (goals.filter((g) => g.goal.trim()).length < 3) {
+      toast.error("List at least 3 goals before submitting.");
+      return;
+    }
+    // Save first, then submit.
+    saveMutation.mutate(buildPayload(), {
+      onSuccess: () => submitMutation.mutate({ id: appraisalId }),
     });
   }
 
-  // ─── Render ──────────────────────────────────────────────────────────────────
+  // ── Exports ──
+  function officialData() {
+    return {
+      employeeName: staffName,
+      jobTitle: designation,
+      supervisor: reviewerName,
+      department: departmentName,
+      location,
+      typeOfReview,
+      periodStart: appraisal?.periodStart ?? "",
+      periodEnd: appraisal?.periodEnd ?? "",
+      status: appraisal?.status ?? "",
+      ratingMatrix: ratings,
+      categoryComments,
+      responsibilities: responsibilities.filter((r) => r.title.trim()),
+      responsibilitiesComment: respComment,
+      areasOfStrength,
+      improvementsMade,
+      areasForDevelopment,
+      developmentActions,
+      achievements: achievements.filter((a) => a.trim()),
+      goals: goals.filter((g) => g.goal.trim()),
+    };
+  }
 
+  // ── Loading / error states ──
   if (isLoading) {
     return (
       <>
         <Header fixed>
           <div className="flex items-center gap-2">
             <ClipboardCheck className="size-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Appraisal Detail</span>
+            <span className="text-sm font-medium">Appraisal</span>
           </div>
-          <div className="ms-auto flex items-center gap-2">
+          <div className="ms-auto">
             <ThemeSwitch />
           </div>
         </Header>
         <Main>
-          <div className="max-w-5xl mx-auto space-y-6">
+          <div className="mx-auto max-w-5xl space-y-6">
             <Skeleton className="h-8 w-64" />
             <Skeleton className="h-48 w-full" />
             <Skeleton className="h-64 w-full" />
@@ -845,22 +512,19 @@ function AppraisalDetailPage() {
         <Header fixed>
           <div className="flex items-center gap-2">
             <ClipboardCheck className="size-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Appraisal Detail</span>
+            <span className="text-sm font-medium">Appraisal</span>
           </div>
-          <div className="ms-auto flex items-center gap-2">
+          <div className="ms-auto">
             <ThemeSwitch />
           </div>
         </Header>
         <Main>
-          <div className="max-w-5xl mx-auto flex flex-col items-center gap-4 py-20 text-center">
+          <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 py-20 text-center">
             <AlertCircle className="size-10 text-destructive" />
             <p className="text-lg font-semibold">Appraisal not found</p>
-            <p className="text-sm text-muted-foreground">
-              This appraisal does not exist or you don't have permission to view it.
-            </p>
-            <Button variant="outline" onClick={() => window.history.back()}>
-              <ArrowLeft className="size-4 mr-2" />
-              Go Back
+            <Button variant="outline" onClick={() => navigate({ to: "/appraisals" })}>
+              <ArrowLeft className="mr-2 size-4" />
+              Back to Appraisals
             </Button>
           </div>
         </Main>
@@ -869,74 +533,110 @@ function AppraisalDetailPage() {
   }
 
   const staffName =
-    (appraisal.staffProfile as { user?: { name?: string | null } | null } | null)?.user?.name ?? "—";
+    (appraisal.staffProfile as { user?: { name?: string | null } | null } | null)
+      ?.user?.name ?? "—";
   const reviewerName =
-    (appraisal.reviewer as { user?: { name?: string | null } | null } | null)?.user?.name ?? "—";
+    (appraisal.reviewer as { user?: { name?: string | null } | null } | null)
+      ?.user?.name ?? "—";
   const departmentName =
-    (appraisal.staffProfile as { department?: { name: string } | null } | null)?.department?.name ?? "—";
+    (appraisal.staffProfile as { department?: { name: string } | null } | null)
+      ?.department?.name ?? "—";
   const designation =
-    (appraisal.staffProfile as { jobTitle?: string | null } | null)?.jobTitle ?? "—";
-
+    (appraisal.staffProfile as { jobTitle?: string | null } | null)?.jobTitle ??
+    "—";
   const periodLabel =
     appraisal.periodStart && appraisal.periodEnd
       ? `${format(parseISO(appraisal.periodStart), "d MMM yyyy")} – ${format(parseISO(appraisal.periodEnd), "d MMM yyyy")}`
       : "—";
-
-  const signatures =
-    (appraisal.signatures as
-      | Array<{ role: SignatureRole; signedAt: string | Date | null; signer?: { user?: { name?: string | null } | null } | null }>
-      | undefined) ?? [];
-  const signatureByRole = new Map<SignatureRole, (typeof signatures)[number]>();
-  for (const s of signatures) signatureByRole.set(s.role, s);
 
   return (
     <>
       <Header fixed>
         <div className="flex items-center gap-2">
           <ClipboardCheck className="size-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Appraisal Detail</span>
+          <span className="text-sm text-muted-foreground">Appraisals</span>
+          <span className="text-muted-foreground">/</span>
+          <span className="text-sm font-medium">{staffName}</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
-          {/* Live score in header */}
-          <div className="hidden md:flex items-center gap-4 px-3 mr-1">
+          <div className="mr-1 hidden items-center gap-4 px-3 md:flex">
             <div className="text-right">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Score</div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Score
+              </div>
               <div
                 className={`text-sm font-bold tabular-nums ${
-                  percentage >= 90
+                  percentage >= 81
                     ? "text-blue-700 dark:text-blue-400"
-                    : percentage >= 70
+                    : percentage >= 61
                       ? "text-amber-600 dark:text-amber-400"
                       : "text-red-600 dark:text-red-400"
                 }`}
               >
-                {totalScore}/65 <span className="text-xs font-normal text-muted-foreground">({percentage}%)</span>
+                {rawTotal}/65{" "}
+                <span className="text-xs font-normal text-muted-foreground">
+                  ({percentage}%)
+                </span>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Increment</div>
-              <div className="text-sm font-bold text-blue-700 dark:text-blue-400">{increment}%</div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Increment
+              </div>
+              <div className="text-sm font-bold text-blue-700 dark:text-blue-400">
+                {increment}%
+              </div>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={exportToExcel}>
-            <FileSpreadsheet className="size-4 mr-1.5" />
-            Export Excel
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              navigate({
+                to: "/appraisals/$appraisalId/report",
+                params: { appraisalId },
+              })
+            }
+          >
+            <BarChart3 className="mr-1.5 size-4" />
+            Report
           </Button>
-          <Button variant="outline" size="sm" onClick={exportToPDF}>
-            <FileDown className="size-4 mr-1.5" />
-            Export PDF
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              exportOfficialAppraisalExcel(
+                officialData(),
+                `Appraisal_${staffName.replace(/\s+/g, "_")}.xlsx`,
+              )
+            }
+          >
+            <FileSpreadsheet className="mr-1.5 size-4" />
+            Excel
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              exportOfficialAppraisalPDF(
+                officialData(),
+                `Appraisal_${staffName.replace(/\s+/g, "_")}.pdf`,
+              )
+            }
+          >
+            <FileDown className="mr-1.5 size-4" />
+            PDF
           </Button>
           <ThemeSwitch />
         </div>
       </Header>
 
       <Main>
-        <div className="max-w-5xl mx-auto space-y-6 pb-16">
-          {/* Back link + status */}
+        <div className="mx-auto max-w-5xl space-y-6 pb-20">
           <div className="flex items-center gap-3">
             <Link
               to="/appraisals"
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <ArrowLeft className="size-4" />
               Back to Appraisals
@@ -944,559 +644,477 @@ function AppraisalDetailPage() {
             <StatusBadge status={appraisal.status} />
           </div>
 
-          {/* Banners */}
-          {(status === "approved" || status === "completed") && (
-            <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 dark:bg-blue-900/20 p-4 text-blue-800 dark:text-blue-300">
+          {/* Approved / rejected banners */}
+          {isReadOnly && (
+            <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-800 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300">
               <CheckCircle2 className="size-5 shrink-0" />
               <div>
-                <p className="font-semibold">Appraisal Approved</p>
+                <p className="font-semibold">Appraisal {appraisal.status}</p>
                 {appraisal.approvedAt && (
-                  <p className="text-sm mt-0.5">
-                    Approved on {format(new Date(appraisal.approvedAt), "d MMM yyyy")}
+                  <p className="mt-0.5 text-sm">
+                    Approved on{" "}
+                    {format(new Date(appraisal.approvedAt), "d MMM yyyy")} — this
+                    record is locked.
                   </p>
                 )}
               </div>
             </div>
           )}
-
           {status === "rejected" && (
-            <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/20 p-4 text-red-800 dark:text-red-300">
-              <XCircle className="size-5 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+              <XCircle className="mt-0.5 size-5 shrink-0" />
               <div>
                 <p className="font-semibold">Appraisal Rejected</p>
                 {appraisal.rejectionReason && (
-                  <p className="text-sm mt-1">
+                  <p className="mt-1 text-sm">
                     <span className="font-medium">Reason: </span>
                     {appraisal.rejectionReason}
                   </p>
                 )}
-                <p className="text-sm mt-1 text-red-700 dark:text-red-400">
-                  You may revise and resubmit this appraisal.
-                </p>
+                <p className="mt-1 text-sm">You may revise and resubmit.</p>
               </div>
             </div>
           )}
 
-          {/* Title strip */}
-          <div className="rounded-xl border bg-card p-6 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">{staffName}</h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {designation} · {departmentName}
-                </p>
+          {/* Employee info strip */}
+          <SectionCard
+            title="Employee Information"
+            description="Auto-populated from the staff profile."
+          >
+            <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm sm:grid-cols-3">
+              <Field label="Employee Name" value={staffName} />
+              <Field label="Job Title" value={designation} />
+              <Field label="Department" value={departmentName} />
+              <Field label="Supervisor" value={reviewerName} />
+              <Field label="Evaluation Period" value={periodLabel} />
+              <div className="space-y-1.5">
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Location
+                </Label>
+                <Input
+                  value={location}
+                  disabled={isReadOnly}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="e.g. 155 Crown Street, Queenstown"
+                />
               </div>
-              <div className="text-right text-sm">
-                <p className="text-muted-foreground text-xs uppercase tracking-wide">Period</p>
-                <p className="font-medium">{periodLabel}</p>
+              <div className="space-y-1.5">
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Type of Review
+                </Label>
+                <Input
+                  value={typeOfReview}
+                  disabled={isReadOnly}
+                  onChange={(e) => setTypeOfReview(e.target.value)}
+                  placeholder="Biannually"
+                />
               </div>
             </div>
-          </div>
+          </SectionCard>
 
-          {/* ── Tabs ──────────────────────────────────────────────────────── */}
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as string)}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="info">1. Employee Info</TabsTrigger>
-              <TabsTrigger value="ratings">2–4. Ratings</TabsTrigger>
-              <TabsTrigger value="dev">5–7. Development</TabsTrigger>
-              <TabsTrigger value="finalize">8–9. Finalize</TabsTrigger>
+          <Tabs value={tab} onValueChange={setTab}>
+            <TabsList variant="line" className="justify-start">
+              <TabsTrigger value="categories">Rating Categories</TabsTrigger>
+              <TabsTrigger value="responsibilities">
+                Core Responsibilities
+              </TabsTrigger>
+              <TabsTrigger value="development">Summary &amp; Development</TabsTrigger>
+              <TabsTrigger value="goals">Achievements &amp; Goals</TabsTrigger>
+              <TabsTrigger value="score">Score</TabsTrigger>
             </TabsList>
 
-            {/* ── Tab 1: Employee Information ─────────────────────────────── */}
-            <TabsContent value="info" className="space-y-6">
-              <div className="rounded-xl border bg-card shadow-sm">
-                <div className="border-b px-6 py-4">
-                  <h2 className="font-semibold">Employee Information</h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Auto-populated from staff profile — read-only.
-                  </p>
-                </div>
-                <div className="px-6 py-5 grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-4 text-sm">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
-                      Full Name
-                    </p>
-                    <p className="font-medium">{staffName}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
-                      Designation
-                    </p>
-                    <p className="font-medium">{designation}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
-                      Department
-                    </p>
-                    <p className="font-medium">{departmentName}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
-                      Reviewer / Supervisor
-                    </p>
-                    <p className="font-medium">{reviewerName}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
-                      Period
-                    </p>
-                    <p className="font-medium">{periodLabel}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
-                      Location
-                    </p>
-                    <p className="font-medium">{appraisal.location ?? "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
-                      Type of Review
-                    </p>
-                    <p className="font-medium">{appraisal.typeOfReview ?? "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-0.5">
-                      Submitted
-                    </p>
-                    <p className="font-medium">
-                      {appraisal.submittedAt
-                        ? format(new Date(appraisal.submittedAt), "d MMM yyyy")
-                        : "—"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl border bg-card shadow-sm">
-                <div className="border-b px-6 py-4">
-                  <h2 className="font-semibold">Rating Scale</h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Reference this scale when assigning scores in the next tab.
-                  </p>
-                </div>
-                <div className="px-6 py-5 flex flex-wrap gap-2">
-                  {[5, 4, 3, 2, 1].map((n) => (
-                    <span
-                      key={n}
-                      className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold ${
-                        n === 5
-                          ? "bg-blue-600 text-white"
-                          : n === 4
-                            ? "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800"
-                            : n === 3
-                              ? "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-900"
-                              : n === 2
-                                ? "bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-900"
-                                : "bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-900"
-                      }`}
-                    >
-                      <span className="w-5 h-5 rounded flex items-center justify-center bg-white/30 text-[11px] font-bold">
-                        {n}
-                      </span>
-                      {RATING_LABELS[n]}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* ── Tab 2: Ratings (sections 2-4) ───────────────────────────── */}
-            <TabsContent value="ratings" className="space-y-6">
-              {/* Section 3: General Performance */}
-              <div className="rounded-xl border bg-card shadow-sm">
-                <div className="border-b px-6 py-4 flex items-center justify-between">
-                  <div>
-                    <h2 className="font-semibold">General Performance Categories</h2>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      Rate each category 1 (Unsatisfactory) → 5 (Excellent).
-                    </p>
-                  </div>
+            {/* ── Rating categories ─────────────────────────────────────────── */}
+            <TabsContent value="categories" className="space-y-6 pt-2">
+              <SectionCard
+                title="Performance Rating Categories"
+                description="Rate each category 1 (Unsatisfactory) → 5 (Excellent). Add a comment per category."
+                badge={
                   <span className="rounded-lg border bg-muted/40 px-3 py-1 text-sm font-semibold tabular-nums">
-                    {generalScore} / 40
+                    {categoryTotal} / 40
                   </span>
-                </div>
-                <div className="px-6 py-4 space-y-0">
-                  {RATING_CATEGORIES.map((cat, i) => (
+                }
+              >
+                <div className="space-y-5">
+                  {CATEGORIES.map((cat) => (
                     <div
                       key={cat.key}
-                      className={`flex items-center gap-4 py-3 ${
-                        i < RATING_CATEGORIES.length - 1 ? "border-b border-border/50" : ""
-                      }`}
+                      className="space-y-2 border-b border-border/50 pb-5 last:border-0 last:pb-0"
                     >
-                      <span className="flex-1 text-sm font-medium">{cat.label}</span>
-                      <RatingToggle
-                        value={ratings[cat.key] ?? null}
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold">{cat.label}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {cat.question}
+                          </p>
+                        </div>
+                        <RatingSelector
+                          value={ratings[cat.key]}
+                          onChange={(v) =>
+                            setRatings((p) => ({ ...p, [cat.key]: v }))
+                          }
+                          disabled={isReadOnly}
+                        />
+                      </div>
+                      <Textarea
+                        rows={2}
+                        className="text-sm"
+                        placeholder={`Comments on ${cat.label.toLowerCase()}…`}
+                        value={categoryComments[cat.key] ?? ""}
+                        disabled={isReadOnly}
+                        onChange={(e) =>
+                          setCategoryComments((p) => ({
+                            ...p,
+                            [cat.key]: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+            </TabsContent>
+
+            {/* ── Core responsibilities ─────────────────────────────────────── */}
+            <TabsContent value="responsibilities" className="space-y-6 pt-2">
+              <SectionCard
+                title="Core Responsibilities"
+                description="The five most important responsibilities from the job description, each rated 1–5."
+                badge={
+                  <span className="rounded-lg border bg-muted/40 px-3 py-1 text-sm font-semibold tabular-nums">
+                    {respTotal} / 25
+                  </span>
+                }
+              >
+                <div className="space-y-3">
+                  {responsibilities.map((r, i) => (
+                    <div
+                      key={i}
+                      className="flex flex-col gap-3 rounded-lg border bg-card p-3 sm:flex-row sm:items-center"
+                    >
+                      <span className="text-xs font-semibold text-muted-foreground sm:w-5">
+                        {i + 1}.
+                      </span>
+                      <Input
+                        className="flex-1"
+                        placeholder={`Responsibility ${i + 1}…`}
+                        value={r.title}
+                        disabled={isReadOnly}
+                        onChange={(e) =>
+                          setResponsibilities((prev) =>
+                            prev.map((x, j) =>
+                              j === i ? { ...x, title: e.target.value } : x,
+                            ),
+                          )
+                        }
+                      />
+                      <RatingSelector
+                        value={r.rating}
                         onChange={(v) =>
-                          setRatings((prev) => ({ ...prev, [cat.key]: v }))
+                          setResponsibilities((prev) =>
+                            prev.map((x, j) =>
+                              j === i ? { ...x, rating: v } : x,
+                            ),
+                          )
                         }
                         disabled={isReadOnly}
                       />
-                      <span className="tabular-nums w-6 text-right text-sm font-semibold text-muted-foreground">
-                        {ratings[cat.key] ?? "—"}
-                      </span>
                     </div>
                   ))}
                 </div>
-                <div className="border-t px-6 py-3 flex items-center justify-between">
-                  <span className="text-sm font-medium">General Score</span>
-                  <span className="rounded-lg border bg-muted/40 px-3 py-1 text-sm font-semibold tabular-nums">
-                    {generalScore} / 40
-                  </span>
-                </div>
-              </div>
-
-              {/* Section 4: Core Responsibilities */}
-              <div className="rounded-xl border bg-card shadow-sm">
-                <div className="border-b px-6 py-4 flex items-center justify-between">
-                  <div>
-                    <h2 className="font-semibold">Core Responsibilities</h2>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      Describe each responsibility and rate performance (up to 5).
-                    </p>
-                  </div>
-                  <span className="rounded-lg border bg-muted/40 px-3 py-1 text-sm font-semibold tabular-nums">
-                    {respScore} / 25
-                  </span>
-                </div>
-                <div className="px-6 py-4">
-                  <ResponsibilitiesEditor
-                    items={responsibilities}
-                    onChange={setResponsibilities}
-                    readOnly={isReadOnly}
+                <div className="mt-4 space-y-1.5">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Comments on Core Responsibilities
+                  </Label>
+                  <Textarea
+                    rows={3}
+                    value={respComment}
+                    disabled={isReadOnly}
+                    onChange={(e) => setRespComment(e.target.value)}
+                    placeholder="Overall comments on the employee's delivery of core responsibilities…"
                   />
                 </div>
-                <div className="border-t px-6 py-3 flex items-center justify-between">
-                  <span className="text-sm font-medium">Responsibilities Score</span>
-                  <span className="rounded-lg border bg-muted/40 px-3 py-1 text-sm font-semibold tabular-nums">
-                    {respScore} / 25
-                  </span>
-                </div>
-              </div>
-
-              {canEdit && (
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    variant="secondary"
-                    onClick={handleSaveRatings}
-                    disabled={saveRatingsMutation.isPending}
-                  >
-                    {saveRatingsMutation.isPending ? "Saving…" : "Save Ratings"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleSaveResponsibilities}
-                    disabled={setResponsibilitiesMutation.isPending}
-                  >
-                    {setResponsibilitiesMutation.isPending
-                      ? "Saving…"
-                      : "Save Responsibilities"}
-                  </Button>
-                </div>
-              )}
+              </SectionCard>
             </TabsContent>
 
-            {/* ── Tab 3: Development (sections 5-7) ────────────────────────── */}
-            <TabsContent value="dev" className="space-y-6">
-              {/* Section 5: Summary & development feedback */}
-              <div className="rounded-xl border bg-card shadow-sm">
-                <div className="border-b px-6 py-4">
-                  <h2 className="font-semibold">Summary &amp; Development</h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Self-assessment and supervisor feedback.
-                  </p>
-                </div>
-                <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label
-                      htmlFor="staff-feedback"
-                      className="text-xs uppercase tracking-wide text-muted-foreground font-semibold"
-                    >
-                      Staff Self-Assessment
-                    </Label>
-                    {isReadOnly ? (
-                      <p className="text-sm whitespace-pre-wrap min-h-[5rem]">
-                        {staffFeedback || (
-                          <span className="text-muted-foreground italic">None recorded.</span>
-                        )}
-                      </p>
-                    ) : (
-                      <Textarea
-                        id="staff-feedback"
-                        rows={4}
-                        placeholder="How the staff member assesses their own performance…"
-                        value={staffFeedback}
-                        onChange={(e) => setStaffFeedback(e.target.value)}
-                      />
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label
-                      htmlFor="supervisor-comments"
-                      className="text-xs uppercase tracking-wide text-muted-foreground font-semibold"
-                    >
-                      Supervisor Comments
-                    </Label>
-                    {isReadOnly && !isManager ? (
-                      <p className="text-sm whitespace-pre-wrap min-h-[5rem]">
-                        {supervisorComments || (
-                          <span className="text-muted-foreground italic">None recorded.</span>
-                        )}
-                      </p>
-                    ) : (
-                      <Textarea
-                        id="supervisor-comments"
-                        rows={4}
-                        placeholder="Supervisor's comments on the appraisal…"
-                        value={supervisorComments}
-                        onChange={(e) => setSupervisorComments(e.target.value)}
-                        disabled={isReadOnly && !isManager}
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 6: Achievements */}
-              <div className="rounded-xl border bg-card shadow-sm">
-                <div className="border-b px-6 py-4">
-                  <h2 className="font-semibold">Achievements</h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    List the key achievements during this appraisal period.
-                  </p>
-                </div>
-                <div className="px-6 py-5">
-                  <DynamicList
-                    label="Achievements"
-                    items={achievements}
-                    onChange={setAchievements}
-                    readOnly={isReadOnly}
-                    minItems={3}
-                    maxItems={5}
+            {/* ── Summary & development ─────────────────────────────────────── */}
+            <TabsContent value="development" className="space-y-6 pt-2">
+              <SectionCard
+                title="Summary & Development"
+                description="Summarise strengths, improvements and development planning."
+              >
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <DevField
+                    label="Areas of Strength"
+                    value={areasOfStrength}
+                    onChange={setAreasOfStrength}
+                    disabled={isReadOnly}
+                  />
+                  <DevField
+                    label="Improvements Made Over the Past Year"
+                    value={improvementsMade}
+                    onChange={setImprovementsMade}
+                    disabled={isReadOnly}
+                  />
+                  <DevField
+                    label="Areas for Development"
+                    value={areasForDevelopment}
+                    onChange={setAreasForDevelopment}
+                    disabled={isReadOnly}
+                  />
+                  <DevField
+                    label="Actions Planned to Address Development"
+                    value={developmentActions}
+                    onChange={setDevelopmentActions}
+                    disabled={isReadOnly}
                   />
                 </div>
-                {canEdit && (
-                  <div className="border-t px-6 py-3 flex justify-end">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleSaveAchievements}
-                      disabled={setAchievementsMutation.isPending}
-                    >
-                      {setAchievementsMutation.isPending ? "Saving…" : "Save Achievements"}
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {/* Section 7: Goals */}
-              <div className="rounded-xl border bg-card shadow-sm">
-                <div className="border-b px-6 py-4">
-                  <h2 className="font-semibold">Goals &amp; Performance Indicators</h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Goals for the next appraisal period.
-                  </p>
-                </div>
-                <div className="px-6 py-5">
-                  <DynamicList
-                    label="Goals"
-                    items={goals}
-                    onChange={setGoals}
-                    readOnly={isReadOnly}
-                    minItems={3}
-                    maxItems={5}
-                  />
-                </div>
-                {canEdit && (
-                  <div className="border-t px-6 py-3 flex justify-end">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleSaveGoals}
-                      disabled={setGoalsMutation.isPending}
-                    >
-                      {setGoalsMutation.isPending ? "Saving…" : "Save Goals"}
-                    </Button>
-                  </div>
-                )}
-              </div>
+              </SectionCard>
             </TabsContent>
 
-            {/* ── Tab 4: Finalize (sections 8-9) ──────────────────────────── */}
-            <TabsContent value="finalize" className="space-y-6">
-              {/* Section 8: Score Summary */}
-              <div className="rounded-xl border bg-card shadow-sm">
-                <div className="border-b px-6 py-4">
-                  <h2 className="font-semibold">Score Summary</h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Auto-calculated from ratings — updates as you change scores.
-                  </p>
-                </div>
-                <div className="px-6 py-5 space-y-3">
-                  <div className="rounded-xl border overflow-hidden">
-                    {[
-                      { label: "General Performance (8 × 5)", val: generalScore, max: 40 },
-                      { label: "Core Responsibilities (5 × 5)", val: respScore, max: 25 },
-                    ].map((row) => (
-                      <div
-                        key={row.label}
-                        className="flex items-center justify-between px-4 py-3 border-b border-border/60"
-                      >
-                        <span className="text-sm">{row.label}</span>
-                        <div className="flex items-center gap-3">
-                          <div className="w-32 h-1.5 rounded-full bg-muted overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-blue-500"
-                              style={{ width: `${(row.val / row.max) * 100}%` }}
-                            />
-                          </div>
-                          <span className="tabular-nums text-sm font-semibold w-16 text-right">
-                            {row.val} / {row.max}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                    <div className="flex items-center justify-between px-4 py-3.5 bg-muted/40 border-b font-semibold">
-                      <span>Total Score</span>
-                      <span className="tabular-nums">{totalScore} / 65</span>
-                    </div>
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
-                      <span className="text-sm">Percentage</span>
-                      <div className="flex-1 ml-4 max-w-md">
-                        <ScoreBar score={percentage} />
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <span className="text-sm">Salary Increment</span>
-                      <span className="inline-flex items-center rounded-lg px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                        {increment}%
+            {/* ── Achievements & goals ──────────────────────────────────────── */}
+            <TabsContent value="goals" className="space-y-6 pt-2">
+              <SectionCard
+                title="Key Achievements"
+                description="List the employee's most important achievements this period (minimum 3, up to 5)."
+              >
+                <div className="space-y-2">
+                  {achievements.map((a, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="w-5 text-xs font-semibold text-muted-foreground">
+                        {i + 1}.
                       </span>
+                      <Input
+                        className="flex-1"
+                        placeholder={`Achievement ${i + 1}…`}
+                        value={a}
+                        disabled={isReadOnly}
+                        onChange={(e) =>
+                          setAchievements((prev) =>
+                            prev.map((x, j) => (j === i ? e.target.value : x)),
+                          )
+                        }
+                      />
+                      {!isReadOnly && achievements.length > 3 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-9 text-muted-foreground hover:text-destructive"
+                          onClick={() =>
+                            setAchievements((prev) =>
+                              prev.filter((_, j) => j !== i),
+                            )
+                          }
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      )}
                     </div>
-                  </div>
-                  {/* Increment table */}
-                  <div className="text-xs">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">
-                      Increment Table
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {INCREMENT_TABLE.map((row) => {
-                        const active = percentage <= row.hi && percentage >= row.lo;
-                        return (
-                          <span
-                            key={row.inc}
-                            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold border tabular-nums
-                              ${
-                                active
-                                  ? "bg-blue-600 text-white border-blue-600"
-                                  : "bg-card border-input text-muted-foreground"
-                              }`}
-                          >
-                            {row.lo === 0 ? `≤${row.hi}` : `${row.lo}–${row.hi}`}% → {row.inc}%
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  ))}
+                  {!isReadOnly && achievements.length < 5 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-1"
+                      onClick={() => setAchievements((p) => [...p, ""])}
+                    >
+                      <Plus className="mr-1.5 size-4" />
+                      Add Achievement
+                    </Button>
+                  )}
                 </div>
-              </div>
+              </SectionCard>
 
-              {/* Section 9: Signatures */}
-              <div className="rounded-xl border bg-card shadow-sm">
-                <div className="border-b px-6 py-4">
-                  <h2 className="font-semibold">Signatures</h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Five-step sign-off: Employee → Manager / Director → HR → Deputy GM → GM.
-                  </p>
-                </div>
-                <div className="px-6 py-5 space-y-3">
-                  {SIGNATURE_ROLES.map((s) => {
-                    const sig = signatureByRole.get(s.role);
-                    const signed = !!sig?.signedAt;
-                    const signerName = sig?.signer?.user?.name ?? null;
-                    return (
-                      <div
-                        key={s.role}
-                        className="rounded-xl border p-4 flex items-center gap-4"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold">{s.label}</span>
-                            {signed && (
-                              <span className="inline-flex items-center gap-1 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 text-[11px] font-semibold">
-                                <CheckCircle2 className="size-3" />
-                                Signed
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">{s.subtitle}</p>
-                          {signed && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {signerName ?? "—"} ·{" "}
-                              {sig?.signedAt
-                                ? format(new Date(sig.signedAt), "d MMM yyyy")
-                                : "—"}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {signed ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled
-                              title="Already signed"
-                            >
-                              <Eraser className="size-4 mr-1.5" />
-                              Clear
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => handleSign(s.role)}
-                              disabled={signMutation.isPending}
-                            >
-                              <PenLine className="size-4 mr-1.5" />
-                              Sign
-                            </Button>
-                          )}
-                        </div>
+              <SectionCard
+                title="Goals for Next Period"
+                description="Each goal pairs with the measure/standard used to evaluate it (minimum 3, up to 5)."
+              >
+                <div className="space-y-3">
+                  {goals.map((g, i) => (
+                    <div
+                      key={i}
+                      className="rounded-lg border bg-card p-3"
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-muted-foreground">
+                          Goal {i + 1}
+                        </span>
+                        {!isReadOnly && goals.length > 3 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 text-muted-foreground hover:text-destructive"
+                            onClick={() =>
+                              setGoals((prev) => prev.filter((_, j) => j !== i))
+                            }
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        )}
                       </div>
-                    );
-                  })}
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <Input
+                          placeholder="Goal to be accomplished…"
+                          value={g.goal}
+                          disabled={isReadOnly}
+                          onChange={(e) =>
+                            setGoals((prev) =>
+                              prev.map((x, j) =>
+                                j === i ? { ...x, goal: e.target.value } : x,
+                              ),
+                            )
+                          }
+                        />
+                        <Input
+                          placeholder="Performance indicator…"
+                          value={g.indicator}
+                          disabled={isReadOnly}
+                          onChange={(e) =>
+                            setGoals((prev) =>
+                              prev.map((x, j) =>
+                                j === i
+                                  ? { ...x, indicator: e.target.value }
+                                  : x,
+                              ),
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  {!isReadOnly && goals.length < 5 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setGoals((p) => [...p, { goal: "", indicator: "" }])
+                      }
+                    >
+                      <Plus className="mr-1.5 size-4" />
+                      Add Goal
+                    </Button>
+                  )}
                 </div>
-              </div>
+              </SectionCard>
+            </TabsContent>
+
+            {/* ── Score ─────────────────────────────────────────────────────── */}
+            <TabsContent value="score" className="space-y-6 pt-2">
+              <SectionCard
+                title="Score Summary"
+                description="Auto-calculated — updates live as ratings change."
+              >
+                <div className="overflow-hidden rounded-xl border">
+                  {[
+                    {
+                      label: "General Performance (8 categories × 5)",
+                      val: categoryTotal,
+                      max: 40,
+                    },
+                    {
+                      label: "Core Responsibilities (5 × 5)",
+                      val: respTotal,
+                      max: 25,
+                    },
+                  ].map((row) => (
+                    <div
+                      key={row.label}
+                      className="flex items-center justify-between border-b border-border/60 px-4 py-3"
+                    >
+                      <span className="text-sm">{row.label}</span>
+                      <div className="flex items-center gap-3">
+                        <div className="h-1.5 w-32 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="h-full rounded-full bg-blue-500"
+                            style={{ width: `${(row.val / row.max) * 100}%` }}
+                          />
+                        </div>
+                        <span className="w-16 text-right text-sm font-semibold tabular-nums">
+                          {row.val} / {row.max}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between border-b bg-muted/40 px-4 py-3.5 font-semibold">
+                    <span>Total Score</span>
+                    <span className="tabular-nums">{rawTotal} / 65</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+                    <span className="text-sm">Percentage</span>
+                    <span className="text-lg font-bold tabular-nums text-blue-700 dark:text-blue-400">
+                      {percentage}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm">Salary Increment</span>
+                    <span className="inline-flex items-center rounded-lg bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                      {increment}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Increment Table
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {INCREMENT_TABLE.map((row) => {
+                      const active =
+                        percentage >= row.lo && percentage <= row.hi;
+                      return (
+                        <span
+                          key={row.inc}
+                          className={`inline-flex items-center rounded-lg border px-3 py-1.5 text-xs font-semibold tabular-nums ${
+                            active
+                              ? "border-blue-600 bg-blue-600 text-white"
+                              : "border-input bg-card text-muted-foreground"
+                          }`}
+                        >
+                          {row.lo === 0 ? `≤${row.hi}` : `${row.lo}–${row.hi}`}% →{" "}
+                          {row.inc}%
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </SectionCard>
             </TabsContent>
           </Tabs>
 
-          {/* ── Action buttons ─────────────────────────────────────────────── */}
-          <div className="flex flex-wrap gap-3 sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 -mx-2 px-2 py-3 border-t">
+          {/* ── Sticky action bar ──────────────────────────────────────────── */}
+          <div className="sticky bottom-0 -mx-2 flex flex-wrap gap-3 border-t bg-background/95 px-2 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             {canEdit && (
-              <Button
-                variant="outline"
-                onClick={handleSaveDraft}
-                disabled={saveDraftMutation.isPending}
-              >
-                {saveDraftMutation.isPending ? "Saving…" : "Save Draft"}
-              </Button>
-            )}
-            {canSubmit && (
-              <Button onClick={handleSubmit} disabled={submitMutation.isPending}>
-                <Send className="size-4 mr-2" />
-                {submitMutation.isPending ? "Submitting…" : "Submit for Approval"}
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={handleSave}
+                  disabled={saveMutation.isPending}
+                >
+                  {saveMutation.isPending ? "Saving…" : "Save Draft"}
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={saveMutation.isPending || submitMutation.isPending}
+                >
+                  <Send className="mr-2 size-4" />
+                  {submitMutation.isPending ? "Submitting…" : "Save & Submit"}
+                </Button>
+              </>
             )}
             {canApproveReject && (
               <>
                 <Button
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={handleApprove}
+                  className="bg-blue-600 text-white hover:bg-blue-700"
+                  onClick={() => approveMutation.mutate({ id: appraisalId })}
                   disabled={approveMutation.isPending}
                 >
-                  <CheckCircle2 className="size-4 mr-2" />
+                  <CheckCircle2 className="mr-2 size-4" />
                   {approveMutation.isPending ? "Approving…" : "Approve"}
                 </Button>
-                <Button variant="destructive" onClick={() => setShowRejectDialog(true)}>
-                  <XCircle className="size-4 mr-2" />
+                <Button
+                  variant="destructive"
+                  onClick={() => setShowReject(true)}
+                >
+                  <XCircle className="mr-2 size-4" />
                   Reject
                 </Button>
               </>
@@ -1505,8 +1123,10 @@ function AppraisalDetailPage() {
         </div>
       </Main>
 
-      {/* Reject dialog */}
-      <Dialog open={showRejectDialog} onOpenChange={(open) => !open && setShowRejectDialog(false)}>
+      <Dialog
+        open={showReject}
+        onOpenChange={(o) => !o && setShowReject(false)}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Reject Appraisal</DialogTitle>
@@ -1514,27 +1134,36 @@ function AppraisalDetailPage() {
               The staff member will be notified and can revise and resubmit.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-2">
+          <div className="space-y-2 py-2">
             <Label htmlFor="reject-reason">Reason for rejection</Label>
             <Textarea
               id="reject-reason"
               rows={4}
-              placeholder="Explain why this appraisal is being rejected…"
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Explain why this appraisal is being rejected…"
             />
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setShowRejectDialog(false)}
+              onClick={() => setShowReject(false)}
               disabled={rejectMutation.isPending}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
-              onClick={handleReject}
+              onClick={() => {
+                if (!rejectReason.trim()) {
+                  toast.error("Please provide a rejection reason.");
+                  return;
+                }
+                rejectMutation.mutate({
+                  id: appraisalId,
+                  rejectionReason: rejectReason.trim(),
+                });
+              }}
               disabled={rejectMutation.isPending || !rejectReason.trim()}
             >
               {rejectMutation.isPending ? "Rejecting…" : "Confirm Rejection"}
@@ -1543,5 +1172,43 @@ function AppraisalDetailPage() {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="mb-0.5 text-xs uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="font-medium">{value}</p>
+    </div>
+  );
+}
+
+function DevField({
+  label,
+  value,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </Label>
+      <Textarea
+        rows={4}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={`${label}…`}
+      />
+    </div>
   );
 }

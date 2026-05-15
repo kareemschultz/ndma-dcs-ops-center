@@ -38,6 +38,21 @@ const ratingMatrixSchema = z.object({
   attendance_punctuality: z.number().min(1).max(5),
 });
 
+// Official NDMA Performance Evaluation Form — 8 fixed categories.
+// `technical_skills` / `attendance_punctuality` keys are reused for the
+// official form's "Problem Solving" / "Overall Professionalism" categories
+// so the existing ratingMatrix storage stays compatible.
+const officialRatingMatrixSchema = z.object({
+  organisational_skills: z.number().min(0).max(5),
+  quality_of_work: z.number().min(0).max(5),
+  dependability: z.number().min(0).max(5),
+  communication_skills: z.number().min(0).max(5),
+  cooperation: z.number().min(0).max(5),
+  initiative: z.number().min(0).max(5),
+  technical_skills: z.number().min(0).max(5),
+  attendance_punctuality: z.number().min(0).max(5),
+});
+
 const appraisalStatusSchema = z.enum([
   "draft",
   "in_progress",
@@ -1222,6 +1237,182 @@ export const appraisalsRouter = {
         ipAddress: context.ipAddress,
         userAgent: context.userAgent,
         actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+      });
+
+      return fetchAppraisal(input.id);
+    }),
+
+  // ── Official NDMA Performance Evaluation Form — single atomic save ──────────
+  // Saves the entire official appraisal layout: 8 category ratings + comments,
+  // 5 core responsibilities + ratings + comment, the 4 development-summary
+  // sections, up to 5 achievements, and up to 5 goal/indicator pairs.
+  setOfficialForm: requireRole("appraisal", "update")
+    .input(
+      z.object({
+        id: z.string().min(1),
+        location: z.string().optional(),
+        typeOfReview: z.string().optional(),
+        ratingMatrix: officialRatingMatrixSchema,
+        categoryComments: z.record(z.string(), z.string()).optional(),
+        responsibilities: z
+          .array(
+            z.object({
+              seq: z.number().int().min(1),
+              title: z.string(),
+              rating: z.number().int().min(0).max(5),
+            }),
+          )
+          .max(5),
+        responsibilitiesComment: z.string().optional(),
+        areasOfStrength: z.string().optional(),
+        improvementsMade: z.string().optional(),
+        areasForDevelopment: z.string().optional(),
+        developmentActions: z.string().optional(),
+        achievements: z.array(z.string()).max(5),
+        goals: z
+          .array(z.object({ goal: z.string(), indicator: z.string() }))
+          .max(5),
+      }),
+    )
+    .handler(async ({ input, context }) => {
+      const before = await db.query.appraisals.findFirst({
+        where: eq(appraisals.id, input.id),
+      });
+      if (!before) throw new ORPCError("NOT_FOUND");
+
+      if (
+        before.immutableFrom &&
+        context.userRole !== "admin" &&
+        context.userRole !== "hrAdminOps"
+      ) {
+        throw new ORPCError("CONFLICT", {
+          message: "Approved appraisals are immutable.",
+        });
+      }
+      if (!(await canAccessAppraisal(context, before.staffProfileId))) {
+        throw new ORPCError("FORBIDDEN");
+      }
+
+      // Score: sum of 8 category ratings (max 40) + sum of responsibility
+      // ratings (max 25) → total out of 65, expressed as a percentage.
+      const categoryTotal = Object.values(input.ratingMatrix).reduce(
+        (sum, v) => sum + v,
+        0,
+      );
+      const respTotal = input.responsibilities.reduce(
+        (sum, r) => sum + r.rating,
+        0,
+      );
+      const rawTotal = categoryTotal + respTotal;
+      const percentage = Math.round((rawTotal / 65) * 100);
+
+      const cleanGoals = input.goals.filter((g) => g.goal.trim());
+      const cleanAchievements = input.achievements.filter((a) => a.trim());
+
+      const [updated] = await db
+        .update(appraisals)
+        .set({
+          location: input.location ?? before.location,
+          typeOfReview: input.typeOfReview ?? before.typeOfReview,
+          ratingMatrix: input.ratingMatrix,
+          categoryComments: input.categoryComments ?? null,
+          responsibilitiesComment: input.responsibilitiesComment ?? null,
+          areasOfStrength: input.areasOfStrength ?? null,
+          improvementsMade: input.improvementsMade ?? null,
+          areasForDevelopment: input.areasForDevelopment ?? null,
+          developmentActions: input.developmentActions ?? null,
+          achievements: cleanAchievements,
+          goals: cleanGoals.map((g) => g.goal),
+          goalIndicators: cleanGoals.map((g) => g.indicator),
+          totalScore: rawTotal,
+          maxScore: 65,
+          percentageScore: percentage,
+          objectives: input.responsibilities
+            .filter((r) => r.title.trim())
+            .map((r) => ({ title: r.title, rating: r.rating })),
+          updatedAt: new Date(),
+        })
+        .where(eq(appraisals.id, input.id))
+        .returning();
+      if (!updated) throw new ORPCError("INTERNAL_SERVER_ERROR");
+
+      // Sync structured sub-tables (responsibilities + achievements + goals).
+      await db
+        .delete(appraisalResponsibilities)
+        .where(eq(appraisalResponsibilities.appraisalId, input.id));
+      const filledResp = input.responsibilities.filter((r) => r.title.trim());
+      if (filledResp.length > 0) {
+        await db.insert(appraisalResponsibilities).values(
+          filledResp.map((r, i) => ({
+            appraisalId: input.id,
+            seq: i + 1,
+            title: r.title,
+          })),
+        );
+      }
+
+      await db
+        .delete(appraisalRatings)
+        .where(eq(appraisalRatings.appraisalId, input.id));
+      const ratingRows = [
+        ...Object.entries(input.ratingMatrix).map(([category, rating]) => ({
+          appraisalId: input.id,
+          kind: "category" as const,
+          category,
+          responsibilitySeq: null,
+          rating,
+        })),
+        ...filledResp.map((r, i) => ({
+          appraisalId: input.id,
+          kind: "responsibility" as const,
+          category: null,
+          responsibilitySeq: i + 1,
+          rating: r.rating,
+        })),
+      ].filter((row) => row.rating > 0);
+      if (ratingRows.length > 0) {
+        await db.insert(appraisalRatings).values(ratingRows);
+      }
+
+      await db
+        .delete(appraisalAchievements)
+        .where(eq(appraisalAchievements.appraisalId, input.id));
+      if (cleanAchievements.length > 0) {
+        await db.insert(appraisalAchievements).values(
+          cleanAchievements.map((text, i) => ({
+            appraisalId: input.id,
+            seq: i + 1,
+            text,
+          })),
+        );
+      }
+
+      await db
+        .delete(appraisalGoals)
+        .where(eq(appraisalGoals.appraisalId, input.id));
+      if (cleanGoals.length > 0) {
+        await db.insert(appraisalGoals).values(
+          cleanGoals.map((g, i) => ({
+            appraisalId: input.id,
+            seq: i + 1,
+            text: g.goal,
+          })),
+        );
+      }
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        actorRole: context.userRole ?? undefined,
+        action: "appraisal.set_official_form",
+        module: "staff",
+        resourceType: "appraisal",
+        resourceId: input.id,
+        beforeValue: before as Record<string, unknown>,
+        afterValue: updated as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
         correlationId: context.requestId,
       });
 
