@@ -93,6 +93,7 @@ import { Route as AuthenticatedChangesChangeIdRouteImport } from './routes/_auth
 import { Route as AuthenticatedAttendanceRollCallRouteImport } from './routes/_authenticated/attendance/roll-call'
 import { Route as AuthenticatedAttendanceMonthlyRouteImport } from './routes/_authenticated/attendance/monthly'
 import { Route as AuthenticatedAttendanceHolidaysRouteImport } from './routes/_authenticated/attendance/holidays'
+import { Route as AuthenticatedAttendanceAnalyticsRouteImport } from './routes/_authenticated/attendance/analytics'
 import { Route as AuthenticatedAppraisalsInboxRouteImport } from './routes/_authenticated/appraisals/inbox'
 import { Route as AuthenticatedAppraisalsAppraisalIdRouteImport } from './routes/_authenticated/appraisals/$appraisalId'
 import { Route as AuthenticatedAdvancesNewRouteImport } from './routes/_authenticated/advances/new'
@@ -594,6 +595,12 @@ const AuthenticatedAttendanceHolidaysRoute =
     path: '/attendance/holidays',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAttendanceAnalyticsRoute =
+  AuthenticatedAttendanceAnalyticsRouteImport.update({
+    id: '/attendance/analytics',
+    path: '/attendance/analytics',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAppraisalsInboxRoute =
   AuthenticatedAppraisalsInboxRouteImport.update({
     id: '/appraisals/inbox',
@@ -690,6 +697,7 @@ export interface FileRoutesByFullPath {
   '/advances/new': typeof AuthenticatedAdvancesNewRoute
   '/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRouteWithChildren
   '/appraisals/inbox': typeof AuthenticatedAppraisalsInboxRoute
+  '/attendance/analytics': typeof AuthenticatedAttendanceAnalyticsRoute
   '/attendance/holidays': typeof AuthenticatedAttendanceHolidaysRoute
   '/attendance/monthly': typeof AuthenticatedAttendanceMonthlyRoute
   '/attendance/roll-call': typeof AuthenticatedAttendanceRollCallRoute
@@ -789,6 +797,7 @@ export interface FileRoutesByTo {
   '/advances/new': typeof AuthenticatedAdvancesNewRoute
   '/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRouteWithChildren
   '/appraisals/inbox': typeof AuthenticatedAppraisalsInboxRoute
+  '/attendance/analytics': typeof AuthenticatedAttendanceAnalyticsRoute
   '/attendance/holidays': typeof AuthenticatedAttendanceHolidaysRoute
   '/attendance/monthly': typeof AuthenticatedAttendanceMonthlyRoute
   '/attendance/roll-call': typeof AuthenticatedAttendanceRollCallRoute
@@ -890,6 +899,7 @@ export interface FileRoutesById {
   '/_authenticated/advances/new': typeof AuthenticatedAdvancesNewRoute
   '/_authenticated/appraisals/$appraisalId': typeof AuthenticatedAppraisalsAppraisalIdRouteWithChildren
   '/_authenticated/appraisals/inbox': typeof AuthenticatedAppraisalsInboxRoute
+  '/_authenticated/attendance/analytics': typeof AuthenticatedAttendanceAnalyticsRoute
   '/_authenticated/attendance/holidays': typeof AuthenticatedAttendanceHolidaysRoute
   '/_authenticated/attendance/monthly': typeof AuthenticatedAttendanceMonthlyRoute
   '/_authenticated/attendance/roll-call': typeof AuthenticatedAttendanceRollCallRoute
@@ -991,6 +1001,7 @@ export interface FileRouteTypes {
     | '/advances/new'
     | '/appraisals/$appraisalId'
     | '/appraisals/inbox'
+    | '/attendance/analytics'
     | '/attendance/holidays'
     | '/attendance/monthly'
     | '/attendance/roll-call'
@@ -1090,6 +1101,7 @@ export interface FileRouteTypes {
     | '/advances/new'
     | '/appraisals/$appraisalId'
     | '/appraisals/inbox'
+    | '/attendance/analytics'
     | '/attendance/holidays'
     | '/attendance/monthly'
     | '/attendance/roll-call'
@@ -1190,6 +1202,7 @@ export interface FileRouteTypes {
     | '/_authenticated/advances/new'
     | '/_authenticated/appraisals/$appraisalId'
     | '/_authenticated/appraisals/inbox'
+    | '/_authenticated/attendance/analytics'
     | '/_authenticated/attendance/holidays'
     | '/_authenticated/attendance/monthly'
     | '/_authenticated/attendance/roll-call'
@@ -1874,6 +1887,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAttendanceHolidaysRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/attendance/analytics': {
+      id: '/_authenticated/attendance/analytics'
+      path: '/attendance/analytics'
+      fullPath: '/attendance/analytics'
+      preLoaderRoute: typeof AuthenticatedAttendanceAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/appraisals/inbox': {
       id: '/_authenticated/appraisals/inbox'
       path: '/appraisals/inbox'
@@ -2030,6 +2050,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdvancesNewRoute: typeof AuthenticatedAdvancesNewRoute
   AuthenticatedAppraisalsAppraisalIdRoute: typeof AuthenticatedAppraisalsAppraisalIdRouteWithChildren
   AuthenticatedAppraisalsInboxRoute: typeof AuthenticatedAppraisalsInboxRoute
+  AuthenticatedAttendanceAnalyticsRoute: typeof AuthenticatedAttendanceAnalyticsRoute
   AuthenticatedAttendanceHolidaysRoute: typeof AuthenticatedAttendanceHolidaysRoute
   AuthenticatedAttendanceMonthlyRoute: typeof AuthenticatedAttendanceMonthlyRoute
   AuthenticatedAttendanceRollCallRoute: typeof AuthenticatedAttendanceRollCallRoute
@@ -2128,6 +2149,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppraisalsAppraisalIdRoute:
     AuthenticatedAppraisalsAppraisalIdRouteWithChildren,
   AuthenticatedAppraisalsInboxRoute: AuthenticatedAppraisalsInboxRoute,
+  AuthenticatedAttendanceAnalyticsRoute: AuthenticatedAttendanceAnalyticsRoute,
   AuthenticatedAttendanceHolidaysRoute: AuthenticatedAttendanceHolidaysRoute,
   AuthenticatedAttendanceMonthlyRoute: AuthenticatedAttendanceMonthlyRoute,
   AuthenticatedAttendanceRollCallRoute: AuthenticatedAttendanceRollCallRoute,

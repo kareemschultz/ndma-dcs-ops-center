@@ -8,6 +8,7 @@
 
 import { useNavigate } from "@tanstack/react-router";
 import {
+  BarChart3,
   CalendarCheck,
   CalendarDays,
   ClipboardCheck,
@@ -15,7 +16,13 @@ import {
   Timer,
 } from "lucide-react";
 
-export type AttendanceView = "logs" | "roll-call" | "monthly" | "lateness" | "holidays";
+export type AttendanceView =
+  | "logs"
+  | "roll-call"
+  | "monthly"
+  | "lateness"
+  | "holidays"
+  | "analytics";
 
 const TABS: Array<{
   value: AttendanceView;
@@ -29,6 +36,7 @@ const TABS: Array<{
   { value: "monthly",   label: "Monthly Grid",    Icon: CalendarDays,   route: "/attendance/monthly",   isNew: true },
   { value: "lateness",  label: "Lateness",        Icon: Timer,          route: "/lateness" },
   { value: "holidays",  label: "Holidays",        Icon: CalendarCheck,  route: "/attendance/holidays",  isNew: true },
+  { value: "analytics", label: "Analytics",       Icon: BarChart3,      route: "/attendance/analytics", isNew: true },
 ];
 
 export function AttendanceSubNav({ activeView }: { activeView: AttendanceView }) {
