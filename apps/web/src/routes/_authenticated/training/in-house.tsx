@@ -139,6 +139,20 @@ export default function InHouseTrainingLogPage() {
 
       <TrainingSubNav active="/training/in-house" />
       <Main>
+        <div className="mb-5 flex gap-3 rounded-lg border bg-muted/40 p-4">
+          <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <div className="text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">
+              Record training delivered internally by DCS.
+            </p>
+            <p className="mt-0.5">
+              Use this for knowledge-sharing, on-the-job coaching, and NOC walkthroughs done
+              in-house — anything that isn't an external course. For paid external courses, use{" "}
+              <span className="font-medium">Training Events</span> instead.
+            </p>
+          </div>
+        </div>
+
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <Select value={String(year)} onValueChange={(v) => v != null && setYear(Number(v))}>
             <SelectTrigger className="w-28">
@@ -256,7 +270,8 @@ export default function InHouseTrainingLogPage() {
           <DialogHeader>
             <DialogTitle>Record In-House Session</DialogTitle>
             <DialogDescription>
-              Log an in-house training session for a staff member.
+              Log a training session delivered internally to one staff member. To record several
+              attendees, add one entry per person.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
@@ -283,15 +298,18 @@ export default function InHouseTrainingLogPage() {
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label>Training Name *</Label>
+              <Label>Training Topic *</Label>
               <Input
                 placeholder="e.g. NOC Alarm Interpretation"
                 value={form.trainingName}
                 onChange={(e) => setForm((f) => ({ ...f, trainingName: e.target.value }))}
               />
+              <p className="text-xs text-muted-foreground">
+                What the session covered.
+              </p>
             </div>
             <div className="grid gap-2">
-              <Label>Date *</Label>
+              <Label>Date Delivered *</Label>
               <Input
                 type="date"
                 value={form.date}

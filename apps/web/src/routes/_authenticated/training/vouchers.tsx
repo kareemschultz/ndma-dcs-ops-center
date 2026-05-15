@@ -201,8 +201,22 @@ export default function ExamVouchersPage() {
 
       <TrainingSubNav active="/training/vouchers" />
       <Main>
+        <div className="mb-5 flex gap-3 rounded-lg border bg-muted/40 p-4">
+          <Ticket className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <div className="text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">
+              Exam vouchers are pre-paid credits for certification exams.
+            </p>
+            <p className="mt-0.5">
+              Add a voucher when DCS purchases one, assign it to the staff member who will use it,
+              then track it through to the exam on the Exam Bookings page. Vouchers have a
+              must-use-by date — use the reminders button so none expire unused.
+            </p>
+          </div>
+        </div>
+
         <div className="mb-4 flex items-center gap-3">
-          <span className="text-muted-foreground text-sm font-medium">Filter:</span>
+          <span className="text-muted-foreground text-sm font-medium">Filter by status:</span>
           {(["all", "unused", "assigned", "booked", "complete_pass", "expired"] as const).map(
             (s) => (
               <Button
@@ -300,28 +314,37 @@ export default function ExamVouchersPage() {
           </DialogHeader>
           <div className="grid gap-4">
             <div className="grid gap-2">
-              <Label>Voucher Number</Label>
+              <Label>Voucher Number *</Label>
               <Input
                 placeholder="e.g. PEAR-2026-0001"
                 value={form.voucherNumber}
                 onChange={(e) => setForm((f) => ({ ...f, voucherNumber: e.target.value }))}
               />
+              <p className="text-xs text-muted-foreground">
+                The reference code printed on the voucher from the exam provider.
+              </p>
             </div>
             <div className="grid gap-2">
-              <Label>Product Name</Label>
+              <Label>Exam / Product Name *</Label>
               <Input
-                placeholder="e.g. Pearson CCNA"
+                placeholder="e.g. Cisco CCNA 200-301"
                 value={form.productName}
                 onChange={(e) => setForm((f) => ({ ...f, productName: e.target.value }))}
               />
+              <p className="text-xs text-muted-foreground">
+                The certification exam this voucher pays for.
+              </p>
             </div>
             <div className="grid gap-2">
-              <Label>Must Be Used By</Label>
+              <Label>Must Be Used By *</Label>
               <Input
                 type="date"
                 value={form.mustBeUsedBy}
                 onChange={(e) => setForm((f) => ({ ...f, mustBeUsedBy: e.target.value }))}
               />
+              <p className="text-xs text-muted-foreground">
+                The voucher's expiry date — after this date it can no longer be redeemed.
+              </p>
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">

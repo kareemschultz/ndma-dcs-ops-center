@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { LayoutList, Plus, Save } from "lucide-react";
+import { LayoutList, Pencil, Plus, Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@ndma-dcs-staff-portal/ui/components/badge";
@@ -159,9 +159,23 @@ export default function TrainingPlanPage() {
 
       <TrainingSubNav active="/training/plan" />
       <Main>
+        <div className="mb-5 flex gap-3 rounded-lg border bg-muted/40 p-4">
+          <LayoutList className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <div className="text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">
+              The training plan sets what each staff member should learn this year.
+            </p>
+            <p className="mt-0.5">
+              Each row is one staff member. Click <span className="font-medium">Edit plan</span> to
+              choose their training areas, a target quarter, and track progress. Use the year
+              selector in the header to switch planning years.
+            </p>
+          </div>
+        </div>
+
         <Card>
           <CardHeader>
-            <CardTitle>Staff × Training Areas — {year}</CardTitle>
+            <CardTitle>Planned Training by Staff Member — {year}</CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto p-0">
             {staffLoading || plansLoading ? (
@@ -174,10 +188,10 @@ export default function TrainingPlanPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[160px]">Staff</TableHead>
-                    <TableHead>Dept</TableHead>
-                    <TableHead>Planned Areas</TableHead>
-                    <TableHead className="w-20 text-right">Actions</TableHead>
+                    <TableHead className="min-w-[160px]">Staff Member</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Planned Training Areas</TableHead>
+                    <TableHead className="w-24 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -215,7 +229,8 @@ export default function TrainingPlanPage() {
                             variant="ghost"
                             onClick={() => openEdit(s.id)}
                           >
-                            Edit
+                            <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                            Edit plan
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -240,6 +255,19 @@ export default function TrainingPlanPage() {
           </DialogHeader>
 
           <div className="space-y-3">
+            {draftTrainings.length > 0 && (
+              <div className="grid grid-cols-[1fr_100px_130px_40px] gap-2 px-0.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                <span>Training Area</span>
+                <span>Target Quarter</span>
+                <span>Progress</span>
+                <span />
+              </div>
+            )}
+            {draftTrainings.length === 0 && (
+              <p className="rounded-md border border-dashed py-6 text-center text-sm text-muted-foreground">
+                No training areas planned yet. Use “Add area” below to start.
+              </p>
+            )}
             {draftTrainings.map((t, i) => (
               <div key={i} className="grid grid-cols-[1fr_100px_130px_40px] items-center gap-2">
                 <Select

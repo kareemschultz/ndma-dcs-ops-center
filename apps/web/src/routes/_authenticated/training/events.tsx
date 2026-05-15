@@ -288,6 +288,19 @@ export default function TrainingEventsPage() {
 
       <TrainingSubNav active="/training/events" />
       <Main>
+        <div className="mb-5 flex gap-3 rounded-lg border bg-muted/40 p-4">
+          <Users className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <div className="text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">
+              Training events are external courses, workshops, and conferences.
+            </p>
+            <p className="mt-0.5">
+              Record the institution, dates, and full cost breakdown (travel, course fee, meals,
+              accommodation), then use the people icon on each row to add the staff who attended.
+            </p>
+          </div>
+        </div>
+
         <Card>
           <CardHeader>
             <CardTitle>All Training Events</CardTitle>
@@ -306,7 +319,7 @@ export default function TrainingEventsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Institution</TableHead>
-                    <TableHead>Description</TableHead>
+                    <TableHead>Course / Event</TableHead>
                     <TableHead>Dates</TableHead>
                     <TableHead>Location</TableHead>
                     <TableHead className="text-right">Participants</TableHead>
@@ -387,9 +400,9 @@ export default function TrainingEventsPage() {
             </div>
 
             <div className="grid gap-2">
-              <Label>Description *</Label>
+              <Label>Course / Event Title *</Label>
               <Input
-                placeholder="Course / training title"
+                placeholder="e.g. CCNA Bootcamp 2026"
                 value={form.description}
                 onChange={(e) => setField("description", e.target.value)}
               />
@@ -498,9 +511,9 @@ export default function TrainingEventsPage() {
             </div>
 
             <div className="grid gap-2">
-              <Label>Description *</Label>
+              <Label>Course / Event Title *</Label>
               <Input
-                placeholder="Course / training title"
+                placeholder="e.g. CCNA Bootcamp 2026"
                 value={editForm.description}
                 onChange={(e) => setEditField("description", e.target.value)}
               />

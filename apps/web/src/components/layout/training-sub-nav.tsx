@@ -1,13 +1,17 @@
 import { Link } from "@tanstack/react-router";
 
+/**
+ * Training section sub-navigation.
+ * Labels are written as plain-English tasks so users know what each page is for.
+ */
 const TRAINING_TABS = [
-  { to: "/training", label: "Overview" },
-  { to: "/training/plan", label: "Plan Matrix" },
-  { to: "/training/catalog", label: "Catalog" },
-  { to: "/training/exams", label: "Exams" },
-  { to: "/training/events", label: "Events" },
-  { to: "/training/vouchers", label: "Vouchers" },
-  { to: "/training/in-house", label: "In-House Log" },
+  { to: "/training", label: "Hub" },
+  { to: "/training/plan", label: "Training Plan" },
+  { to: "/training/events", label: "Training Events" },
+  { to: "/training/in-house", label: "In-House Sessions" },
+  { to: "/training/vouchers", label: "Exam Vouchers" },
+  { to: "/training/exams", label: "Exam Bookings" },
+  { to: "/training/catalog", label: "Certification Catalog" },
 ] as const;
 
 export function TrainingSubNav({ active }: { active: string }) {

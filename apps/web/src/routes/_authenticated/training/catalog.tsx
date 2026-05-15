@@ -157,6 +157,20 @@ export default function CertCatalogPage() {
 
       <TrainingSubNav active="/training/catalog" />
       <Main>
+        <div className="mb-5 flex gap-3 rounded-lg border bg-muted/40 p-4">
+          <Tag className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <div className="text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">
+              The certification catalog is a reference list, not a per-staff record.
+            </p>
+            <p className="mt-0.5">
+              It lists the certifications DCS recommends for each training area (e.g. CCNA for
+              Networking). It's the menu you draw on when building each staff member's training
+              plan — adding an entry here does not assign it to anyone.
+            </p>
+          </div>
+        </div>
+
         {isLoading ? (
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
