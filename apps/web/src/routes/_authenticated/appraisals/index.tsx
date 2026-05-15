@@ -5,6 +5,8 @@ import { useState } from "react";
 import { differenceInDays, format, parseISO } from "date-fns";
 import {
   AlertCircle,
+  Activity,
+  Award,
   BarChart3,
   CheckCircle2,
   Clock,
@@ -12,9 +14,11 @@ import {
   FileDown,
   FileText,
   GitPullRequest,
+  Gauge,
   Info,
   Inbox,
   LayoutGrid,
+  LineChart as LineChartIcon,
   List,
   Pencil,
   Plus,
@@ -31,8 +35,16 @@ import {
   CartesianGrid,
   Cell,
   Legend,
+  Line,
+  LineChart,
   Pie,
   PieChart,
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -836,6 +848,538 @@ function PipelineView({
   );
 }
 
+// ── Score helpers ─────────────────────────────────────────────────────────────
+const APPRAISAL_MAX = 65;
+
+/** Resolve an appraisal row's percentage — prefers explicit %, else derives from totalScore/65. */
+function rowPercentage(row: AppraisalListRow): number | null {
+  const explicit = (row as { percentage?: number | null; percentageScore?: number | null }).percentage
+    ?? (row as { percentageScore?: number | null }).percentageScore;
+  if (typeof explicit === "number") return Math.round(explicit);
+  if (typeof row.totalScore === "number") return Math.round((row.totalScore / APPRAISAL_MAX) * 100);
+  return null;
+}
+
+const PERFORMANCE_BANDS = [
+  { key: "exceptional", label: "Exceptional", range: "90-100%", min: 90, color: "#1d4ed8" },
+  { key: "high", label: "High Performer", range: "80-89%", min: 80, color: "#3b82f6" },
+  { key: "solid", label: "Solid", range: "70-79%", min: 70, color: "#60a5fa" },
+  { key: "developing", label: "Developing", range: "60-69%", min: 60, color: "#f59e0b" },
+  { key: "needs_dev", label: "Needs Development", range: "<60%", min: 0, color: "#ef4444" },
+] as const;
+
+function bandOf(pct: number): (typeof PERFORMANCE_BANDS)[number] {
+  return PERFORMANCE_BANDS.find((b) => pct >= b.min) ?? PERFORMANCE_BANDS[PERFORMANCE_BANDS.length - 1];
+}
+
+// ── KPI tile ──────────────────────────────────────────────────────────────────
+function KpiTile({
+  label,
+  value,
+  sub,
+  icon,
+  tone,
+  accent,
+}: {
+  label: string;
+  value: string;
+  sub?: ReactNode;
+  icon: ReactNode;
+  tone: string;
+  accent: string;
+}) {
+  return (
+    <Card className="relative overflow-hidden border-border/60">
+      <span className={`absolute inset-y-0 left-0 w-1 ${accent}`} />
+      <CardContent className="flex items-start gap-3 p-4 pl-5">
+        <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${tone}`}>
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {label}
+          </p>
+          <p className="text-2xl font-bold leading-tight tabular-nums">{value}</p>
+          {sub != null && <div className="mt-0.5 text-[11px] text-muted-foreground">{sub}</div>}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── KPI summary strip ─────────────────────────────────────────────────────────
+function AppraisalKpiStrip({
+  rows,
+  isLoading,
+  overdueFollowups,
+  cycleLabel,
+}: {
+  rows: AppraisalListRow[];
+  isLoading: boolean;
+  overdueFollowups: number;
+  cycleLabel: string;
+}) {
+  const stats = useMemo(() => {
+    const total = rows.length;
+    const scored = rows
+      .map(rowPercentage)
+      .filter((p): p is number => p != null);
+    const avg = scored.length > 0 ? Math.round(scored.reduce((s, p) => s + p, 0) / scored.length) : null;
+    const completed = rows.filter((r) => r.status === "completed" || r.status === "approved").length;
+    const inProgress = rows.filter((r) => ["in_progress", "submitted"].includes(r.status)).length;
+    const overdue = rows.filter((r) => r.status === "overdue").length;
+    const highPerformers = scored.filter((p) => p >= 80).length;
+    const needsDev = scored.filter((p) => p < 60).length;
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { total, avg, completed, inProgress, overdue, highPerformers, needsDev, completionRate };
+  }, [rows]);
+
+  if (isLoading) {
+    return (
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-[88px] rounded-xl" />
+        ))}
+      </section>
+    );
+  }
+
+  return (
+    <section className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+      <KpiTile
+        label="Total Appraisals"
+        value={String(stats.total)}
+        sub={cycleLabel}
+        icon={<ClipboardCheck className="size-5 text-blue-600" />}
+        tone="bg-blue-50 dark:bg-blue-950/40"
+        accent="bg-blue-500"
+      />
+      <KpiTile
+        label="Average Score"
+        value={stats.avg != null ? `${stats.avg}%` : "—"}
+        sub={stats.avg != null ? bandOf(stats.avg).label : "No scored appraisals"}
+        icon={<Gauge className="size-5 text-indigo-600" />}
+        tone="bg-indigo-50 dark:bg-indigo-950/40"
+        accent="bg-indigo-500"
+      />
+      <KpiTile
+        label="Completed"
+        value={`${stats.completionRate}%`}
+        sub={`${stats.completed} of ${stats.total} finalised`}
+        icon={<CheckCircle2 className="size-5 text-blue-600" />}
+        tone="bg-blue-50 dark:bg-blue-950/40"
+        accent="bg-blue-500"
+      />
+      <KpiTile
+        label="In Progress"
+        value={String(stats.inProgress)}
+        sub="Submitted / under review"
+        icon={<Activity className="size-5 text-amber-600" />}
+        tone="bg-amber-50 dark:bg-amber-950/40"
+        accent="bg-amber-500"
+      />
+      <KpiTile
+        label="High Performers"
+        value={String(stats.highPerformers)}
+        sub="Scored ≥ 80%"
+        icon={<Award className="size-5 text-violet-600" />}
+        tone="bg-violet-50 dark:bg-violet-950/40"
+        accent="bg-violet-500"
+      />
+      <KpiTile
+        label="Needs Attention"
+        value={String(stats.needsDev + stats.overdue + overdueFollowups)}
+        sub={`${stats.needsDev} <60% · ${stats.overdue} overdue · ${overdueFollowups} follow-up`}
+        icon={<AlertCircle className="size-5 text-red-600" />}
+        tone="bg-red-50 dark:bg-red-950/40"
+        accent="bg-red-500"
+      />
+    </section>
+  );
+}
+
+// ── Analytics view ────────────────────────────────────────────────────────────
+const REPORT_CATEGORIES: { key: string; short: string }[] = [
+  { key: "organisational_skills", short: "Organisation" },
+  { key: "quality_of_work", short: "Quality" },
+  { key: "dependability", short: "Dependability" },
+  { key: "communication_skills", short: "Communication" },
+  { key: "cooperation", short: "Cooperation" },
+  { key: "initiative", short: "Initiative" },
+  { key: "technical_skills", short: "Problem Solving" },
+  { key: "attendance_punctuality", short: "Professionalism" },
+];
+
+function AnalyticsCard({
+  title,
+  subtitle,
+  icon,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <Card className="border-border/60">
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-2">
+          <span className="flex size-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40">
+            {icon}
+          </span>
+          <div>
+            <CardTitle className="text-sm">{title}</CardTitle>
+            <p className="text-[11px] text-muted-foreground">{subtitle}</p>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
+function AnalyticsEmpty({ label }: { label: string }) {
+  return (
+    <div className="flex h-[280px] flex-col items-center justify-center text-center">
+      <BarChart3 className="mb-2 size-8 text-muted-foreground/30" />
+      <p className="text-sm text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+function AnalyticsView({
+  rows,
+  isLoading,
+}: {
+  rows: AppraisalListRow[];
+  isLoading: boolean;
+}) {
+  // Score distribution histogram — 10-point buckets.
+  const distribution = useMemo(() => {
+    const buckets = [
+      { name: "0-49", min: 0, max: 49, count: 0, fill: "#ef4444" },
+      { name: "50-59", min: 50, max: 59, count: 0, fill: "#f59e0b" },
+      { name: "60-69", min: 60, max: 69, count: 0, fill: "#f59e0b" },
+      { name: "70-79", min: 70, max: 79, count: 0, fill: "#60a5fa" },
+      { name: "80-89", min: 80, max: 89, count: 0, fill: "#3b82f6" },
+      { name: "90-100", min: 90, max: 100, count: 0, fill: "#1d4ed8" },
+    ];
+    for (const r of rows) {
+      const pct = rowPercentage(r);
+      if (pct == null) continue;
+      const b = buckets.find((x) => pct >= x.min && pct <= x.max);
+      if (b) b.count += 1;
+    }
+    return buckets;
+  }, [rows]);
+
+  // Average score by department.
+  const byDepartment = useMemo(() => {
+    const map = new Map<string, { sum: number; count: number }>();
+    for (const r of rows) {
+      const pct = rowPercentage(r);
+      if (pct == null) continue;
+      const dept = r.staffProfile?.department?.name ?? "Unassigned";
+      const cur = map.get(dept) ?? { sum: 0, count: 0 };
+      cur.sum += pct;
+      cur.count += 1;
+      map.set(dept, cur);
+    }
+    return [...map.entries()]
+      .map(([name, v]) => ({ name, avg: Math.round(v.sum / v.count), count: v.count }))
+      .sort((a, b) => b.avg - a.avg);
+  }, [rows]);
+
+  // Category-strength comparison — average rating per category across all rated appraisals.
+  const categoryStrength = useMemo(() => {
+    const sums = new Map<string, { sum: number; count: number }>();
+    for (const r of rows) {
+      const matrix = (r as { ratingMatrix?: Record<string, number> | null }).ratingMatrix;
+      if (!matrix) continue;
+      for (const c of REPORT_CATEGORIES) {
+        const v = matrix[c.key];
+        if (typeof v !== "number" || v <= 0) continue;
+        const cur = sums.get(c.key) ?? { sum: 0, count: 0 };
+        cur.sum += v;
+        cur.count += 1;
+        sums.set(c.key, cur);
+      }
+    }
+    return REPORT_CATEGORIES.map((c) => {
+      const v = sums.get(c.key);
+      return { category: c.short, avg: v && v.count > 0 ? Number((v.sum / v.count).toFixed(2)) : 0 };
+    });
+  }, [rows]);
+  const hasCategoryData = categoryStrength.some((c) => c.avg > 0);
+
+  // Cycle-over-cycle trend.
+  const cycleTrend = useMemo(() => {
+    const map = new Map<string, { sum: number; count: number; sort: number }>();
+    for (const r of rows) {
+      const pct = rowPercentage(r);
+      if (pct == null) continue;
+      const cy = r.cycle;
+      const label = cy
+        ? `${cy.year} ${cy.half === "h1" ? "H1" : "H2"}`
+        : r.year != null
+          ? String(r.year)
+          : "Unknown";
+      const sort = cy ? cy.year * 10 + (cy.half === "h1" ? 1 : 2) : (r.year ?? 0) * 10;
+      const cur = map.get(label) ?? { sum: 0, count: 0, sort };
+      cur.sum += pct;
+      cur.count += 1;
+      map.set(label, cur);
+    }
+    return [...map.entries()]
+      .map(([name, v]) => ({ name, avg: Math.round(v.sum / v.count), count: v.count, sort: v.sort }))
+      .sort((a, b) => a.sort - b.sort);
+  }, [rows]);
+
+  const overallAvg = useMemo(() => {
+    const scored = rows.map(rowPercentage).filter((p): p is number => p != null);
+    return scored.length > 0 ? Math.round(scored.reduce((s, p) => s + p, 0) / scored.length) : 0;
+  }, [rows]);
+
+  // Performance band breakdown for the donut.
+  const bandBreakdown = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of rows) {
+      const pct = rowPercentage(r);
+      if (pct == null) continue;
+      const b = bandOf(pct);
+      counts.set(b.key, (counts.get(b.key) ?? 0) + 1);
+    }
+    return PERFORMANCE_BANDS.map((b) => ({
+      name: b.label,
+      value: counts.get(b.key) ?? 0,
+      fill: b.color,
+    })).filter((b) => b.value > 0);
+  }, [rows]);
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-4 lg:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-[340px] rounded-xl" />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <AnalyticsCard
+          title="Score Distribution"
+          subtitle="How appraisal scores spread across performance bands"
+          icon={<BarChart3 className="size-4" />}
+        >
+          {distribution.some((b) => b.count > 0) ? (
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={distribution} margin={{ top: 8, right: 8, left: -16, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                <XAxis dataKey="name" tick={chartTheme.axisTickSmall} />
+                <YAxis allowDecimals={false} tick={chartTheme.axisTick} />
+                <Tooltip
+                  contentStyle={chartTheme.tooltipContent}
+                  cursor={chartTheme.tooltipCursor}
+                  formatter={(v) => [`${Number(v)} appraisal(s)`, "Count"]}
+                />
+                <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={44}>
+                  {distribution.map((entry) => (
+                    <Cell key={entry.name} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <AnalyticsEmpty label="No scored appraisals in this selection." />
+          )}
+        </AnalyticsCard>
+
+        <AnalyticsCard
+          title="Average Score by Department"
+          subtitle="Mean appraisal percentage per department"
+          icon={<Building2 className="size-4" />}
+        >
+          {byDepartment.length > 0 ? (
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart
+                data={byDepartment}
+                layout="vertical"
+                margin={{ top: 4, right: 28, left: 4, bottom: 4 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
+                <XAxis type="number" domain={[0, 100]} tick={chartTheme.axisTick} />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  width={120}
+                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                />
+                <Tooltip
+                  contentStyle={chartTheme.tooltipContent}
+                  cursor={chartTheme.tooltipCursor}
+                  formatter={(v, _n, p) => [
+                    `${Number(v)}% avg · ${(p?.payload as { count?: number })?.count ?? 0} appraisal(s)`,
+                    "Score",
+                  ]}
+                />
+                <ReferenceLine x={overallAvg} stroke="#1d4ed8" strokeDasharray="4 4" />
+                <Bar dataKey="avg" radius={[0, 6, 6, 0]} barSize={20}>
+                  {byDepartment.map((entry) => (
+                    <Cell key={entry.name} fill={entry.avg >= overallAvg ? "#3b82f6" : "#93c5fd"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <AnalyticsEmpty label="No department scores available yet." />
+          )}
+        </AnalyticsCard>
+
+        <AnalyticsCard
+          title="Category Strength Profile"
+          subtitle="Average rating (1–5) across the 8 evaluation categories"
+          icon={<Activity className="size-4" />}
+        >
+          {hasCategoryData ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <RadarChart data={categoryStrength} outerRadius="70%">
+                <PolarGrid stroke="var(--border)" />
+                <PolarAngleAxis
+                  dataKey="category"
+                  tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+                />
+                <PolarRadiusAxis
+                  domain={[0, 5]}
+                  tickCount={6}
+                  tick={{ fontSize: 9, fill: "var(--muted-foreground)" }}
+                />
+                <Radar
+                  name="Avg rating"
+                  dataKey="avg"
+                  stroke="#2563eb"
+                  fill="#3b82f6"
+                  fillOpacity={0.45}
+                />
+                <Tooltip
+                  contentStyle={chartTheme.tooltipContent}
+                  formatter={(v) => [`${Number(v)} / 5`, "Avg rating"]}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          ) : (
+            <AnalyticsEmpty label="No category ratings recorded yet." />
+          )}
+        </AnalyticsCard>
+
+        <AnalyticsCard
+          title="Cycle-over-Cycle Trend"
+          subtitle="Average score progression across appraisal cycles"
+          icon={<LineChartIcon className="size-4" />}
+        >
+          {cycleTrend.length > 1 ? (
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={cycleTrend} margin={{ top: 8, right: 16, left: -16, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                <XAxis dataKey="name" tick={chartTheme.axisTickSmall} />
+                <YAxis domain={[0, 100]} tick={chartTheme.axisTick} />
+                <Tooltip
+                  contentStyle={chartTheme.tooltipContent}
+                  formatter={(v, _n, p) => [
+                    `${Number(v)}% · ${(p?.payload as { count?: number })?.count ?? 0} appraisal(s)`,
+                    "Avg score",
+                  ]}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="avg"
+                  stroke="#2563eb"
+                  strokeWidth={2.5}
+                  dot={{ r: 4, fill: "#2563eb" }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : cycleTrend.length === 1 ? (
+            <div className="flex h-[280px] flex-col items-center justify-center gap-1 text-center">
+              <Gauge className="mb-1 size-8 text-blue-500/40" />
+              <p className="text-3xl font-bold tabular-nums text-blue-700 dark:text-blue-300">
+                {cycleTrend[0].avg}%
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {cycleTrend[0].name} average — one cycle, no trend yet
+              </p>
+            </div>
+          ) : (
+            <AnalyticsEmpty label="No cycle data available yet." />
+          )}
+        </AnalyticsCard>
+      </div>
+
+      <AnalyticsCard
+        title="Performance Band Mix"
+        subtitle="Share of appraisals in each performance band"
+        icon={<Award className="size-4" />}
+      >
+        {bandBreakdown.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-[260px_1fr] sm:items-center">
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={bandBreakdown}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={52}
+                  outerRadius={86}
+                  paddingAngle={2}
+                >
+                  {bandBreakdown.map((entry) => (
+                    <Cell key={entry.name} fill={entry.fill} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={chartTheme.tooltipContent} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="space-y-1.5">
+              {PERFORMANCE_BANDS.map((b) => {
+                const found = bandBreakdown.find((x) => x.name === b.label);
+                const count = found?.value ?? 0;
+                const total = bandBreakdown.reduce((s, x) => s + x.value, 0);
+                const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                return (
+                  <div key={b.key} className="flex items-center gap-3">
+                    <span className="size-3 shrink-0 rounded-sm" style={{ background: b.color }} />
+                    <span className="w-36 text-sm">{b.label}</span>
+                    <span className="text-xs text-muted-foreground">{b.range}</span>
+                    <div className="ml-auto flex items-center gap-2">
+                      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${pct}%`, background: b.color }}
+                        />
+                      </div>
+                      <span className="w-14 text-right text-sm font-semibold tabular-nums">
+                        {count} ({pct}%)
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <AnalyticsEmpty label="No scored appraisals to band yet." />
+        )}
+      </AnalyticsCard>
+    </div>
+  );
+}
+
 function AppraisalsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -1063,6 +1607,18 @@ function AppraisalsPage() {
 
         <CycleBanner />
 
+        {/* KPI summary tiles — cycle-aware appraisal metrics */}
+        <AppraisalKpiStrip
+          rows={rows}
+          isLoading={appraisalsLoading}
+          overdueFollowups={followupStats.overdue}
+          cycleLabel={
+            selectedCycle
+              ? `${selectedCycle.year} ${selectedCycle.half === "h1" ? "First Half" : "Second Half"}`
+              : "All cycles"
+          }
+        />
+
         {/* Pipeline stats strip — 5 stage buckets that match the Kanban columns */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {pipelineLoading
@@ -1113,6 +1669,10 @@ function AppraisalsPage() {
             <TabsTrigger value="records">
               <List className="mr-1.5 size-3.5" />
               All
+            </TabsTrigger>
+            <TabsTrigger value="analytics">
+              <LineChartIcon className="mr-1.5 size-3.5" />
+              Analytics
             </TabsTrigger>
             <TabsTrigger value="tracker">
               <BarChart3 className="mr-1.5 size-3.5" />
@@ -1228,6 +1788,10 @@ function AppraisalsPage() {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <AnalyticsView rows={rows} isLoading={appraisalsLoading} />
           </TabsContent>
 
           <TabsContent value="tracker">

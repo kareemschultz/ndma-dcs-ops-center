@@ -3,13 +3,18 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import {
+  Activity,
   AlertCircle,
   ArrowLeft,
   Award,
+  BarChart3,
   ClipboardCheck,
   FileDown,
   FileSpreadsheet,
+  Flag,
+  MessageSquare,
   Pencil,
+  Sparkles,
   Target,
   TrendingUp,
 } from "lucide-react";
@@ -215,6 +220,12 @@ function AppraisalReportPage() {
   const staffName =
     (appraisal.staffProfile as { user?: { name?: string | null } | null } | null)
       ?.user?.name ?? "—";
+  const staffInitials = (() => {
+    if (!staffName || staffName === "—") return "—";
+    const parts = staffName.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  })();
   const reviewerName =
     (appraisal.reviewer as { user?: { name?: string | null } | null } | null)
       ?.user?.name ?? "—";
@@ -336,35 +347,72 @@ function AppraisalReportPage() {
           </Link>
 
           {/* Hero — score summary */}
-          <div className="overflow-hidden rounded-2xl border bg-gradient-to-br from-blue-600 to-blue-800 p-6 text-white shadow-sm">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-wider text-blue-200">
-                  Performance Evaluation Report
-                </p>
-                <h1 className="mt-1 text-2xl font-bold">{staffName}</h1>
-                <p className="mt-0.5 text-sm text-blue-100">
-                  {designation} · {departmentName}
-                </p>
-                <p className="mt-2 text-sm text-blue-200">
-                  {periodLabel} · Reviewer: {reviewerName}
-                </p>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <div className="text-4xl font-bold tabular-nums">
-                    {percentage}%
-                  </div>
-                  <div className="text-xs text-blue-200">
-                    {rawTotal} / 65 points
+          <div className="relative overflow-hidden rounded-2xl border border-blue-900/20 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 p-6 text-white shadow-lg sm:p-8">
+            {/* decorative glow */}
+            <div className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full bg-blue-400/20 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-20 left-1/3 size-48 rounded-full bg-indigo-400/10 blur-3xl" />
+            <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-start gap-4">
+                <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-lg font-bold backdrop-blur-sm ring-1 ring-white/20">
+                  {staffInitials}
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-blue-200">
+                    Performance Evaluation Report
+                  </p>
+                  <h1 className="mt-1 text-2xl font-bold leading-tight sm:text-[1.7rem]">
+                    {staffName}
+                  </h1>
+                  <p className="mt-0.5 text-sm text-blue-100">
+                    {designation} · {departmentName}
+                  </p>
+                  <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-white/10 px-2 py-0.5 text-[11px] font-medium ring-1 ring-white/15">
+                      {periodLabel}
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-white/10 px-2 py-0.5 text-[11px] font-medium ring-1 ring-white/15">
+                      Reviewer: {reviewerName}
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-white/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-white/20">
+                      {appraisal.status.replace(/_/g, " ")}
+                    </span>
                   </div>
                 </div>
-                <div className="h-12 w-px bg-blue-400/40" />
-                <div className="text-center">
-                  <div className="text-2xl font-bold tabular-nums">
-                    {increment}%
+              </div>
+
+              {/* Score block */}
+              <div className="flex items-center gap-5 rounded-2xl bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur-sm">
+                {/* score ring */}
+                <div
+                  className="relative flex size-24 items-center justify-center rounded-full"
+                  style={{
+                    background: `conic-gradient(#bfdbfe ${percentage * 3.6}deg, rgba(255,255,255,0.14) ${percentage * 3.6}deg)`,
+                  }}
+                >
+                  <div className="flex size-[4.6rem] flex-col items-center justify-center rounded-full bg-blue-800/90">
+                    <span className="text-2xl font-bold tabular-nums leading-none">
+                      {percentage}%
+                    </span>
+                    <span className="mt-0.5 text-[10px] text-blue-200">
+                      {rawTotal}/65 pts
+                    </span>
                   </div>
-                  <div className="text-xs text-blue-200">Salary increment</div>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-blue-200">
+                      Overall Grade
+                    </p>
+                    <p className="text-base font-bold leading-tight">{grade.label}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-blue-200">
+                      Salary Increment
+                    </p>
+                    <p className="text-base font-bold leading-tight tabular-nums">
+                      {increment}%
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -377,16 +425,19 @@ function AppraisalReportPage() {
               value={grade.label}
               valueCls={grade.cls}
               icon={<Award className="size-4 text-blue-600" />}
+              barPct={percentage}
             />
             <StatTile
               label="General Performance"
               value={`${categoryTotal} / 40`}
               icon={<TrendingUp className="size-4 text-blue-600" />}
+              barPct={Math.round((categoryTotal / 40) * 100)}
             />
             <StatTile
               label="Core Responsibilities"
               value={`${respTotal} / 25`}
               icon={<Target className="size-4 text-blue-600" />}
+              barPct={Math.round((respTotal / 25) * 100)}
             />
             <StatTile
               label="Status"
@@ -398,7 +449,11 @@ function AppraisalReportPage() {
 
           {/* Charts row */}
           <div className="grid gap-4 lg:grid-cols-2">
-            <ChartCard title="Category Profile" subtitle="Rating across the 8 evaluation categories">
+            <ChartCard
+              title="Category Profile"
+              subtitle="Rating across the 8 evaluation categories"
+              icon={<Activity className="size-4" />}
+            >
               {categoryTotal > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <RadarChart data={radarData} outerRadius="72%">
@@ -427,7 +482,11 @@ function AppraisalReportPage() {
               )}
             </ChartCard>
 
-            <ChartCard title="Category Breakdown" subtitle="Per-category score (1–5 scale)">
+            <ChartCard
+              title="Category Breakdown"
+              subtitle="Per-category score (1–5 scale)"
+              icon={<BarChart3 className="size-4" />}
+            >
               {categoryTotal > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart
@@ -473,6 +532,7 @@ function AppraisalReportPage() {
             <ChartCard
               title="Core Responsibilities"
               subtitle="Performance against key responsibilities"
+              icon={<Target className="size-4" />}
             >
               {respChartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={Math.max(180, respChartData.length * 56)}>
@@ -516,6 +576,7 @@ function AppraisalReportPage() {
             <ChartCard
               title="Score Trend"
               subtitle="This employee's appraisal scores over time"
+              icon={<TrendingUp className="size-4" />}
             >
               {trendData.length > 1 ? (
                 <ResponsiveContainer width="100%" height={300}>
@@ -547,7 +608,7 @@ function AppraisalReportPage() {
           </div>
 
           {/* Category comments */}
-          <ReportSection title="Category Comments">
+          <ReportSection title="Category Comments" icon={<MessageSquare className="size-4" />}>
             <div className="divide-y">
               {CATEGORIES.map((c) => {
                 const rating = matrix[c.key] ?? 0;
@@ -578,7 +639,7 @@ function AppraisalReportPage() {
           </ReportSection>
 
           {/* Development summary */}
-          <ReportSection title="Summary & Development">
+          <ReportSection title="Summary & Development" icon={<Activity className="size-4" />}>
             <div className="grid gap-4 sm:grid-cols-2">
               <DevBlock label="Areas of Strength" value={appraisal.areasOfStrength} />
               <DevBlock
@@ -598,7 +659,7 @@ function AppraisalReportPage() {
 
           {/* Achievements + goals */}
           <div className="grid gap-4 lg:grid-cols-2">
-            <ReportSection title="Key Achievements">
+            <ReportSection title="Key Achievements" icon={<Sparkles className="size-4" />}>
               {achievements.length > 0 ? (
                 <ol className="space-y-2">
                   {achievements.map((a, i) => (
@@ -617,7 +678,7 @@ function AppraisalReportPage() {
               )}
             </ReportSection>
 
-            <ReportSection title="Goals for Next Period">
+            <ReportSection title="Goals for Next Period" icon={<Flag className="size-4" />}>
               {goalArr.length > 0 ? (
                 <ol className="space-y-3">
                   {goalArr.map((g, i) => (
@@ -654,23 +715,35 @@ function StatTile({
   value,
   valueCls,
   icon,
+  barPct,
 }: {
   label: string;
   value: string;
   valueCls?: string;
   icon: React.ReactNode;
+  barPct?: number;
 }) {
   return (
-    <div className="rounded-xl border bg-card p-4">
+    <div className="rounded-xl border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
       <div className="mb-1.5 flex items-center justify-between">
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
           {label}
         </span>
-        {icon}
+        <span className="flex size-7 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40">
+          {icon}
+        </span>
       </div>
       <p className={`text-lg font-bold leading-tight ${valueCls ?? ""}`}>
         {value}
       </p>
+      {typeof barPct === "number" && (
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-blue-600 transition-all"
+            style={{ width: `${Math.min(Math.max(barPct, 0), 100)}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -678,17 +751,26 @@ function StatTile({
 function ChartCard({
   title,
   subtitle,
+  icon,
   children,
 }: {
   title: string;
   subtitle: string;
+  icon?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border bg-card shadow-sm">
-      <div className="border-b px-5 py-3.5">
-        <h3 className="text-sm font-semibold">{title}</h3>
-        <p className="text-xs text-muted-foreground">{subtitle}</p>
+    <div className="rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex items-center gap-2.5 border-b px-5 py-3.5">
+        {icon && (
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40">
+            {icon}
+          </span>
+        )}
+        <div>
+          <h3 className="text-sm font-semibold leading-tight">{title}</h3>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        </div>
       </div>
       <div className="p-4">{children}</div>
     </div>
@@ -697,14 +779,17 @@ function ChartCard({
 
 function ReportSection({
   title,
+  icon,
   children,
 }: {
   title: string;
+  icon?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className="rounded-xl border bg-card shadow-sm">
-      <div className="border-b px-6 py-4">
+      <div className="flex items-center gap-2 border-b px-6 py-4">
+        {icon && <span className="text-blue-600">{icon}</span>}
         <h2 className="font-semibold">{title}</h2>
       </div>
       <div className="px-6 py-5">{children}</div>
