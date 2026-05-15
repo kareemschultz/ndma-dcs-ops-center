@@ -21,7 +21,7 @@ export const staffRouter = {
         status: z
           .enum(["active", "inactive", "on_leave", "terminated"])
           .optional(),
-        limit: z.number().min(1).max(200).default(100),
+        limit: z.number().min(1).max(500).default(100),
         offset: z.number().min(0).default(0),
       }),
     )
