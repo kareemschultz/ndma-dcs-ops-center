@@ -79,6 +79,7 @@ import { Route as AuthenticatedLeaveTosdRouteImport } from './routes/_authentica
 import { Route as AuthenticatedLeavePlannerRouteImport } from './routes/_authenticated/leave/planner'
 import { Route as AuthenticatedLeaveNewRouteImport } from './routes/_authenticated/leave/new'
 import { Route as AuthenticatedLeaveCalendarRouteImport } from './routes/_authenticated/leave/calendar'
+import { Route as AuthenticatedLeaveBalancesRouteImport } from './routes/_authenticated/leave/balances'
 import { Route as AuthenticatedIncidentsNewRouteImport } from './routes/_authenticated/incidents/new'
 import { Route as AuthenticatedIncidentsIncidentIdRouteImport } from './routes/_authenticated/incidents/$incidentId'
 import { Route as AuthenticatedHrPpeRouteImport } from './routes/_authenticated/hr/ppe'
@@ -510,6 +511,12 @@ const AuthenticatedLeaveCalendarRoute =
     path: '/leave/calendar',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedLeaveBalancesRoute =
+  AuthenticatedLeaveBalancesRouteImport.update({
+    id: '/leave/balances',
+    path: '/leave/balances',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedIncidentsNewRoute =
   AuthenticatedIncidentsNewRouteImport.update({
     id: '/incidents/new',
@@ -689,6 +696,7 @@ export interface FileRoutesByFullPath {
   '/hr/ppe': typeof AuthenticatedHrPpeRoute
   '/incidents/$incidentId': typeof AuthenticatedIncidentsIncidentIdRoute
   '/incidents/new': typeof AuthenticatedIncidentsNewRoute
+  '/leave/balances': typeof AuthenticatedLeaveBalancesRoute
   '/leave/calendar': typeof AuthenticatedLeaveCalendarRoute
   '/leave/new': typeof AuthenticatedLeaveNewRoute
   '/leave/planner': typeof AuthenticatedLeavePlannerRoute
@@ -786,6 +794,7 @@ export interface FileRoutesByTo {
   '/hr/ppe': typeof AuthenticatedHrPpeRoute
   '/incidents/$incidentId': typeof AuthenticatedIncidentsIncidentIdRoute
   '/incidents/new': typeof AuthenticatedIncidentsNewRoute
+  '/leave/balances': typeof AuthenticatedLeaveBalancesRoute
   '/leave/calendar': typeof AuthenticatedLeaveCalendarRoute
   '/leave/new': typeof AuthenticatedLeaveNewRoute
   '/leave/planner': typeof AuthenticatedLeavePlannerRoute
@@ -885,6 +894,7 @@ export interface FileRoutesById {
   '/_authenticated/hr/ppe': typeof AuthenticatedHrPpeRoute
   '/_authenticated/incidents/$incidentId': typeof AuthenticatedIncidentsIncidentIdRoute
   '/_authenticated/incidents/new': typeof AuthenticatedIncidentsNewRoute
+  '/_authenticated/leave/balances': typeof AuthenticatedLeaveBalancesRoute
   '/_authenticated/leave/calendar': typeof AuthenticatedLeaveCalendarRoute
   '/_authenticated/leave/new': typeof AuthenticatedLeaveNewRoute
   '/_authenticated/leave/planner': typeof AuthenticatedLeavePlannerRoute
@@ -984,6 +994,7 @@ export interface FileRouteTypes {
     | '/hr/ppe'
     | '/incidents/$incidentId'
     | '/incidents/new'
+    | '/leave/balances'
     | '/leave/calendar'
     | '/leave/new'
     | '/leave/planner'
@@ -1081,6 +1092,7 @@ export interface FileRouteTypes {
     | '/hr/ppe'
     | '/incidents/$incidentId'
     | '/incidents/new'
+    | '/leave/balances'
     | '/leave/calendar'
     | '/leave/new'
     | '/leave/planner'
@@ -1179,6 +1191,7 @@ export interface FileRouteTypes {
     | '/_authenticated/hr/ppe'
     | '/_authenticated/incidents/$incidentId'
     | '/_authenticated/incidents/new'
+    | '/_authenticated/leave/balances'
     | '/_authenticated/leave/calendar'
     | '/_authenticated/leave/new'
     | '/_authenticated/leave/planner'
@@ -1750,6 +1763,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeaveCalendarRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/leave/balances': {
+      id: '/_authenticated/leave/balances'
+      path: '/leave/balances'
+      fullPath: '/leave/balances'
+      preLoaderRoute: typeof AuthenticatedLeaveBalancesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/incidents/new': {
       id: '/_authenticated/incidents/new'
       path: '/incidents/new'
@@ -1988,6 +2008,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedHrPpeRoute: typeof AuthenticatedHrPpeRoute
   AuthenticatedIncidentsIncidentIdRoute: typeof AuthenticatedIncidentsIncidentIdRoute
   AuthenticatedIncidentsNewRoute: typeof AuthenticatedIncidentsNewRoute
+  AuthenticatedLeaveBalancesRoute: typeof AuthenticatedLeaveBalancesRoute
   AuthenticatedLeaveCalendarRoute: typeof AuthenticatedLeaveCalendarRoute
   AuthenticatedLeaveNewRoute: typeof AuthenticatedLeaveNewRoute
   AuthenticatedLeavePlannerRoute: typeof AuthenticatedLeavePlannerRoute
@@ -2085,6 +2106,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedHrPpeRoute: AuthenticatedHrPpeRoute,
   AuthenticatedIncidentsIncidentIdRoute: AuthenticatedIncidentsIncidentIdRoute,
   AuthenticatedIncidentsNewRoute: AuthenticatedIncidentsNewRoute,
+  AuthenticatedLeaveBalancesRoute: AuthenticatedLeaveBalancesRoute,
   AuthenticatedLeaveCalendarRoute: AuthenticatedLeaveCalendarRoute,
   AuthenticatedLeaveNewRoute: AuthenticatedLeaveNewRoute,
   AuthenticatedLeavePlannerRoute: AuthenticatedLeavePlannerRoute,
