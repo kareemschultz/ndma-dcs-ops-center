@@ -1,18 +1,17 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format, parseISO, differenceInYears } from "date-fns";
+import { differenceInDays, format, parseISO } from "date-fns";
 import { useState } from "react";
 import {
+  AlertTriangle,
   ArrowLeft,
-  Briefcase,
   Building2,
   Calendar,
-  CalendarCheck,
-  CheckCircle2,
-  ClipboardList,
+  CalendarDays,
+  ChevronDown,
+  ChevronRight,
   Clock3,
   Download,
-  FileSignature,
   HardHat,
   Key,
   ListChecks,
@@ -21,13 +20,12 @@ import {
   Phone,
   Shield,
   ShieldCheck,
-  Star,
   Users,
   BookOpen,
   TrendingUp,
   FileText,
   HeartHandshake,
-  PalmtreeIcon,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -52,6 +50,10 @@ type EditProfileForm = {
   jobTitle: string;
   employmentType: "full_time" | "part_time" | "contract" | "temporary";
   status: "active" | "inactive" | "on_leave" | "terminated";
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  nextAppraisalDate: string;
+  notes: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -131,29 +133,6 @@ function AppraisalStatusBadge({ status }: { status: string }) {
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${cfg.className}`}>{cfg.label}</span>;
 }
 
-function LeaveRequestStatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; className: string }> = {
-    pending: { label: "Pending", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
-    approved: { label: "Approved", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
-    rejected: { label: "Rejected", className: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
-    cancelled: { label: "Cancelled", className: "bg-muted text-muted-foreground" },
-  };
-  const cfg = map[status] ?? { label: status, className: "bg-muted text-muted-foreground" };
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${cfg.className}`}>{cfg.label}</span>;
-}
-
-function ContractStatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; className: string }> = {
-    active: { label: "Active", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
-    expiring_soon: { label: "Expiring Soon", className: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
-    expired: { label: "Expired", className: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
-    renewed: { label: "Renewed", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
-    terminated: { label: "Terminated", className: "bg-muted text-muted-foreground" },
-  };
-  const cfg = map[status] ?? { label: status, className: "bg-muted text-muted-foreground" };
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${cfg.className}`}>{cfg.label}</span>;
-}
-
 // ---------------------------------------------------------------------------
 // Edit Profile Dialog
 // ---------------------------------------------------------------------------
@@ -191,12 +170,16 @@ function EditProfileDialog({
       jobTitle: form.jobTitle || undefined,
       employmentType: form.employmentType || undefined,
       status: form.status || undefined,
+      emergencyContactName: form.emergencyContactName || undefined,
+      emergencyContactPhone: form.emergencyContactPhone || undefined,
+      nextAppraisalDate: form.nextAppraisalDate || undefined,
+      notes: form.notes || undefined,
     });
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
         </DialogHeader>
@@ -212,40 +195,88 @@ function EditProfileDialog({
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="ep-employmentType">Employment Type</Label>
-            <Select
-              value={form.employmentType}
-              onValueChange={(v) => setForm((f) => ({ ...f, employmentType: v as EditProfileForm["employmentType"] }))}
-            >
-              <SelectTrigger id="ep-employmentType">
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="full_time">Full Time</SelectItem>
-                <SelectItem value="part_time">Part Time</SelectItem>
-                <SelectItem value="contract">Contract</SelectItem>
-                <SelectItem value="temporary">Temporary</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="ep-employmentType">Employment Type</Label>
+              <Select
+                value={form.employmentType}
+                onValueChange={(v) => setForm((f) => ({ ...f, employmentType: v as EditProfileForm["employmentType"] }))}
+              >
+                <SelectTrigger id="ep-employmentType">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full_time">Full Time</SelectItem>
+                  <SelectItem value="part_time">Part Time</SelectItem>
+                  <SelectItem value="contract">Contract</SelectItem>
+                  <SelectItem value="temporary">Temporary</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="ep-status">Status</Label>
+              <Select
+                value={form.status}
+                onValueChange={(v) => setForm((f) => ({ ...f, status: v as EditProfileForm["status"] }))}
+              >
+                <SelectTrigger id="ep-status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="on_leave">On Leave</SelectItem>
+                  <SelectItem value="terminated">Terminated</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <Separator />
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Emergency Contact</p>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="ep-ec-name">Contact Name</Label>
+              <Input
+                id="ep-ec-name"
+                value={form.emergencyContactName}
+                onChange={(e) => setForm((f) => ({ ...f, emergencyContactName: e.target.value }))}
+                placeholder="Jane Doe"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ep-ec-phone">Contact Phone</Label>
+              <Input
+                id="ep-ec-phone"
+                value={form.emergencyContactPhone}
+                onChange={(e) => setForm((f) => ({ ...f, emergencyContactPhone: e.target.value }))}
+                placeholder="+592 xxx xxxx"
+              />
+            </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="ep-status">Status</Label>
-            <Select
-              value={form.status}
-              onValueChange={(v) => setForm((f) => ({ ...f, status: v as EditProfileForm["status"] }))}
-            >
-              <SelectTrigger id="ep-status">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="on_leave">On Leave</SelectItem>
-                <SelectItem value="terminated">Terminated</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="ep-appraisal">Next Appraisal Date</Label>
+            <Input
+              id="ep-appraisal"
+              type="date"
+              value={form.nextAppraisalDate}
+              onChange={(e) => setForm((f) => ({ ...f, nextAppraisalDate: e.target.value }))}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="ep-notes">Notes</Label>
+            <textarea
+              id="ep-notes"
+              value={form.notes}
+              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+              placeholder="Internal notes about this staff member..."
+              rows={3}
+              className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+            />
           </div>
         </div>
 
@@ -674,156 +705,250 @@ function AccessTab({ staffProfileId }: { staffProfileId: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers for hero + quick-stats
+// Alerts banner helpers + Main page
 // ---------------------------------------------------------------------------
 
-function toIsoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
-function attendanceRateColor(rate: number): string {
-  if (rate >= 95) return "text-blue-700 dark:text-blue-300";
-  if (rate >= 85) return "text-amber-700 dark:text-amber-300";
-  return "text-red-700 dark:text-red-300";
-}
-
-function attendanceBarColor(rate: number): string {
-  if (rate >= 95) return "bg-blue-600";
-  if (rate >= 85) return "bg-amber-500";
-  return "bg-red-500";
-}
-
-function formatLeaveDateRange(start: string, end: string): string {
-  const s = parseISO(start);
-  const e = parseISO(end);
-  if (start === end) return format(s, "d MMM yyyy");
-  return `${format(s, "d MMM")} — ${format(e, "d MMM yyyy")}`;
-}
-
-// ---------------------------------------------------------------------------
-// Quick Stat Card
-// ---------------------------------------------------------------------------
-
-function QuickStatCard({
-  label,
-  value,
-  hint,
-  icon,
-  valueClassName,
-}: {
-  label: string;
-  value: React.ReactNode;
-  hint?: string;
-  icon: React.ReactNode;
-  valueClassName?: string;
-}) {
-  return (
-    <div className="rounded-xl border bg-card p-4">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-        <span className="text-muted-foreground">{icon}</span>
-      </div>
-      <div className={`mt-1.5 text-2xl font-bold tabular-nums ${valueClassName ?? ""}`}>{value}</div>
-      {hint && <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p>}
-    </div>
-  );
+function daysUntilNextBirthday(birthdayStr: string): number {
+  const today = new Date();
+  const bday = parseISO(birthdayStr);
+  // Set birthday to this year
+  const thisYear = new Date(today.getFullYear(), bday.getMonth(), bday.getDate());
+  const nextYear = new Date(today.getFullYear() + 1, bday.getMonth(), bday.getDate());
+  const diff = differenceInDays(thisYear, today);
+  if (diff < 0) {
+    return differenceInDays(nextYear, today);
+  }
+  return diff;
 }
 
 // ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
+// Attendance Tab
+// ---------------------------------------------------------------------------
+
+type AttendanceDailyStatus =
+  | "on_site"
+  | "wfh"
+  | "late"
+  | "half_day"
+  | "annual_leave"
+  | "sick"
+  | "compassionate"
+  | "maternity_paternity"
+  | "absent"
+  | "holiday";
+
+const ATT_GLYPH: Record<AttendanceDailyStatus, string> = {
+  on_site: "P", wfh: "W", late: "L", half_day: "½",
+  annual_leave: "A", sick: "S", compassionate: "C",
+  maternity_paternity: "M", absent: "X", holiday: "★",
+};
+
+const ATT_LABEL: Record<AttendanceDailyStatus, string> = {
+  on_site: "On Site", wfh: "WFH", late: "Late", half_day: "Half Day",
+  annual_leave: "Annual Leave", sick: "Sick", compassionate: "Compassionate",
+  maternity_paternity: "Mat/Pat", absent: "Absent", holiday: "Holiday",
+};
+
+const ATT_CELL_CLASS: Record<AttendanceDailyStatus, string> = {
+  on_site: "bg-blue-50 text-blue-800 dark:bg-blue-950/40 dark:text-blue-200",
+  wfh: "bg-blue-100/60 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300",
+  late: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200",
+  half_day: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-200",
+  annual_leave: "bg-violet-50 text-violet-800 dark:bg-violet-950/40 dark:text-violet-200",
+  sick: "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-200",
+  compassionate: "bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-200",
+  maternity_paternity: "bg-pink-100 text-pink-800 dark:bg-pink-950/40 dark:text-pink-200",
+  absent: "bg-red-100 text-red-900 font-bold dark:bg-red-950/50 dark:text-red-200",
+  holiday: "bg-violet-100 text-violet-900 dark:bg-violet-950/40 dark:text-violet-200",
+};
+
+const ATT_MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+const ATT_STATUSES = Object.keys(ATT_GLYPH) as AttendanceDailyStatus[];
+
+function AttendanceTab({ staffProfileId }: { staffProfileId: string }) {
+  const currentYear = new Date().getFullYear();
+  const [attYear, setAttYear] = useState(currentYear);
+
+  const cardQuery = useQuery(
+    orpc.attendanceDaily.getCard.queryOptions({
+      input: { staffProfileId, year: attYear },
+    }),
+  );
+
+  const breakdownQuery = useQuery(
+    orpc.attendanceDaily.getMonthlyBreakdown.queryOptions({
+      input: { staffProfileId, year: attYear },
+    }),
+  );
+
+  const isLoading = cardQuery.isLoading || breakdownQuery.isLoading;
+
+  const dayMap = new Map<string, AttendanceDailyStatus>();
+  for (const row of cardQuery.data ?? []) {
+    dayMap.set(row.date, row.status as AttendanceDailyStatus);
+  }
+
+  const kpis = { on_site: 0, wfh: 0, absent: 0, leave: 0, late: 0, holiday: 0 };
+  for (const row of cardQuery.data ?? []) {
+    const s = row.status as AttendanceDailyStatus;
+    if (s === "on_site") kpis.on_site++;
+    else if (s === "wfh") kpis.wfh++;
+    else if (s === "absent") kpis.absent++;
+    else if (s === "annual_leave" || s === "sick" || s === "compassionate" || s === "maternity_paternity") kpis.leave++;
+    else if (s === "late") kpis.late++;
+    else if (s === "holiday") kpis.holiday++;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="size-4 text-muted-foreground" />
+          <h2 className="font-semibold">Attendance Card</h2>
+        </div>
+        <Select
+          value={String(attYear)}
+          onValueChange={(v) => v && setAttYear(Number(v))}
+        >
+          <SelectTrigger className="w-24 h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {[currentYear - 1, currentYear].map((y) => (
+              <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-24 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-xl" />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+            {[
+              { label: "On Site", value: kpis.on_site, cls: "text-blue-700 dark:text-blue-300" },
+              { label: "WFH", value: kpis.wfh, cls: "text-blue-500 dark:text-blue-400" },
+              { label: "Absent", value: kpis.absent, cls: "text-red-700 dark:text-red-300" },
+              { label: "Leave", value: kpis.leave, cls: "text-violet-700 dark:text-violet-300" },
+              { label: "Late", value: kpis.late, cls: "text-amber-700 dark:text-amber-300" },
+              { label: "Holiday", value: kpis.holiday, cls: "text-purple-700 dark:text-purple-300" },
+            ].map((k) => (
+              <div key={k.label} className="rounded-xl border p-3 text-center">
+                <p className={`text-2xl font-bold ${k.cls}`}>{k.value}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{k.label}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-xl border p-4 space-y-3">
+            <h3 className="text-sm font-medium text-muted-foreground">Year Heatmap</h3>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {ATT_MONTH_NAMES.map((mLabel, mIdx) => {
+                const m = mIdx + 1;
+                const daysInM = new Date(attYear, m, 0).getDate();
+                return (
+                  <div key={m} className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">{mLabel}</p>
+                    <div className="flex flex-wrap gap-0.5">
+                      {Array.from({ length: daysInM }, (_, d) => {
+                        const dateStr = `${attYear}-${String(m).padStart(2, "0")}-${String(d + 1).padStart(2, "0")}`;
+                        const status = dayMap.get(dateStr);
+                        return (
+                          <span
+                            key={d}
+                            title={status ? `${dateStr}: ${ATT_LABEL[status]}` : dateStr}
+                            className={`inline-flex size-4 items-center justify-center rounded-sm text-[8px] font-bold ${
+                              status ? ATT_CELL_CLASS[status] : "bg-muted/30 text-muted-foreground/20"
+                            }`}
+                          >
+                            {status ? ATT_GLYPH[status] : "·"}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap gap-1.5 pt-2 border-t">
+              {ATT_STATUSES.map((s) => (
+                <span key={s} className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${ATT_CELL_CLASS[s]}`}>
+                  {ATT_GLYPH[s]} {ATT_LABEL[s]}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border overflow-hidden">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b bg-muted/40">
+                  <th className="px-3 py-2 text-left font-medium">Month</th>
+                  <th className="px-2 py-2 text-center font-medium text-blue-700">P</th>
+                  <th className="px-2 py-2 text-center font-medium text-blue-500">W</th>
+                  <th className="px-2 py-2 text-center font-medium text-amber-700">L</th>
+                  <th className="px-2 py-2 text-center font-medium text-indigo-700">½</th>
+                  <th className="px-2 py-2 text-center font-medium text-violet-700">A</th>
+                  <th className="px-2 py-2 text-center font-medium text-red-600">S</th>
+                  <th className="px-2 py-2 text-center font-medium text-red-900">X</th>
+                  <th className="px-2 py-2 text-center font-medium text-violet-900">★</th>
+                  <th className="px-2 py-2 text-center font-medium text-muted-foreground">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {(breakdownQuery.data ?? []).map((row) => (
+                  <tr key={String(row.month)} className="hover:bg-muted/20 transition-colors">
+                    <td className="px-3 py-1.5 font-medium">{String(row.monthLabel)}</td>
+                    <td className="px-2 py-1.5 text-center">{Number(row.on_site) || "—"}</td>
+                    <td className="px-2 py-1.5 text-center">{Number(row.wfh) || "—"}</td>
+                    <td className="px-2 py-1.5 text-center">{Number(row.late) || "—"}</td>
+                    <td className="px-2 py-1.5 text-center">{Number(row.half_day) || "—"}</td>
+                    <td className="px-2 py-1.5 text-center">{Number(row.annual_leave) || "—"}</td>
+                    <td className="px-2 py-1.5 text-center">{Number(row.sick) || "—"}</td>
+                    <td className="px-2 py-1.5 text-center">{Number(row.absent) || "—"}</td>
+                    <td className="px-2 py-1.5 text-center">{Number(row.holiday) || "—"}</td>
+                    <td className="px-2 py-1.5 text-center text-muted-foreground">
+                      {Number(row.working) || "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 
 function StaffProfilePage() {
   const { staffId } = Route.useParams();
-  const navigate = useNavigate();
   const [editOpen, setEditOpen] = useState(false);
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+  const [advancesOpen, setAdvancesOpen] = useState(false);
 
   const { data: profile, isLoading, error } = useQuery(
     orpc.staff.get.queryOptions({ input: { id: staffId } }),
   );
 
-  // Side-panel + quick-stats data — all from oRPC
-  const yearStart = `${new Date().getFullYear()}-01-01`;
-  const yearEndIso = `${new Date().getFullYear()}-12-31`;
-
-  const { data: recentLeave, isLoading: leaveLoading } = useQuery(
-    orpc.leave.requests.list.queryOptions({
-      input: { staffProfileId: staffId, limit: 5 },
-    }),
-  );
-
-  const { data: appraisalHistory, isLoading: appraisalsLoading } = useQuery(
-    orpc.appraisals.getByStaff.queryOptions({ input: { staffProfileId: staffId } }),
-  );
-
-  const { data: contractList, isLoading: contractsLoading } = useQuery(
+  const { data: staffContracts } = useQuery(
     orpc.contracts.list.queryOptions({ input: { staffProfileId: staffId, limit: 10 } }),
   );
 
-  const { data: attendanceLogs, isLoading: attendanceLoading } = useQuery(
-    orpc.attendanceTime.logs.list.queryOptions({
-      input: {
-        staffProfileId: staffId,
-        from: yearStart,
-        to: toIsoDate(new Date()),
-        limit: 500,
-      },
-    }),
-  );
-
-  // Derived quick-stats
-  const yearsOfService = profile?.startDate
-    ? Math.max(0, differenceInYears(new Date(), new Date(profile.startDate)))
-    : null;
-
-  const leaveDaysUsedThisYear = (recentLeave ?? [])
-    .filter((r) => r.status === "approved" && r.startDate >= yearStart && r.startDate <= yearEndIso)
-    .reduce((sum, r) => sum + (r.totalDays ?? 0), 0);
-
-  // Attendance rate: present-day count / workdays in period
-  const totalAttendanceDays = attendanceLogs?.length ?? 0;
-  const presentDays = (attendanceLogs ?? []).filter((l) => l.status === "Workday").length;
-  const absentDays = (attendanceLogs ?? []).filter((l) => l.status === "Absent").length;
-  const leaveDays = (attendanceLogs ?? []).filter((l) => l.status === "Leave").length;
-  // Count only workable days (exclude rest/holiday) as denominator
-  const workableDays =
-    presentDays + absentDays + leaveDays;
-  const attendanceRate = workableDays > 0 ? Math.round((presentDays / workableDays) * 100) : null;
-
-  // Last appraisal score — most recent that has a percentageScore set
-  const lastAppraisalScore = (appraisalHistory ?? [])
-    .filter((a) => a.percentageScore != null)
-    .map((a) => a.percentageScore as number)[0];
-
-  // Active contract end date
-  const activeContract =
-    (contractList ?? []).find((c) => c.status === "active") ?? (contractList ?? [])[0];
-  const contractEnd = activeContract?.endDate ?? profile?.contractEndDate ?? null;
-
-  // Next appraisal — first non-completed/non-rejected appraisal with a scheduledDate
-  const nextAppraisal = (appraisalHistory ?? [])
-    .filter((a) => a.scheduledDate && a.status !== "completed" && a.status !== "rejected")
-    .sort((a, b) => (a.scheduledDate ?? "").localeCompare(b.scheduledDate ?? ""))[0];
-
-  // Open work items + on-call status — pull from workload.get for current week, then filter
-  const today = new Date();
-  const day = today.getDay();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - ((day + 6) % 7));
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  const { data: workload } = useQuery(
-    orpc.workload.get.queryOptions({
-      input: {
-        weekStart: toIsoDate(monday),
-        weekEnd: toIsoDate(sunday),
-      },
-    }),
-  );
-  const myWorkload = (workload ?? []).find((w) => w.staff.id === staffId);
-  const openTasks = myWorkload?.openWorkItems ?? null;
-  const onCallRole = myWorkload?.onCallRole ?? null;
-  const isOnLeaveNow = myWorkload?.onLeave ?? false;
+  function dismissAlert(key: string) {
+    setDismissedAlerts((prev) => new Set([...prev, key]));
+  }
 
   if (isLoading) {
     return (
@@ -876,213 +1001,41 @@ function StaffProfilePage() {
       </Header>
 
       <Main>
-        {/* Back link */}
-        <div className="mb-4 flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/staff" })}>
-            <ArrowLeft className="size-4" />
-          </Button>
-          <span className="text-sm text-muted-foreground">Back to directory</span>
-        </div>
-
-        {/* ────────────────────── Hero header ────────────────────── */}
-        <div className="mb-4 overflow-hidden rounded-xl border bg-card">
-          {/* Gradient accent strip */}
-          <div className="h-1.5 bg-gradient-to-r from-blue-700 to-blue-500" />
-
-          <div className="p-5">
-            <div className="flex flex-wrap items-start gap-5">
-              {/* Avatar */}
-              <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-blue-100 text-2xl font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                {profile.user?.name?.[0]?.toUpperCase() ?? "?"}
-              </div>
-
-              {/* Identity */}
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-xl font-semibold tracking-tight">
-                    {profile.user?.name ?? "Unnamed"}
-                  </h1>
-                  <StaffStatusBadge status={profile.status} />
-                  <EmploymentTypeBadge type={profile.employmentType} />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="ml-1 h-7 gap-1.5 px-2 text-xs"
-                    onClick={() => setEditOpen(true)}
-                  >
-                    <Pencil className="size-3" />
-                    Edit
-                  </Button>
-                </div>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  {profile.jobTitle}
-                  {profile.department?.name ? ` · ${profile.department.name}` : ""}
-                </p>
-
-                {/* Chips */}
-                <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
-                  {profile.isTeamLead && (
-                    <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5">
-                      <ShieldCheck className="size-3 text-amber-500" />
-                      Team Lead
-                    </span>
-                  )}
-                  {profile.isLeadEngineerEligible && (
-                    <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5">
-                      <ShieldCheck className="size-3 text-indigo-500" />
-                      Lead Engineer Eligible
-                    </span>
-                  )}
-                  {profile.isOnCallEligible && (
-                    <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5">
-                      <Calendar className="size-3 text-blue-500" />
-                      On-Call Eligible
-                    </span>
-                  )}
-                  {onCallRole && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                      <Calendar className="size-3" />
-                      On-Call this week ({onCallRole})
-                    </span>
-                  )}
-                  {isOnLeaveNow && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                      <PalmtreeIcon className="size-3" />
-                      On leave
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Attendance rate */}
-              <div className="shrink-0 text-right">
-                {attendanceLoading ? (
-                  <Skeleton className="h-12 w-20" />
-                ) : attendanceRate != null ? (
-                  <>
-                    <div className={`text-[40px] font-bold leading-none tabular-nums ${attendanceRateColor(attendanceRate)}`}>
-                      {attendanceRate}%
-                    </div>
-                    <div className="mt-1 text-[11px] text-muted-foreground">attendance YTD</div>
-                  </>
-                ) : (
-                  <div className="text-xs text-muted-foreground">No attendance data</div>
-                )}
-              </div>
+        <div className="mb-6 flex items-center gap-3">
+          <Link to="/staff">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="size-4" />
+            </Button>
+          </Link>
+          <div className="flex items-center gap-4">
+            <div className="flex size-16 items-center justify-center rounded-full bg-muted text-2xl font-bold">
+              {profile.user?.name?.[0] ?? "?"}
             </div>
-
-            {/* Key dates strip */}
-            <div className="mt-4 grid grid-cols-2 gap-3 border-t pt-4 sm:grid-cols-4">
-              <div className="rounded-lg bg-muted/50 px-3 py-2.5">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Employee ID
-                </div>
-                <div className="mt-0.5 font-mono text-sm font-medium">{profile.employeeId}</div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold">{profile.user?.name}</h1>
+                <StaffStatusBadge status={profile.status} />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-1 h-7 gap-1.5 px-2 text-xs"
+                  onClick={() => setEditOpen(true)}
+                >
+                  <Pencil className="size-3" />
+                  Edit
+                </Button>
               </div>
-              <div className="rounded-lg bg-muted/50 px-3 py-2.5">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Start Date
-                </div>
-                <div className="mt-0.5 text-sm font-medium">
-                  {profile.startDate ? format(new Date(profile.startDate), "d MMM yyyy") : "—"}
-                </div>
-              </div>
-              <div className="rounded-lg bg-muted/50 px-3 py-2.5">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Contract End
-                </div>
-                <div className="mt-0.5 text-sm font-medium">
-                  {contractEnd ? format(parseISO(contractEnd), "d MMM yyyy") : "—"}
-                </div>
-              </div>
-              <div className="rounded-lg bg-muted/50 px-3 py-2.5">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Next Appraisal
-                </div>
-                <div className="mt-0.5 text-sm font-medium">
-                  {nextAppraisal?.scheduledDate
-                    ? format(parseISO(nextAppraisal.scheduledDate), "d MMM yyyy")
-                    : "—"}
-                </div>
-              </div>
+              <p className="text-muted-foreground">{profile.jobTitle}</p>
             </div>
           </div>
         </div>
-
-        {/* ────────────────────── Quick-stats strip ────────────────────── */}
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <QuickStatCard
-            label="Years of Service"
-            value={yearsOfService != null ? yearsOfService : "—"}
-            hint={profile.startDate ? `Since ${format(new Date(profile.startDate), "MMM yyyy")}` : undefined}
-            icon={<Briefcase className="size-3.5" />}
-          />
-          <QuickStatCard
-            label="Open Tasks"
-            value={openTasks != null ? openTasks : "—"}
-            hint={myWorkload?.overdueWorkItems ? `${myWorkload.overdueWorkItems} overdue` : "Current load"}
-            icon={<ClipboardList className="size-3.5" />}
-          />
-          <QuickStatCard
-            label="Leave Used YTD"
-            value={leaveLoading ? "…" : `${leaveDaysUsedThisYear} d`}
-            hint="Approved requests"
-            icon={<CalendarCheck className="size-3.5" />}
-          />
-          <QuickStatCard
-            label="Attendance Rate"
-            value={
-              attendanceLoading
-                ? "…"
-                : attendanceRate != null
-                  ? `${attendanceRate}%`
-                  : "—"
-            }
-            hint={
-              totalAttendanceDays > 0
-                ? `${presentDays}/${workableDays} workable days`
-                : "No logs"
-            }
-            icon={<CheckCircle2 className="size-3.5" />}
-            valueClassName={attendanceRate != null ? attendanceRateColor(attendanceRate) : ""}
-          />
-          <QuickStatCard
-            label="Last Appraisal"
-            value={
-              appraisalsLoading
-                ? "…"
-                : lastAppraisalScore != null
-                  ? `${lastAppraisalScore}%`
-                  : "—"
-            }
-            hint="Most recent score"
-            icon={<Star className="size-3.5" />}
-          />
-        </div>
-
-        {/* Attendance progress bar */}
-        {attendanceRate != null && (
-          <div className="mb-6 rounded-xl border bg-card p-4">
-            <div className="mb-2 flex items-center justify-between text-xs">
-              <span className="font-medium">YTD Attendance Progress</span>
-              <span className="font-mono text-muted-foreground">
-                {presentDays} present / {absentDays} absent / {leaveDays} leave
-              </span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-muted">
-              <div
-                className={`h-full rounded-full ${attendanceBarColor(attendanceRate)}`}
-                style={{ width: `${attendanceRate}%` }}
-              />
-            </div>
-          </div>
-        )}
 
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="flex flex-wrap gap-1">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="career">Career Path</TabsTrigger>
             <TabsTrigger value="appraisals">Appraisals</TabsTrigger>
+            <TabsTrigger value="attendance">Attendance</TabsTrigger>
             <TabsTrigger value="operational">Operational HR</TabsTrigger>
             <TabsTrigger value="policy">Policy & Compliance</TabsTrigger>
             <TabsTrigger value="access">Access</TabsTrigger>
@@ -1092,9 +1045,86 @@ function StaffProfilePage() {
               Overview Tab
           ---------------------------------------------------------------- */}
           <TabsContent value="overview" className="space-y-6">
+            {/* Alerts banners */}
+            {(() => {
+              const alerts: Array<{ key: string; color: "amber" | "red"; icon: React.ReactNode; text: string }> = [];
+
+              // Birthday alert (within 14 days)
+              const profileTyped = profile as typeof profile & { birthday?: string | null; emergencyContactName?: string | null; emergencyContactPhone?: string | null; nextAppraisalDate?: string | null; notes?: string | null };
+              if (profileTyped.birthday) {
+                const bdayDays = daysUntilNextBirthday(profileTyped.birthday);
+                if (bdayDays <= 14 && !dismissedAlerts.has("birthday")) {
+                  alerts.push({
+                    key: "birthday",
+                    color: "amber",
+                    icon: <Calendar className="size-4 shrink-0" />,
+                    text: bdayDays === 0
+                      ? `Birthday today! — ${format(parseISO(profileTyped.birthday), "d MMM")}`
+                      : `Birthday in ${bdayDays} day${bdayDays !== 1 ? "s" : ""} — ${format(parseISO(profileTyped.birthday), "d MMM")}`,
+                  });
+                }
+              }
+
+              // Contract expiry alert (within 30 days)
+              if (staffContracts) {
+                for (const c of staffContracts) {
+                  if (c.endDate && (c.status === "active" || c.status === "expiring_soon")) {
+                    const daysLeft = differenceInDays(parseISO(c.endDate), new Date());
+                    if (daysLeft >= 0 && daysLeft <= 30 && !dismissedAlerts.has(`contract-${c.id}`)) {
+                      alerts.push({
+                        key: `contract-${c.id}`,
+                        color: daysLeft < 14 ? "red" : "amber",
+                        icon: <AlertTriangle className="size-4 shrink-0" />,
+                        text: `Contract expiring in ${daysLeft} day${daysLeft !== 1 ? "s" : ""} — ${c.contractType}`,
+                      });
+                    }
+                  }
+                }
+              }
+
+              // Next appraisal alert (within 30 days)
+              if (profileTyped.nextAppraisalDate && !dismissedAlerts.has("appraisal")) {
+                const appraisalDays = differenceInDays(parseISO(profileTyped.nextAppraisalDate), new Date());
+                if (appraisalDays >= 0 && appraisalDays <= 30) {
+                  alerts.push({
+                    key: "appraisal",
+                    color: "amber",
+                    icon: <FileText className="size-4 shrink-0" />,
+                    text: `Appraisal due in ${appraisalDays} day${appraisalDays !== 1 ? "s" : ""} — ${format(parseISO(profileTyped.nextAppraisalDate), "d MMM yyyy")}`,
+                  });
+                }
+              }
+
+              if (alerts.length === 0) return null;
+
+              return (
+                <div className="space-y-2">
+                  {alerts.map((alert) => (
+                    <div
+                      key={alert.key}
+                      className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm ${
+                        alert.color === "red"
+                          ? "border-red-300 bg-red-50 text-red-800 dark:bg-red-950/30 dark:text-red-200 dark:border-red-800"
+                          : "border-amber-300 bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-800"
+                      }`}
+                    >
+                      {alert.icon}
+                      <span className="flex-1">{alert.text}</span>
+                      <button
+                        type="button"
+                        onClick={() => dismissAlert(alert.key)}
+                        className="ml-2 opacity-60 hover:opacity-100"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
             <div className="grid gap-6 lg:grid-cols-3">
-              {/* Main content */}
-              <div className="space-y-6 lg:col-span-2">
+              <div className="lg:col-span-2 space-y-6">
                 <div className="rounded-xl border p-5 space-y-4">
                   <h2 className="font-semibold">Employment Details</h2>
 
@@ -1155,10 +1185,7 @@ function StaffProfilePage() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="rounded-lg border bg-muted/20 p-4">
                       <p className="text-xs uppercase tracking-wide text-muted-foreground">Phone Number</p>
-                      <p className="mt-1 flex items-center gap-1.5 font-medium">
-                        <Phone className="size-3.5 text-muted-foreground" />
-                        {profile.phoneNumber ?? "—"}
-                      </p>
+                      <p className="mt-1 font-medium">{profile.phoneNumber ?? "—"}</p>
                     </div>
                     <div className="rounded-lg border bg-muted/20 p-4">
                       <p className="text-xs uppercase tracking-wide text-muted-foreground">Emergency Contacts</p>
@@ -1167,6 +1194,24 @@ function StaffProfilePage() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Single emergency contact (from new flat fields) */}
+                  {(() => {
+                    const p = profile as typeof profile & { emergencyContactName?: string | null; emergencyContactPhone?: string | null };
+                    if (!p.emergencyContactName && !p.emergencyContactPhone) return null;
+                    return (
+                      <div className="flex items-start gap-3">
+                        <Phone className="mt-0.5 size-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Emergency Contact</p>
+                          <p className="text-sm font-medium">
+                            {p.emergencyContactName ?? "—"}
+                            {p.emergencyContactPhone ? ` · ${p.emergencyContactPhone}` : ""}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className="space-y-2">
                     {(Array.isArray(profile.emergencyContacts) ? profile.emergencyContacts : []).length > 0 ? (
@@ -1184,14 +1229,50 @@ function StaffProfilePage() {
                           </div>
                         ),
                       )
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No emergency contacts saved yet.</p>
-                    )}
+                    ) : null}
                   </div>
+
+                  {/* Notes */}
+                  {(() => {
+                    const p = profile as typeof profile & { notes?: string | null };
+                    if (!p.notes) return null;
+                    return (
+                      <div className="rounded-lg bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Notes</p>
+                        {p.notes}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Advance Requests mini-panel */}
+                <div className="rounded-xl border">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between p-4 text-left"
+                    onClick={() => setAdvancesOpen((o) => !o)}
+                  >
+                    <span className="font-semibold text-sm">Advance Requests</span>
+                    {advancesOpen ? (
+                      <ChevronDown className="size-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="size-4 text-muted-foreground" />
+                    )}
+                  </button>
+                  {advancesOpen && (
+                    <div className="border-t px-4 py-4">
+                      <p className="text-sm text-muted-foreground">
+                        Advance request tracking is not yet available. This panel will show salary and other advance requests once the Advances module is configured.
+                      </p>
+                      <Button variant="outline" size="sm" className="mt-3" disabled>
+                        View All Advances
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-xl border p-5">
-                  <h2 className="mb-4 font-semibold">Deep Dives</h2>
+                  <h2 className="mb-4 font-semibold">Operational HR</h2>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Link
                       to="/hr/ppe"
@@ -1208,11 +1289,11 @@ function StaffProfilePage() {
                       Timesheets & Lateness
                     </Link>
                     <Link
-                      to="/leave"
+                      to="/timesheets"
                       className="flex items-center gap-3 rounded-xl border px-3 py-2 text-sm hover:bg-accent"
                     >
-                      <CalendarCheck className="size-4 text-muted-foreground" />
-                      Leave Register
+                      <ListChecks className="size-4 text-muted-foreground" />
+                      Timesheets
                     </Link>
                     <Link
                       to="/policy"
@@ -1225,14 +1306,12 @@ function StaffProfilePage() {
                 </div>
               </div>
 
-              {/* Side panel */}
-              <aside className="space-y-4">
-                {/* Account */}
-                <div className="rounded-xl border p-4 space-y-2 text-sm">
+              <div className="space-y-4">
+                <div className="rounded-xl border p-4 space-y-3 text-sm">
                   <h3 className="font-semibold">Account</h3>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Mail className="size-3.5 shrink-0" />
-                    <span className="break-all">{profile.user?.email ?? "—"}</span>
+                    <span>{profile.user?.email ?? "—"}</span>
                   </div>
                   <div className="text-xs text-muted-foreground">
                     Role:{" "}
@@ -1242,136 +1321,14 @@ function StaffProfilePage() {
                   </div>
                 </div>
 
-                {/* Recent Leave */}
-                <div className="rounded-xl border p-4 space-y-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Recent Leave</h3>
-                    <Link to="/leave" className="text-[11px] text-primary hover:underline">
-                      View all →
-                    </Link>
-                  </div>
-                  {leaveLoading ? (
-                    <div className="space-y-2">
-                      {Array.from({ length: 3 }).map((_, i) => (
-                        <Skeleton key={i} className="h-10 w-full rounded" />
-                      ))}
-                    </div>
-                  ) : (recentLeave ?? []).length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No leave on record.</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {(recentLeave ?? []).slice(0, 5).map((req) => (
-                        <li
-                          key={req.id}
-                          className="flex items-start justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2"
-                        >
-                          <div className="min-w-0">
-                            <p className="text-[12.5px] font-medium">
-                              {req.leaveType?.name ?? "Leave"}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {formatLeaveDateRange(req.startDate, req.endDate)}
-                              {" · "}
-                              {req.totalDays}d
-                            </p>
-                          </div>
-                          <LeaveRequestStatusBadge status={req.status} />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                {/* Recent Appraisals */}
-                <div className="rounded-xl border p-4 space-y-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Recent Appraisals</h3>
-                    <Link to="/appraisals" className="text-[11px] text-primary hover:underline">
-                      View all →
-                    </Link>
-                  </div>
-                  {appraisalsLoading ? (
-                    <div className="space-y-2">
-                      {Array.from({ length: 3 }).map((_, i) => (
-                        <Skeleton key={i} className="h-10 w-full rounded" />
-                      ))}
-                    </div>
-                  ) : (appraisalHistory ?? []).length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No appraisals on record.</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {(appraisalHistory ?? []).slice(0, 5).map((a) => (
-                        <li key={a.id} className="rounded-lg bg-muted/40 px-3 py-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-[12.5px] font-medium">
-                              {format(parseISO(a.periodStart), "MMM yyyy")}
-                              {" — "}
-                              {format(parseISO(a.periodEnd), "MMM yyyy")}
-                            </p>
-                            <AppraisalStatusBadge status={a.status} />
-                          </div>
-                          <div className="mt-0.5 flex items-center justify-between">
-                            <span className="text-[11px] text-muted-foreground">
-                              {a.typeOfReview ?? "Review"}
-                            </span>
-                            {a.percentageScore != null && (
-                              <span className="font-mono text-[11px] font-semibold tabular-nums">
-                                {a.percentageScore}%
-                              </span>
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                {/* Recent Contracts */}
-                <div className="rounded-xl border p-4 space-y-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Contracts</h3>
-                    <Link to="/contracts" className="text-[11px] text-primary hover:underline">
-                      View all →
-                    </Link>
-                  </div>
-                  {contractsLoading ? (
-                    <div className="space-y-2">
-                      {Array.from({ length: 2 }).map((_, i) => (
-                        <Skeleton key={i} className="h-10 w-full rounded" />
-                      ))}
-                    </div>
-                  ) : (contractList ?? []).length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No contracts on record.</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {(contractList ?? []).slice(0, 4).map((c) => (
-                        <li
-                          key={c.id}
-                          className="flex items-start justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2"
-                        >
-                          <div className="min-w-0">
-                            <p className="flex items-center gap-1.5 text-[12.5px] font-medium capitalize">
-                              <FileSignature className="size-3.5 text-muted-foreground" />
-                              {c.contractType.replace(/_/g, " ")}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {format(parseISO(c.startDate), "d MMM yyyy")}
-                              {c.endDate ? ` — ${format(parseISO(c.endDate), "d MMM yyyy")}` : " — open-ended"}
-                            </p>
-                          </div>
-                          <ContractStatusBadge status={c.status} />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                {/* Quick Links */}
                 <div className="rounded-xl border p-4 text-sm">
-                  <h3 className="mb-2 font-semibold">Quick Links</h3>
+                  <h3 className="font-semibold mb-2">Quick Links</h3>
                   <div className="space-y-1.5">
                     <Link to="/roster" className="block text-muted-foreground hover:text-foreground">
                       → Roster Schedule
+                    </Link>
+                    <Link to="/leave" className="block text-muted-foreground hover:text-foreground">
+                      → Leave Records
                     </Link>
                     <Link to="/access" className="block text-muted-foreground hover:text-foreground">
                       → Platform Accounts
@@ -1381,7 +1338,7 @@ function StaffProfilePage() {
                     </Link>
                   </div>
                 </div>
-              </aside>
+              </div>
             </div>
           </TabsContent>
 
@@ -1422,12 +1379,6 @@ function StaffProfilePage() {
                   Work periods, entries, and approval status.
                 </p>
               </Link>
-              <Link to="/leave" className="rounded-xl border p-4 hover:bg-accent">
-                <h3 className="font-semibold">Leave</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Requests, balances, and approvals.
-                </p>
-              </Link>
             </div>
           </TabsContent>
 
@@ -1442,18 +1393,30 @@ function StaffProfilePage() {
                 remain the primary controls for internal governance.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={() => navigate({ to: "/leave" })}>
-                  <ListChecks className="mr-1.5 size-3.5" />
-                  Leave Records
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => navigate({ to: "/compliance/items" })}>
-                  Compliance Items
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => navigate({ to: "/compliance/training" })}>
-                  Training Records
-                </Button>
+                <Link to="/leave">
+                  <Button variant="outline" size="sm">
+                    Leave Records
+                  </Button>
+                </Link>
+                <Link to="/compliance/items">
+                  <Button variant="outline" size="sm">
+                    Compliance Items
+                  </Button>
+                </Link>
+                <Link to="/compliance/training">
+                  <Button variant="outline" size="sm">
+                    Training Records
+                  </Button>
+                </Link>
               </div>
             </div>
+          </TabsContent>
+
+          {/* ----------------------------------------------------------------
+              Attendance Tab
+          ---------------------------------------------------------------- */}
+          <TabsContent value="attendance">
+            <AttendanceTab staffProfileId={staffId} />
           </TabsContent>
 
           {/* ----------------------------------------------------------------
@@ -1473,6 +1436,10 @@ function StaffProfilePage() {
           jobTitle: profile.jobTitle ?? "",
           employmentType: (profile.employmentType as EditProfileForm["employmentType"]) ?? "full_time",
           status: (profile.status as EditProfileForm["status"]) ?? "active",
+          emergencyContactName: (profile as typeof profile & { emergencyContactName?: string | null }).emergencyContactName ?? "",
+          emergencyContactPhone: (profile as typeof profile & { emergencyContactPhone?: string | null }).emergencyContactPhone ?? "",
+          nextAppraisalDate: (profile as typeof profile & { nextAppraisalDate?: string | null }).nextAppraisalDate ?? "",
+          notes: (profile as typeof profile & { notes?: string | null }).notes ?? "",
         }}
       />
     </>

@@ -79,6 +79,12 @@ export const staffProfiles = pgTable(
       .default([]),
     contractExpiresAt: timestamp("contract_expires_at"),
     startDate: timestamp("start_date").notNull(),
+    // Extended profile fields (migration 0036)
+    profilePhotoUrl: text("profile_photo_url"),
+    emergencyContactName: text("emergency_contact_name"),
+    emergencyContactPhone: text("emergency_contact_phone"),
+    nextAppraisalDate: date("next_appraisal_date"),
+    notes: text("notes"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

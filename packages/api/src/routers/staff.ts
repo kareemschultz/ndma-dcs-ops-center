@@ -80,14 +80,20 @@ export const staffRouter = {
         isTeamLead: z.boolean().default(false),
         isLeadEngineerEligible: z.boolean().default(false),
         isOnCallEligible: z.boolean().default(true),
+        emergencyContactName: z.string().optional(),
+        emergencyContactPhone: z.string().optional(),
+        nextAppraisalDate: z.string().optional(), // ISO date string
+        notes: z.string().optional(),
       }),
     )
     .handler(async ({ input, context }) => {
+      const { nextAppraisalDate, ...rest } = input;
       const profileRows = await db
         .insert(staffProfiles)
         .values({
-          ...input,
-          startDate: new Date(input.startDate),
+          ...rest,
+          startDate: new Date(rest.startDate),
+          nextAppraisalDate: nextAppraisalDate ?? null,
         })
         .returning();
       const profile = profileRows[0];
@@ -135,10 +141,18 @@ export const staffRouter = {
         isTeamLead: z.boolean().optional(),
         isLeadEngineerEligible: z.boolean().optional(),
         isOnCallEligible: z.boolean().optional(),
+        emergencyContactName: z.string().optional(),
+        emergencyContactPhone: z.string().optional(),
+        nextAppraisalDate: z.string().optional(), // ISO date string
+        notes: z.string().optional(),
       }),
     )
     .handler(async ({ input, context }) => {
-      const { id, ...updates } = input;
+      const { id, nextAppraisalDate, ...rest } = input;
+      const updates: Record<string, unknown> = { ...rest };
+      if (nextAppraisalDate !== undefined) {
+        updates.nextAppraisalDate = nextAppraisalDate || null;
+      }
       const before = await db.query.staffProfiles.findFirst({
         where: eq(staffProfiles.id, id),
       });
