@@ -2,13 +2,14 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -148,6 +149,9 @@ function AddTosdDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add TOSD Record</DialogTitle>
+          <DialogDescription>
+            Record a time-off, sick day, lateness or work-from-home entry for a staff member.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
@@ -242,6 +246,129 @@ function AddTosdDialog({
 }
 
 // ---------------------------------------------------------------------------
+// Edit TOSD Record Dialog
+// ---------------------------------------------------------------------------
+
+type TosdRow = {
+  id: string;
+  type: string;
+  reasonText?: string | null;
+  days?: string | null;
+  hours?: string | null;
+  staffProfile?: { user?: { name?: string | null } | null } | null;
+};
+
+function EditTosdDialog({
+  record,
+  onClose,
+}: {
+  record: TosdRow;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState({
+    type: record.type as TosdType,
+    reasonText: record.reasonText ?? "",
+    days: record.days ?? "",
+    hours: record.hours ?? "",
+  });
+
+  const mutation = useMutation(
+    orpc.leave.tosd.update.mutationOptions({
+      onSuccess: () => {
+        toast.success("TOSD record updated");
+        queryClient.invalidateQueries({ queryKey: orpc.leave.tosd.list.key() });
+        onClose();
+      },
+      onError: (err: Error) => toast.error(err.message ?? "Failed to update record"),
+    }),
+  );
+
+  return (
+    <DialogContent className="sm:max-w-md">
+      <DialogHeader>
+        <DialogTitle>Edit TOSD Record</DialogTitle>
+        <DialogDescription>
+          Update the record for{" "}
+          <span className="font-medium">{record.staffProfile?.user?.name ?? "this staff member"}</span>.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="space-y-4 py-2">
+        <div className="space-y-1.5">
+          <Label>Type</Label>
+          <Select
+            value={form.type}
+            onValueChange={(v) => setForm((f) => ({ ...f, type: v as TosdType }))}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TOSD_TYPES.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {TOSD_TYPE_LABELS[t]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label>Reason (optional)</Label>
+          <Input
+            value={form.reasonText}
+            onChange={(e) => setForm((f) => ({ ...f, reasonText: e.target.value }))}
+            placeholder="Brief explanation…"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Days</Label>
+            <Input
+              type="number"
+              step="0.5"
+              min="0"
+              value={form.days}
+              onChange={(e) => setForm((f) => ({ ...f, days: e.target.value }))}
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Hours</Label>
+            <Input
+              type="number"
+              step="0.5"
+              min="0"
+              value={form.hours}
+              onChange={(e) => setForm((f) => ({ ...f, hours: e.target.value }))}
+              placeholder="0"
+            />
+          </div>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose} disabled={mutation.isPending}>
+          Cancel
+        </Button>
+        <Button
+          onClick={() =>
+            mutation.mutate({
+              id: record.id,
+              type: form.type,
+              reasonText: form.reasonText || null,
+              days: form.days || null,
+              hours: form.hours || null,
+            })
+          }
+          disabled={mutation.isPending}
+        >
+          {mutation.isPending ? "Saving…" : "Save Changes"}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
@@ -249,6 +376,9 @@ function TosdPage() {
   const [selectedStaffId, setSelectedStaffId] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<number>(CURRENT_YEAR);
   const [addOpen, setAddOpen] = useState(false);
+  const [editRecord, setEditRecord] = useState<TosdRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TosdRow | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: staffData, isLoading: staffLoading } = useQuery(
     orpc.staff.list.queryOptions({ input: { limit: 200, offset: 0 } }),
@@ -261,6 +391,17 @@ function TosdPage() {
         staffId: selectedStaffId || undefined,
         year: selectedYear,
       },
+    }),
+  );
+
+  const deleteMutation = useMutation(
+    orpc.leave.tosd.delete.mutationOptions({
+      onSuccess: () => {
+        toast.success("TOSD record deleted");
+        queryClient.invalidateQueries({ queryKey: orpc.leave.tosd.list.key() });
+        setDeleteTarget(null);
+      },
+      onError: (err: Error) => toast.error(err.message ?? "Failed to delete record"),
     }),
   );
 
@@ -341,13 +482,14 @@ function TosdPage() {
                 <TableHead>Reason</TableHead>
                 <TableHead className="text-right">Days</TableHead>
                 <TableHead className="text-right">Hours</TableHead>
+                <TableHead className="w-24 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rowsLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
+                    {Array.from({ length: 7 }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
@@ -356,7 +498,7 @@ function TosdPage() {
                 ))
               ) : !rows || rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
                     No TOSD records found for the selected filters.
                   </TableCell>
                 </TableRow>
@@ -394,6 +536,28 @@ function TosdPage() {
                     <TableCell className="text-right font-mono text-sm">
                       {r.hours ?? "—"}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-7"
+                          onClick={() => setEditRecord(r as TosdRow)}
+                          title="Edit record"
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-7 text-destructive hover:text-destructive/80"
+                          onClick={() => setDeleteTarget(r as TosdRow)}
+                          title="Delete record"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -407,6 +571,41 @@ function TosdPage() {
         onOpenChange={setAddOpen}
         staffList={staffList}
       />
+
+      <Dialog open={Boolean(editRecord)} onOpenChange={(v) => { if (!v) setEditRecord(null); }}>
+        {editRecord && (
+          <EditTosdDialog record={editRecord} onClose={() => setEditRecord(null)} />
+        )}
+      </Dialog>
+
+      <Dialog open={Boolean(deleteTarget)} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete TOSD Record</DialogTitle>
+            <DialogDescription>
+              Permanently delete the{" "}
+              <span className="font-medium">
+                {deleteTarget ? (TOSD_TYPE_LABELS[deleteTarget.type as TosdType] ?? deleteTarget.type) : ""}
+              </span>{" "}
+              record for{" "}
+              <span className="font-medium">{deleteTarget?.staffProfile?.user?.name ?? "this staff member"}</span>?
+              This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleteMutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => { if (deleteTarget) deleteMutation.mutate({ id: deleteTarget.id }); }}
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

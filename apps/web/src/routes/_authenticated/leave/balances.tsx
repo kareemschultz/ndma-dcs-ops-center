@@ -1,9 +1,21 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { Wallet } from "lucide-react";
+import { Pencil, Plus, Wallet } from "lucide-react";
+import { toast } from "sonner";
 
+import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@ndma-dcs-staff-portal/ui/components/dialog";
+import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
+import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
 import {
   Select,
   SelectContent,
@@ -24,6 +36,7 @@ import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { LeaveSubNav } from "@/components/layout/leave-sub-nav";
+import { getLeaveTypeDisplayName } from "@/lib/leave-types";
 import { orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_authenticated/leave/balances")({
@@ -41,13 +54,186 @@ function staffLabel(s: StaffListItem | undefined): string {
   return s.user?.name ?? s.employeeId;
 }
 
+type BalanceRow = {
+  id: string;
+  leaveTypeId: string;
+  leaveTypeName: string;
+  contractYearStart: string;
+  contractYearEnd: string;
+  entitlement: number;
+  carriedOver: number;
+  adjustment: number;
+};
+
+type LeaveTypeLite = { id: string; name: string; defaultAnnualAllowance?: number | null };
+
+// ---------------------------------------------------------------------------
+// Adjust / Create Balance Dialog
+// ---------------------------------------------------------------------------
+
+function BalanceDialog({
+  staffProfileId,
+  existing,
+  leaveTypes,
+  onClose,
+}: {
+  staffProfileId: string;
+  existing: BalanceRow | null;
+  leaveTypes: LeaveTypeLite[];
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  // NDMA contracts renew annually — default to the current calendar year.
+  const thisYear = new Date().getFullYear();
+  const [form, setForm] = useState({
+    leaveTypeId: existing?.leaveTypeId ?? "",
+    contractYearStart: existing?.contractYearStart ?? `${thisYear}-01-01`,
+    contractYearEnd: existing?.contractYearEnd ?? `${thisYear}-12-31`,
+    entitlement: existing?.entitlement ?? 0,
+    carriedOver: existing?.carriedOver ?? 0,
+    adjustment: existing?.adjustment ?? 0,
+  });
+
+  const mutation = useMutation(
+    orpc.leave.balances.adjust.mutationOptions({
+      onSuccess: () => {
+        toast.success(existing ? "Leave balance updated" : "Leave balance added");
+        queryClient.invalidateQueries({ queryKey: orpc.leave.balances.getByStaff.key() });
+        onClose();
+      },
+      onError: (err: Error) => toast.error(err.message ?? "Failed to save balance"),
+    }),
+  );
+
+  function handleSave() {
+    if (!form.leaveTypeId) {
+      toast.error("Leave type is required");
+      return;
+    }
+    if (!form.contractYearStart || !form.contractYearEnd) {
+      toast.error("Contract year start and end are required");
+      return;
+    }
+    mutation.mutate({
+      staffProfileId,
+      leaveTypeId: form.leaveTypeId,
+      contractYearStart: form.contractYearStart,
+      contractYearEnd: form.contractYearEnd,
+      entitlement: form.entitlement,
+      carriedOver: form.carriedOver,
+      adjustment: form.adjustment,
+    });
+  }
+
+  return (
+    <DialogContent className="sm:max-w-md">
+      <DialogHeader>
+        <DialogTitle>{existing ? "Adjust Leave Balance" : "Add Leave Balance"}</DialogTitle>
+        <DialogDescription>
+          {existing
+            ? `Update the ${existing.leaveTypeName} entitlement for this contract year.`
+            : "Create a leave balance entry for this staff member and contract year."}
+        </DialogDescription>
+      </DialogHeader>
+      <div className="space-y-4 py-2">
+        <div className="space-y-1.5">
+          <Label>Leave Type</Label>
+          <Select
+            value={form.leaveTypeId}
+            onValueChange={(v) => setForm((f) => ({ ...f, leaveTypeId: v ?? "" }))}
+            disabled={Boolean(existing)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select leave type…" />
+            </SelectTrigger>
+            <SelectContent>
+              {leaveTypes.map((lt) => (
+                <SelectItem key={lt.id} value={lt.id}>
+                  {getLeaveTypeDisplayName(lt.name)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Contract Year Start</Label>
+            <Input
+              type="date"
+              value={form.contractYearStart}
+              disabled={Boolean(existing)}
+              onChange={(e) => setForm((f) => ({ ...f, contractYearStart: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Contract Year End</Label>
+            <Input
+              type="date"
+              value={form.contractYearEnd}
+              onChange={(e) => setForm((f) => ({ ...f, contractYearEnd: e.target.value }))}
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1.5">
+            <Label>Entitlement</Label>
+            <Input
+              type="number"
+              step="0.5"
+              value={form.entitlement}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, entitlement: Number(e.target.value) || 0 }))
+              }
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Carried Over</Label>
+            <Input
+              type="number"
+              step="0.5"
+              value={form.carriedOver}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, carriedOver: Number(e.target.value) || 0 }))
+              }
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Adjustment</Label>
+            <Input
+              type="number"
+              step="0.5"
+              value={form.adjustment}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, adjustment: Number(e.target.value) || 0 }))
+              }
+            />
+          </div>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose} disabled={mutation.isPending}>
+          Cancel
+        </Button>
+        <Button onClick={handleSave} disabled={mutation.isPending}>
+          {mutation.isPending ? "Saving…" : existing ? "Save Changes" : "Add Balance"}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  );
+}
+
 function BalancesPage() {
   const [selectedStaffId, setSelectedStaffId] = useState<string>("");
+  const [editBalance, setEditBalance] = useState<BalanceRow | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
 
   const { data: staffData, isLoading: staffLoading } = useQuery(
     orpc.staff.list.queryOptions({ input: { limit: 200, offset: 0 } }),
   );
   const staffList: StaffListItem[] = staffData ?? [];
+
+  const { data: leaveTypesData } = useQuery(orpc.leave.types.list.queryOptions());
+  const leaveTypes: LeaveTypeLite[] = leaveTypesData ?? [];
 
   // Default to the first staff member once the list loads.
   const effectiveStaffId = selectedStaffId || staffList[0]?.id || "";
@@ -65,6 +251,7 @@ function BalancesPage() {
         b.entitlement + b.carriedOver + b.adjustment - b.used;
       return {
         id: b.id,
+        leaveTypeId: b.leaveTypeId,
         leaveTypeName: b.leaveType?.name ?? "—",
         leaveTypeCode: b.leaveType?.code ?? "",
         contractYearStart: b.contractYearStart,
@@ -88,6 +275,14 @@ function BalancesPage() {
           <h1 className="text-lg font-semibold">Leave Balances</h1>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={() => setAddOpen(true)}
+            disabled={!effectiveStaffId}
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            Add Balance
+          </Button>
           <ThemeSwitch />
         </div>
       </Header>
@@ -134,13 +329,14 @@ function BalancesPage() {
                 <TableHead className="text-right">Adjustment</TableHead>
                 <TableHead className="text-right">Used</TableHead>
                 <TableHead className="text-right">Available</TableHead>
+                <TableHead className="w-16 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 7 }).map((_, j) => (
+                    {Array.from({ length: 8 }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
@@ -150,7 +346,7 @@ function BalancesPage() {
               ) : !effectiveStaffId ? (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={8}
                     className="py-12 text-center text-muted-foreground"
                   >
                     Select a staff member to view their leave balances.
@@ -159,7 +355,7 @@ function BalancesPage() {
               ) : rows.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={8}
                     className="py-12 text-center text-muted-foreground"
                   >
                     No leave balances recorded for this staff member.
@@ -207,6 +403,17 @@ function BalancesPage() {
                         {r.available}
                       </span>
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-7"
+                        onClick={() => setEditBalance(r as BalanceRow)}
+                        title="Adjust balance"
+                      >
+                        <Pencil className="size-3.5" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -214,6 +421,28 @@ function BalancesPage() {
           </Table>
         </div>
       </Main>
+
+      <Dialog open={addOpen} onOpenChange={(v) => { if (!v) setAddOpen(false); }}>
+        {addOpen && effectiveStaffId && (
+          <BalanceDialog
+            staffProfileId={effectiveStaffId}
+            existing={null}
+            leaveTypes={leaveTypes}
+            onClose={() => setAddOpen(false)}
+          />
+        )}
+      </Dialog>
+
+      <Dialog open={Boolean(editBalance)} onOpenChange={(v) => { if (!v) setEditBalance(null); }}>
+        {editBalance && effectiveStaffId && (
+          <BalanceDialog
+            staffProfileId={effectiveStaffId}
+            existing={editBalance}
+            leaveTypes={leaveTypes}
+            onClose={() => setEditBalance(null)}
+          />
+        )}
+      </Dialog>
     </>
   );
 }

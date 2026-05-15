@@ -8,6 +8,7 @@ import {
   CalendarClock,
   CheckCircle2,
   FileText,
+  Pencil,
   Plus,
   Trash2,
   TrendingUp,
@@ -18,6 +19,7 @@ import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -109,9 +111,11 @@ function LifecycleDateRow({
 
 function CareerPlanRow({
   plan,
+  onEdit,
   onDelete,
 }: {
   plan: CareerPlan;
+  onEdit: (plan: CareerPlan) => void;
   onDelete: (id: string) => void;
 }) {
   const statusColors = {
@@ -130,7 +134,10 @@ function CareerPlanRow({
       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[plan.status]}`}>
         {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
       </span>
-      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-600" onClick={() => onDelete(plan.id)}>
+      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => onEdit(plan)} title="Edit entry">
+        <Pencil className="h-3.5 w-3.5" />
+      </Button>
+      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-600" onClick={() => onDelete(plan.id)} title="Delete entry">
         <Trash2 className="h-3.5 w-3.5" />
       </Button>
     </div>
@@ -165,6 +172,9 @@ function SetLifecycleDatesDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Set Lifecycle Dates</DialogTitle>
+          <DialogDescription>
+            Set the renewal letter and appraisal due dates for this contract.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <p className="text-sm text-muted-foreground">Leave fields blank to auto-compute from end date (3 months before end).</p>
@@ -194,44 +204,79 @@ function SetLifecycleDatesDialog({
   );
 }
 
-function AddCareerPlanDialog({
+function CareerPlanDialog({
   staffId,
+  existing,
   open,
   onOpenChange,
 }: {
   staffId: string;
+  existing: CareerPlan | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({ targetYear: new Date().getFullYear() + 1, plannedRole: "", conditions: "" });
+  const defaults = {
+    targetYear: existing?.targetYear ?? new Date().getFullYear() + 1,
+    plannedRole: existing?.plannedRole ?? "",
+    conditions: existing?.conditions ?? "",
+    status: (existing?.status ?? "pending") as CareerPlan["status"],
+  };
+  const [form, setForm] = useState(defaults);
 
   const mutation = useMutation(
     orpc.careerProgression.upsert.mutationOptions({
       onSuccess: () => {
-        toast.success("Career plan entry saved.");
+        toast.success(existing ? "Career plan entry updated." : "Career plan entry saved.");
         queryClient.invalidateQueries({ queryKey: orpc.careerProgression.list.key() });
         onOpenChange(false);
-        setForm({ targetYear: new Date().getFullYear() + 1, plannedRole: "", conditions: "" });
       },
       onError: () => toast.error("Failed to save."),
     }),
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        // Reset form when opening so edit values populate fresh.
+        if (v) setForm(defaults);
+        onOpenChange(v);
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Career Plan Entry</DialogTitle>
+          <DialogTitle>{existing ? "Edit Career Plan Entry" : "Add Career Plan Entry"}</DialogTitle>
+          <DialogDescription>
+            Record a target role and year for this staff member. Entries are keyed by
+            staff member and year — re-saving the same year updates the existing entry.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
-          <div className="space-y-1">
-            <Label>Target Year</Label>
-            <Input
-              type="number"
-              value={form.targetYear}
-              onChange={(e) => setForm((p) => ({ ...p, targetYear: parseInt(e.target.value) || p.targetYear }))}
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Target Year</Label>
+              <Input
+                type="number"
+                value={form.targetYear}
+                disabled={Boolean(existing)}
+                onChange={(e) => setForm((p) => ({ ...p, targetYear: parseInt(e.target.value) || p.targetYear }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Status</Label>
+              <Select
+                value={form.status}
+                onValueChange={(v) => setForm((p) => ({ ...p, status: (v ?? "pending") as CareerPlan["status"] }))}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="achieved">Achieved</SelectItem>
+                  <SelectItem value="missed">Missed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="space-y-1">
             <Label>Planned Role</Label>
@@ -239,14 +284,14 @@ function AddCareerPlanDialog({
           </div>
           <div className="space-y-1">
             <Label>Conditions (optional)</Label>
-            <Textarea value={form.conditions} onChange={(e) => setForm((p) => ({ ...p, conditions: e.target.value }))} rows={2} placeholder="e.g. Complete CCIE certification" />
+            <Textarea value={form.conditions ?? ""} onChange={(e) => setForm((p) => ({ ...p, conditions: e.target.value }))} rows={2} placeholder="e.g. Complete CCIE certification" />
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button
             disabled={!form.plannedRole.trim() || mutation.isPending}
-            onClick={() => mutation.mutate({ staffId, targetYear: form.targetYear, plannedRole: form.plannedRole, conditions: form.conditions || undefined, status: "pending" })}
+            onClick={() => mutation.mutate({ staffId, targetYear: form.targetYear, plannedRole: form.plannedRole, conditions: form.conditions || undefined, status: form.status })}
           >
             {mutation.isPending ? "Saving..." : "Save"}
           </Button>
@@ -261,6 +306,7 @@ function ContractDetailPage() {
   const queryClient = useQueryClient();
   const [datesDialogOpen, setDatesDialogOpen] = useState(false);
   const [careerDialogOpen, setCareerDialogOpen] = useState(false);
+  const [editCareerPlan, setEditCareerPlan] = useState<CareerPlan | null>(null);
   const [setOutcomeOpen, setSetOutcomeOpen] = useState(false);
   const [outcomeValue, setOutcomeValue] = useState<"renewed" | "not_renewed" | "left" | "terminated">("renewed");
 
@@ -454,6 +500,7 @@ function ContractDetailPage() {
                     <CareerPlanRow
                       key={p.id}
                       plan={p}
+                      onEdit={(plan) => setEditCareerPlan(plan)}
                       onDelete={(id) => deleteCareerPlanMutation.mutate({ id })}
                     />
                   ))
@@ -464,13 +511,27 @@ function ContractDetailPage() {
       </Main>
 
       <SetLifecycleDatesDialog contractId={contractId} open={datesDialogOpen} onOpenChange={setDatesDialogOpen} />
-      <AddCareerPlanDialog staffId={contract.staffProfileId as string} open={careerDialogOpen} onOpenChange={setCareerDialogOpen} />
+      <CareerPlanDialog
+        staffId={contract.staffProfileId as string}
+        existing={null}
+        open={careerDialogOpen}
+        onOpenChange={setCareerDialogOpen}
+      />
+      <CareerPlanDialog
+        staffId={contract.staffProfileId as string}
+        existing={editCareerPlan}
+        open={Boolean(editCareerPlan)}
+        onOpenChange={(v) => { if (!v) setEditCareerPlan(null); }}
+      />
 
       {/* Record outcome dialog */}
       <Dialog open={setOutcomeOpen} onOpenChange={setSetOutcomeOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Record Renewal Outcome</DialogTitle>
+            <DialogDescription>
+              Record the final outcome of this contract's renewal cycle.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <Label>Outcome</Label>

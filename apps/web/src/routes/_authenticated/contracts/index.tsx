@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { differenceInDays, format, parseISO } from "date-fns";
-import { FileText, AlertCircle, Plus, Pencil, FileDown } from "lucide-react";
+import { FileText, AlertCircle, ArrowRight, Plus, Pencil, FileDown } from "lucide-react";
 import { exportContractsExcel } from "@/utils/excel-export";
 import { toast } from "sonner";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
@@ -475,6 +475,7 @@ function EditContractDialog({
 }
 
 function ContractsPage() {
+  const navigate = useNavigate();
   const [status, setStatus] = useState<ContractStatus | "">("");
   const [showCreate, setShowCreate] = useState(false);
   const [editingContract, setEditingContract] = useState<ContractRecord | null>(null);
@@ -612,7 +613,7 @@ function ContractsPage() {
                 <TableHead>Days Until Renewal</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Renewal Status</TableHead>
-                <TableHead className="w-16" />
+                <TableHead className="w-24 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -680,16 +681,32 @@ function ContractsPage() {
                           />
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8"
-                          onClick={() => setEditingContract(contract as ContractRecord)}
-                          title="Edit contract"
-                        >
-                          <Pencil className="size-3.5" />
-                        </Button>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                            onClick={() => setEditingContract(contract as ContractRecord)}
+                            title="Edit contract"
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                            onClick={() =>
+                              navigate({
+                                to: "/contracts/$contractId",
+                                params: { contractId: contract.id },
+                              })
+                            }
+                            title="View contract details"
+                          >
+                            <ArrowRight className="size-3.5" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
