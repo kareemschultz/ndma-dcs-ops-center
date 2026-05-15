@@ -994,6 +994,8 @@ function AppraisalsPage() {
       <Header fixed>
         <div className="flex items-center gap-2">
           <ClipboardCheck className="size-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Performance</span>
+          <span className="text-muted-foreground">/</span>
           <span className="text-sm font-medium">Appraisals</span>
         </div>
         <div className="ms-auto flex items-center gap-2">

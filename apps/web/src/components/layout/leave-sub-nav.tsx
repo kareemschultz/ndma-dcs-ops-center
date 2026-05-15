@@ -3,12 +3,13 @@
 // Import in: leave/index.tsx, leave/calendar.tsx, leave/tosd.tsx
 
 import { useNavigate, useLocation } from "@tanstack/react-router";
-import { Calendar, CalendarOff, Clock } from "lucide-react";
+import { Calendar, CalendarOff, Clock, Wallet } from "lucide-react";
 
 const LEAVE_TABS = [
   { to: "/leave",          label: "Requests",   Icon: CalendarOff },
   { to: "/leave/calendar", label: "Calendar",   Icon: Calendar    },
   { to: "/leave/tosd",     label: "Time-Off & Sick Days", Icon: Clock },
+  { to: "/leave/balances", label: "Balances",   Icon: Wallet      },
 ] as const;
 
 export function LeaveSubNav() {
