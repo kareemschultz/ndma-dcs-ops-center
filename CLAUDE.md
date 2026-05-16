@@ -295,13 +295,36 @@ GitHub Actions: `.github/workflows/ci.yml` — type-check + build on every push/
 - `beforeValue` + `afterValue` for updates (fetch the record first; omit `beforeValue` for creates)
 - `ipAddress` + `userAgent` from context
 
-## Multi-View Pages Pattern (List/Kanban/Grid/Calendar)
+## Multi-View Pages Pattern — MANDATORY across the app
 
-When a page supports multiple views (e.g., Work Register):
-- Use a single `useQuery()` for data — all views share it
-- Store `viewMode` in `useState<"list" | "kanban" | "grid">("list")`
-- Render a toggle button group in the Header to switch modes
-- Extract each view as a **separate component** (`WorkListView`, `WorkKanbanView`, etc.)
-- Kanban grouping: client-side `array.filter(item => item.status === col)` per column — fast enough for ≤200 items
-- `LoadingSkeleton` must adapt its rendering based on the active view mode
-- Kanban columns should be horizontally scrollable: `flex overflow-x-auto gap-4`
+**Any list/register page where users benefit from more than one lens MUST offer
+multiple view modes** (not just Work Register and Leave). Apply this to register
+pages — work, incidents, leave, procurement, contracts, scheduling, appraisals,
+training, PPE, etc. — wherever a board/timeline/detail view adds real value.
+
+Standard view modes (use the subset that fits the data):
+- **`list`** — compact table, the default
+- **`detailed`** — rich cards (reason, approver, related entities, badges)
+- **`board`** — kanban grouped by status/stage; horizontally scrollable
+- **`gantt`** — per-entity timeline across a year (for anything date-ranged: leave,
+  contracts, scheduling, temp changes)
+- **`grid`** / **`calendar`** — where appropriate. Do NOT add a `calendar` view if
+  the page already has a dedicated Calendar sub-nav tab — don't duplicate it.
+
+Implementation rules:
+- One `useQuery()` for data — every view shares it (no per-view fetching)
+- `viewMode` in `useState<ViewMode>("list")`; a toggle button-group in the toolbar
+  (rounded `inline-flex border p-0.5`, active = `bg-primary text-primary-foreground`)
+- Extract each view as a **separate component** taking shared props (`rows`, action
+  callbacks). Don't inline 4 views in one JSX return.
+- Kanban/board grouping: client-side `array.filter(i => i.status === col)` — fine
+  for ≤200 rows. Columns: `flex overflow-x-auto gap-4`.
+- Tailwind cannot see runtime-built class strings — keep status→class maps as
+  **literal** entries (`{ approved: "border-l-blue-500" }`), never `.replace()`.
+- `LoadingSkeleton` adapts to the active view mode.
+- **Department (NOC / DCS) filtering:** use the shared `<DepartmentFilter />` +
+  `useTeamFilter()` (URL-backed `team` param). Pass `team` to the list query.
+  Add this to every register page where the NOC vs DCS split is meaningful.
+
+Reference implementation: `apps/web/src/routes/_authenticated/leave/index.tsx`
+(list / detailed / board / gantt + DepartmentFilter + year selector).

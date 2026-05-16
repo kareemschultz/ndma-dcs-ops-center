@@ -61,3 +61,8 @@ AccountManagement*.xlsx
 .claude/*.lock
 .claude/worktrees/
 .design-bundle/
+
+# local reference / scratch (not for repo)
+/.claire/
+/design handoff/
+ndma hrms*.zip

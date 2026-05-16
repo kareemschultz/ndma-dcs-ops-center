@@ -127,7 +127,8 @@ export const leaveRouter = {
       .input(z.object({ staffProfileId: z.string() }))
       .handler(async ({ input, context }) => {
         const role = context.userRole;
-        const canSeeAll = role && ["admin", "hrAdminOps", "manager", "readOnly"].includes(role);
+        const canSeeAll =
+          role && ["admin", "hrAdminOps", "manager", "personalAssistant", "readOnly"].includes(role);
 
         if (!canSeeAll) {
           // Staff can only see their own balances
@@ -211,7 +212,8 @@ export const leaveRouter = {
       )
       .handler(async ({ input, context }) => {
         const role = context.userRole;
-        const canSeeAll = role && ["admin", "hrAdminOps", "manager", "readOnly"].includes(role);
+        const canSeeAll =
+          role && ["admin", "hrAdminOps", "manager", "personalAssistant", "readOnly"].includes(role);
 
         const conditions = [];
 
@@ -234,10 +236,13 @@ export const leaveRouter = {
 
         if (input.status)
           conditions.push(eq(leaveRequests.status, input.status));
+        // Overlap filter: a request matches the [from, to] window if it touches
+        // it at all — NOT only if fully contained. A leave that starts before
+        // `from` but runs into the window must still appear (e.g. on the planner).
         if (input.from)
-          conditions.push(gte(leaveRequests.startDate, input.from));
+          conditions.push(gte(leaveRequests.endDate, input.from));
         if (input.to)
-          conditions.push(lte(leaveRequests.endDate, input.to));
+          conditions.push(lte(leaveRequests.startDate, input.to));
 
         return db.query.leaveRequests.findMany({
           where: conditions.length > 0 ? and(...conditions) : undefined,

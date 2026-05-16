@@ -13,6 +13,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
+  differenceInCalendarDays,
   endOfMonth,
   format,
   getDay,
@@ -26,7 +27,11 @@ import {
   ChevronRight,
   GanttChart,
   List as ListIcon,
+  TrendingUp,
 } from "lucide-react";
+import {
+  Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from "recharts";
 
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@ndma-dcs-staff-portal/ui/components/card";
@@ -46,7 +51,9 @@ import {
   TableHeader,
   TableRow,
 } from "@ndma-dcs-staff-portal/ui/components/table";
+import { DepartmentFilter } from "@/components/layout/department-filter";
 import { Header } from "@/components/layout/header";
+import { LeaveSubNav } from "@/components/layout/leave-sub-nav";
 import { Main } from "@/components/layout/main";
 import { PageHeader } from "@/components/layout/page-header";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -136,6 +143,12 @@ const LEAVE_STYLES: Record<LeaveCode, LeaveTypeStyle> = {
 
 // Order shown in the always-visible stats strip + Summary view columns.
 const STAT_ORDER: LeaveCode[] = ["A", "S", "M", "C", "H", "W"];
+
+// Chart hex per leave code (categorical — no green, per CLAUDE.md design rules).
+const CODE_HEX: Record<LeaveCode, string> = {
+  A: "#8b5cf6", S: "#ef4444", M: "#ec4899", C: "#a855f7",
+  H: "#f59e0b", W: "#3b82f6", O: "#94a3b8",
+};
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -231,7 +244,9 @@ function LeavePlannerPage() {
   const today = new Date();
   const [year, setYear]   = useState<number>(today.getFullYear());
   const [month, setMonth] = useState<number>(today.getMonth() + 1); // 1-12
-  const [view, setView]   = useState<"gantt" | "list" | "summary">("gantt");
+  const [view, setView]   = useState<"gantt" | "list" | "summary" | "analytics">("gantt");
+  const [employeeFilter, setEmployeeFilter] = useState<string>("");
+  const [typeFilter, setTypeFilter]         = useState<LeaveCode | "">("");
   const { team } = useTeamFilter();
 
   const monthStartDate = useMemo(() => startOfMonth(new Date(year, month - 1, 1)), [year, month]);
@@ -284,14 +299,50 @@ function LeavePlannerPage() {
     return { used, allowance, remaining: allowance - used };
   }, [myBalances, leaveTypes]);
 
+  // Whole-year approved leave — drives the Analytics view.
+  const { data: yearRequestsData } = useQuery({
+    ...orpc.leave.requests.list.queryOptions({
+      input: {
+        status: "approved",
+        from: ymd(year, 1, 1),
+        to: ymd(year, 12, daysInMonth(year, 12)),
+        limit: 200,
+        team: team === "All" ? undefined : team,
+      },
+    }),
+    enabled: view === "analytics",
+  });
+
   const staff: StaffLite[] = (staffData ?? []) as StaffLite[];
   const requests: LeaveRequestLite[] = (requestsData ?? []) as LeaveRequestLite[];
   const types: LeaveTypeLite[] = (leaveTypes ?? []).map((t) => ({ id: t.id, name: t.name }));
 
+  // Employee + leave-type filters (applied client-side, cascade to every view).
+  const typeCodeById = useMemo(
+    () => new Map(types.map((t) => [t.id, classifyLeaveType(t.name).code])),
+    [types],
+  );
+  const filteredStaff = useMemo(
+    () => (employeeFilter ? staff.filter((s) => s.id === employeeFilter) : staff),
+    [staff, employeeFilter],
+  );
+  const filteredRequests = useMemo(
+    () => requests.filter((r) => {
+      if (employeeFilter && r.staffProfileId !== employeeFilter) return false;
+      if (typeFilter) {
+        const code = typeCodeById.get(r.leaveTypeId)
+          ?? classifyLeaveType(r.leaveType?.name ?? "").code;
+        if (code !== typeFilter) return false;
+      }
+      return true;
+    }),
+    [requests, employeeFilter, typeFilter, typeCodeById],
+  );
+
   // Per-staff day grid
   const gantt = useMemo(
-    () => buildGantt(requests, types, year, month),
-    [requests, types, year, month],
+    () => buildGantt(filteredRequests, types, year, month),
+    [filteredRequests, types, year, month],
   );
 
   // ── Compute counts per staff × per code ──────────────────────────────
@@ -304,7 +355,7 @@ function LeavePlannerPage() {
     total: number;
   };
   const staffSummary: StaffSummary[] = useMemo(() => {
-    return staff.map((st) => {
+    return filteredStaff.map((st) => {
       const grid = gantt[st.id] ?? {};
       const counts: Record<LeaveCode, number> = { A:0,S:0,M:0,C:0,H:0,W:0,O:0 };
       Object.values(grid).forEach((c) => { counts[c.code] += 1; });
@@ -319,7 +370,7 @@ function LeavePlannerPage() {
         total,
       };
     });
-  }, [staff, gantt]);
+  }, [filteredStaff, gantt]);
 
   // Filtered summary rows: only staff with at least one leave day this month
   const summaryRows = useMemo(
@@ -346,7 +397,7 @@ function LeavePlannerPage() {
   const listRows: ListRow[] = useMemo(() => {
     const rows: ListRow[] = [];
     const days = daysInMonth(year, month);
-    for (const st of staff) {
+    for (const st of filteredStaff) {
       const grid = gantt[st.id] ?? {};
       let current: StaffSegment | null = null;
       for (let d = 1; d <= days; d++) {
@@ -378,7 +429,7 @@ function LeavePlannerPage() {
     }
     rows.sort((a, b) => a.start - b.start || a.staffName.localeCompare(b.staffName));
     return rows;
-  }, [staff, gantt, year, month]);
+  }, [filteredStaff, gantt, year, month]);
 
   // ── Gantt column meta ──────────────────────────────────────────────────
   const numDays = daysInMonth(year, month);
@@ -415,9 +466,12 @@ function LeavePlannerPage() {
           <span className="text-sm font-medium">Leave Planner</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
+          <DepartmentFilter />
           <ThemeSwitch />
         </div>
       </Header>
+
+      <LeaveSubNav />
 
       <Main className="space-y-4">
         <PageHeader
@@ -490,7 +544,7 @@ function LeavePlannerPage() {
           </CardContent>
         </Card>
 
-        {/* ── Year + Month selectors + View toggle ─────────────────────── */}
+        {/* ── Month nav · Employee filter · View toggle ────────────────── */}
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={prevMonth} aria-label="Previous month">
             <ChevronLeft className="size-4" />
@@ -517,11 +571,26 @@ function LeavePlannerPage() {
             <ChevronRight className="size-4" />
           </Button>
 
+          {/* Employee filter */}
+          <Select
+            value={employeeFilter || "_all"}
+            onValueChange={(v) => setEmployeeFilter(v && v !== "_all" ? v : "")}
+          >
+            <SelectTrigger className="w-[190px]"><SelectValue placeholder="All staff" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all">All staff</SelectItem>
+              {staff.map((s) => (
+                <SelectItem key={s.id} value={s.id}>{s.user?.name ?? "Unnamed"}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <div className="ml-auto inline-flex rounded-md border overflow-hidden">
             {([
-              { v: "gantt",   icon: GanttChart, label: "Gantt"   },
-              { v: "list",    icon: ListIcon,   label: "List"    },
-              { v: "summary", icon: BarChart3,  label: "Summary" },
+              { v: "gantt",     icon: GanttChart, label: "Gantt"     },
+              { v: "list",      icon: ListIcon,   label: "List"      },
+              { v: "summary",   icon: BarChart3,  label: "Summary"   },
+              { v: "analytics", icon: TrendingUp, label: "Analytics" },
             ] as const).map((b) => {
               const ActiveIcon = b.icon;
               const isActive = view === b.v;
@@ -544,26 +613,45 @@ function LeavePlannerPage() {
           </div>
         </div>
 
-        {/* ── Legend ──────────────────────────────────────────────────── */}
-        <div className="flex flex-wrap items-center gap-1.5">
+        {/* ── Leave-type legend — doubles as an interactive filter ─────── */}
+        <div className="flex flex-wrap items-center gap-1.5 rounded-lg border bg-muted/30 px-3 py-2">
+          <span className="mr-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Leave types
+          </span>
+          <button
+            type="button"
+            onClick={() => setTypeFilter("")}
+            className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+              !typeFilter ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+            }`}
+          >
+            All
+          </button>
           {STAT_ORDER.map((code) => {
             const s = LEAVE_STYLES[code];
+            const active = typeFilter === code;
             return (
-              <span
+              <button
                 key={code}
-                className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold ${s.bg} ${s.tc}`}
+                type="button"
+                onClick={() => setTypeFilter(typeFilter === code ? "" : code)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                  active ? "border-primary bg-primary/10 text-foreground" : "border-transparent hover:bg-muted"
+                }`}
               >
-                {s.code} {s.label}
-              </span>
+                <span className={`size-2.5 rounded-full ${s.barBg}`} />
+                {s.label}
+              </button>
             );
           })}
-          <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold bg-muted text-muted-foreground">
-            — Weekend
+          <span className="ml-auto inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="size-2.5 rounded-sm bg-muted-foreground/25" />
+            Weekend
           </span>
         </div>
 
         {/* ── View body ───────────────────────────────────────────────── */}
-        {isLoading ? (
+        {isLoading && view !== "analytics" ? (
           <Skeleton className="h-72 w-full" />
         ) : view === "summary" ? (
           <SummaryView
@@ -578,9 +666,17 @@ function LeavePlannerPage() {
             month={month}
             typeNameById={new Map(types.map((t) => [t.id, t.name]))}
           />
+        ) : view === "analytics" ? (
+          <AnalyticsView
+            requests={(yearRequestsData ?? []) as LeaveRequestLite[]}
+            types={types}
+            year={year}
+            employeeFilter={employeeFilter}
+            typeFilter={typeFilter}
+          />
         ) : (
           <GanttView
-            staff={staff}
+            staff={filteredStaff}
             gantt={gantt}
             columnMeta={columnMeta}
           />
@@ -860,5 +956,161 @@ function GanttView({
         </table>
       </CardContent>
     </Card>
+  );
+}
+
+// ── Analytics view — whole-year charts ─────────────────────────────────────
+
+function reqDays(r: LeaveRequestLite): number {
+  try {
+    return Math.max(differenceInCalendarDays(parseISO(r.endDate), parseISO(r.startDate)) + 1, 1);
+  } catch {
+    return 1;
+  }
+}
+
+function AnalyticsStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <Card><CardContent className="p-4">
+      <div className="text-2xl font-bold tabular-nums">{value}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+    </CardContent></Card>
+  );
+}
+
+function AnalyticsView({
+  requests, types, year, employeeFilter, typeFilter,
+}: {
+  requests: LeaveRequestLite[];
+  types: LeaveTypeLite[];
+  year: number;
+  employeeFilter: string;
+  typeFilter: LeaveCode | "";
+}) {
+  const typeCodeById = useMemo(
+    () => new Map(types.map((t) => [t.id, classifyLeaveType(t.name).code])),
+    [types],
+  );
+  const codeOf = (r: LeaveRequestLite): LeaveCode =>
+    typeCodeById.get(r.leaveTypeId) ?? classifyLeaveType(r.leaveType?.name ?? "").code;
+
+  const rows = useMemo(
+    () => requests.filter((r) => {
+      if (r.status !== "approved") return false;
+      if (employeeFilter && r.staffProfileId !== employeeFilter) return false;
+      if (typeFilter && codeOf(r) !== typeFilter) return false;
+      return true;
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [requests, employeeFilter, typeFilter, typeCodeById],
+  );
+
+  const byType = useMemo(() => {
+    const map: Record<LeaveCode, number> = { A:0,S:0,M:0,C:0,H:0,W:0,O:0 };
+    for (const r of rows) map[codeOf(r)] += reqDays(r);
+    return STAT_ORDER
+      .map((c) => ({ name: LEAVE_STYLES[c].label, value: map[c], hex: CODE_HEX[c] }))
+      .filter((d) => d.value > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows]);
+
+  const byMonth = useMemo(() => {
+    const months = Array<number>(12).fill(0);
+    const yStart = new Date(year, 0, 1).getTime();
+    const yEnd = new Date(year, 11, 31).getTime();
+    for (const r of rows) {
+      let s: number, e: number;
+      try { s = parseISO(r.startDate).getTime(); e = parseISO(r.endDate).getTime(); }
+      catch { continue; }
+      const lo = Math.max(s, yStart), hi = Math.min(e, yEnd);
+      for (let t = lo; t <= hi; t += 86_400_000) months[new Date(t).getMonth()] += 1;
+    }
+    return months.map((value, i) => ({ name: format(new Date(2000, i, 1), "MMM"), value }));
+  }, [rows, year]);
+
+  const byDept = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const r of rows) {
+      const d = r.staffProfile?.department?.name ?? "—";
+      map.set(d, (map.get(d) ?? 0) + reqDays(r));
+    }
+    return [...map.entries()]
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [rows]);
+
+  const totalDays = useMemo(() => rows.reduce((s, r) => s + reqDays(r), 0), [rows]);
+  const distinctStaff = useMemo(
+    () => new Set(rows.map((r) => r.staffProfileId)).size,
+    [rows],
+  );
+
+  if (rows.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-16 text-center text-sm text-muted-foreground">
+          No approved leave for {year}.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <AnalyticsStat label={`Approved leave periods · ${year}`} value={rows.length} />
+        <AnalyticsStat label="Total leave days" value={totalDays} />
+        <AnalyticsStat label="Staff with leave" value={distinctStaff} />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-1"><CardTitle className="text-sm">Leave days by type</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={byType}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  {byType.map((d) => <Cell key={d.name} fill={d.hex} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-1"><CardTitle className="text-sm">Leave days by month</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={byMonth}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader className="pb-1"><CardTitle className="text-sm">Leave days by department</CardTitle></CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={Math.max(byDept.length * 36, 120)}>
+            <BarChart data={byDept} layout="vertical" margin={{ left: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+              <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Bar dataKey="value" fill="#2563eb" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

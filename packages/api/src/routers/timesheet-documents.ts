@@ -31,9 +31,18 @@ export const timesheetDocumentsRouter = {
       if (input.month) conditions.push(eq(timesheetDocuments.month, input.month));
       if (input.office) conditions.push(eq(timesheetDocuments.office, input.office));
 
+      // admin / hrAdminOps / manager / personalAssistant see every staff member's
+      // timesheet documents (HR-ops visibility). Everyone else is scoped to their
+      // own profile + any staff they manage.
+      const canSeeAll =
+        role === "admin" ||
+        role === "hrAdminOps" ||
+        role === "manager" ||
+        role === "personalAssistant";
+
       if (input.staffId) {
         conditions.push(eq(timesheetDocuments.staffId, input.staffId));
-      } else if (role !== "admin" && role !== "hrAdminOps" && role !== "manager") {
+      } else if (!canSeeAll) {
         const managed = await getManagedStaffIds(context);
         const caller = await getCallerStaffProfile(context);
         const ids = new Set(managed);

@@ -113,6 +113,15 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+// Safely format a value that may be a Date, an ISO string, or null/undefined.
+// oRPC's serializer revives `timestamp` columns as Date objects, so parseISO()
+// on String(date) yields an Invalid Date and format() throws RangeError.
+function safeFormatDate(value: unknown, pattern: string): string {
+  if (!value) return "—";
+  const d = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(d.getTime()) ? "—" : format(d, pattern);
+}
+
 // ─── Create Timesheet Dialog ──────────────────────────────────────────────────
 
 function CreateTimesheetDialog({
@@ -1075,22 +1084,33 @@ function isPdfDataUrl(dataUrl: string): boolean {
   return dataUrl.startsWith("data:application/pdf");
 }
 
-function openTimesheetDocument(storagePath: string, filename: string) {
+async function openTimesheetDocument(storagePath: string, filename: string) {
   if (!storagePath) {
     toast.error("This document has no stored file.");
     return;
   }
-  if (isPdfDataUrl(storagePath)) {
-    window.open(storagePath, "_blank", "noopener,noreferrer");
-    return;
+  try {
+    // Chrome blocks top-level navigation to large `data:` URLs, so convert the
+    // stored data URL into a Blob object URL — those are allowed to open.
+    const response = await fetch(storagePath);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    if (isPdfDataUrl(storagePath)) {
+      window.open(objectUrl, "_blank", "noopener,noreferrer");
+    } else {
+      // Excel / other — trigger a download via a transient anchor.
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = filename || "timesheet";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    }
+    // Give the browser time to load the resource before releasing the URL.
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+  } catch {
+    toast.error("Could not open the timesheet file.");
   }
-  // Excel / other — trigger a download via a transient anchor.
-  const anchor = document.createElement("a");
-  anchor.href = storagePath;
-  anchor.download = filename || "timesheet";
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
 }
 
 // ─── Upload Timesheet Document Dialog ─────────────────────────────────────────
@@ -1475,9 +1495,7 @@ function TimesheetDocumentsTab() {
                     {doc.uploader?.name ?? "—"}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                    {doc.uploadedAt
-                      ? format(parseISO(String(doc.uploadedAt)), "dd MMM yyyy")
-                      : "—"}
+                    {safeFormatDate(doc.uploadedAt, "dd MMM yyyy")}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1.5">

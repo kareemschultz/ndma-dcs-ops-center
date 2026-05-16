@@ -1,0 +1,4037 @@
+{
+ "entries": [
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-03-08",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-kevin-pharous",
+   "date": "2022-03-28",
+   "type": "medical",
+   "reasonText": null,
+   "days": 5.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2022-05-07",
+   "type": "medical",
+   "reasonText": null,
+   "days": 4.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-tramayne-henry",
+   "date": "2022-05-23",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-05-30",
+   "type": "absent",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-06-16",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-jamal-gray",
+   "date": "2022-06-21",
+   "type": "medical",
+   "reasonText": null,
+   "days": 5.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2022-07-06",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-07-13",
+   "type": "absent",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2022-07-20",
+   "type": "medical",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-07-26",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-osafo-sam",
+   "date": "2022-07-29",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2022-08-02",
+   "type": "medical",
+   "reasonText": null,
+   "days": 10.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-joshua",
+   "date": "2022-08-15",
+   "type": "medical",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2022-08-21",
+   "type": "absent",
+   "reasonText": null,
+   "days": null,
+   "hours": 8.0
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2022-08-29",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-marcellous-bhagwandeen",
+   "date": "2022-08-30",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-09-22",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-10-06",
+   "type": "medical",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-marcellous-bhagwandeen",
+   "date": "2022-10-12",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-lionel-christian",
+   "date": "2022-10-18",
+   "type": "medical",
+   "reasonText": null,
+   "days": 5.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-10-21",
+   "type": "medical",
+   "reasonText": null,
+   "days": 5.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2022-10-21",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2022-10-27",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-kevin-pharous",
+   "date": "2022-11-02",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-kevin-pharous",
+   "date": "2022-11-08",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-kevin-pharous",
+   "date": "2022-11-09",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-11-11",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.5
+  },
+  {
+   "staffProfileId": "sp-ex-marcellous-bhagwandeen",
+   "date": "2022-11-11",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.5
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2022-11-13",
+   "type": "callout_legacy",
+   "reasonText": "Livestreaming Cenotaph",
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-ex-marcellous-bhagwandeen",
+   "date": "2022-11-14",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.5
+  },
+  {
+   "staffProfileId": "sp-ex-marcellous-bhagwandeen",
+   "date": "2022-11-15",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 7.5
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-11-16",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2022-11-23",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.5
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2022-11-24",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 7.5
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-11-24",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-11-25",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2022-11-25",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2022-11-27",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-11-28",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.5
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2022-11-28",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2022-12-01",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 0.5
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-12-01",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.5
+  },
+  {
+   "staffProfileId": "sp-ex-kevin-pharous",
+   "date": "2022-12-03",
+   "type": "callout_legacy",
+   "reasonText": "Timehri Fibre Cut",
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2022-12-05",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2022-12-05",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-12-06",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.5
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2022-12-07",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-12-07",
+   "type": "work_from_home",
+   "reasonText": null,
+   "days": null,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-marcellous-bhagwandeen",
+   "date": "2022-12-07",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.5
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2022-12-08",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.5
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-12-08",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-ex-kevin-pharous",
+   "date": "2022-12-09",
+   "type": "callout_legacy",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-ex-lionel-christian",
+   "date": "2022-12-11",
+   "type": "time_off",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2022-12-12",
+   "type": "time_off",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-osafo-sam",
+   "date": "2022-12-12",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-12-22",
+   "type": "time_off",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2022-12-23",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-12-23",
+   "type": "absent",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2022-12-27",
+   "type": "medical",
+   "reasonText": null,
+   "days": 21.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-osafo-sam",
+   "date": "2022-12-28",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2022-12-28",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2022-12-28",
+   "type": "callout_legacy",
+   "reasonText": "SIM 1189 Investigation",
+   "days": null,
+   "hours": 6.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2022-12-29",
+   "type": "work_from_home",
+   "reasonText": "Family emergency",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-tramayne-henry",
+   "date": "2022-12-29",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 4.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2022-12-30",
+   "type": "callout_legacy",
+   "reasonText": "MOHSSS Link Off",
+   "days": null,
+   "hours": 3.5
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2022-12-31",
+   "type": "callout_legacy",
+   "reasonText": "Statehouse Livestreaming Issues",
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2022-12-31",
+   "type": "callout_legacy",
+   "reasonText": "Police Mess Livestreaming Service",
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2023-01-03",
+   "type": "time_off",
+   "reasonText": "UG",
+   "days": null,
+   "hours": 3.5
+  },
+  {
+   "staffProfileId": "sp-ex-tramayne-henry",
+   "date": "2023-01-04",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": null,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-01-05",
+   "type": "time_off",
+   "reasonText": "Personal errand",
+   "days": null,
+   "hours": 3.5
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2023-01-05",
+   "type": "time_off",
+   "reasonText": "UG",
+   "days": null,
+   "hours": 3.5
+  },
+  {
+   "staffProfileId": "sp-ex-jamal-gray",
+   "date": "2023-01-09",
+   "type": "time_off",
+   "reasonText": "Had an issue with water in his neighbourhood and was unable to prepare him self for work",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-joshua",
+   "date": "2023-01-10",
+   "type": "time_off",
+   "reasonText": "Family emergency",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2023-01-11",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2023-01-12",
+   "type": "time_off",
+   "reasonText": "Personal errand",
+   "days": null,
+   "hours": 2.5
+  },
+  {
+   "staffProfileId": "sp-ex-kevin-pharous",
+   "date": "2023-01-16",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-titus-collins",
+   "date": "2023-01-17",
+   "type": "time_off",
+   "reasonText": "Personal errand",
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-01-18",
+   "type": "time_off",
+   "reasonText": "Medical",
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-stefan",
+   "date": "2023-01-18",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2023-01-20",
+   "type": "callout_legacy",
+   "reasonText": "A10 Project",
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2023-01-23",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.5
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-01-23",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2023-01-23",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2023-01-23",
+   "type": "callout_legacy",
+   "reasonText": "A10 Project",
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2023-01-24",
+   "type": "time_off",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-01-24",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2023-01-24",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-01-26",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-01-26",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-01-30",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.5
+  },
+  {
+   "staffProfileId": "sp-ex-jamal-gray",
+   "date": "2023-01-30",
+   "type": "time_off",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-02-01",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.5
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-02-02",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2023-02-07",
+   "type": "callout_legacy",
+   "reasonText": "To provide support for Presidential Livestreaming service at GDF Officer's Mess\"",
+   "days": null,
+   "hours": 3.5
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-02-10",
+   "type": "time_off",
+   "reasonText": "Personal errand",
+   "days": null,
+   "hours": 5.0
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-02-14",
+   "type": "callout_legacy",
+   "reasonText": "Relocation Racks",
+   "days": null,
+   "hours": 2.5
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2023-02-14",
+   "type": "callout_legacy",
+   "reasonText": "Relocation Racks",
+   "days": null,
+   "hours": 2.5
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-02-15",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.5
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2023-02-18",
+   "type": "callout_legacy",
+   "reasonText": "National Stadium Livestreaming",
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2023-02-21",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-03-08",
+   "type": "time_off",
+   "reasonText": "Funeral",
+   "days": null,
+   "hours": 3.5
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-03-13",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-03-13",
+   "type": "work_from_home",
+   "reasonText": "Work From Home",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-03-14",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2023-03-14",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2023-03-15",
+   "type": "time_off",
+   "reasonText": "Doctor Visit",
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-03-15",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.5
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-03-20",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 5.5
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-03-20",
+   "type": "time_off",
+   "reasonText": "Family emergency",
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2023-03-21",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-03-22",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.5
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2023-03-27",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.5
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2023-03-27",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-04-04",
+   "type": "reported_sick",
+   "reasonText": "Medical Submitted",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2023-04-05",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2023-04-05",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-04-05",
+   "type": "reported_sick",
+   "reasonText": "Medical Submitted",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2023-04-19",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-ex-alec-persaud",
+   "date": "2023-04-19",
+   "type": "time_off",
+   "reasonText": "Doctor Visit",
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-04-20",
+   "type": "time_off",
+   "reasonText": "Doctor Visit",
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-ex-osafo-sam",
+   "date": "2023-05-02",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2023-05-03",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2023-05-03",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-osafo-sam",
+   "date": "2023-05-03",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2023-05-08",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2023-05-09",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2023-05-10",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-ex-kevin-pharous",
+   "date": "2023-05-10",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.5
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-05-11",
+   "type": "time_off",
+   "reasonText": "Dentist Visit",
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-05-12",
+   "type": "time_off",
+   "reasonText": "Work From Home",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2023-05-15",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-ex-osafo-sam",
+   "date": "2023-05-16",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-05-16",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2023-05-16",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-ex-osafo-sam",
+   "date": "2023-05-17",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-05-17",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.5
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2023-05-17",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2023-05-23",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": null,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2023-05-23",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2023-05-23",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-05-24",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2023-05-30",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.5
+  },
+  {
+   "staffProfileId": "sp-ex-titus-collins",
+   "date": "2023-05-30",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-marcellous-bhagwandeen",
+   "date": "2023-05-31",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2023-05-31",
+   "type": "time_off",
+   "reasonText": "Personal errand",
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-ex-marcellous-bhagwandeen",
+   "date": "2023-06-01",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2023-06-01",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-joshua",
+   "date": "2023-06-03",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-joshua",
+   "date": "2023-06-04",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2023-06-05",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-titus-collins",
+   "date": "2023-06-05",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2023-06-06",
+   "type": "reported_sick",
+   "reasonText": "Possible covid, awaiting results",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-titus-collins",
+   "date": "2023-06-06",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2023-06-12",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-06-12",
+   "type": "work_from_home",
+   "reasonText": "Flood",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2023-06-13",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2023-06-14",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2023-06-21",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 0.5
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2023-06-27",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2023-07-10",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2023-07-13",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.5
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2023-07-17",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-kevin-pharous",
+   "date": "2023-07-17",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-ex-marcellous-bhagwandeen",
+   "date": "2023-07-18",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-07-18",
+   "type": "time_off",
+   "reasonText": "Doctor Visit",
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-07-19",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 5.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-07-19",
+   "type": "reported_sick",
+   "reasonText": "Medical Submitted",
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2023-07-24",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-07-25",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2023-08-11",
+   "type": "callout_legacy",
+   "reasonText": "Firmware Upgrade Core Switches",
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2023-08-18",
+   "type": "callout_legacy",
+   "reasonText": "Firmware Upgrade Core Switches",
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2023-08-25",
+   "type": "callout_legacy",
+   "reasonText": "Firmware Upgrade Core Switches",
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2023-08-25",
+   "type": "callout_legacy",
+   "reasonText": "Firmware Upgrade Core Switches",
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2023-08-29",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2023-08-30",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2023-09-01",
+   "type": "callout_legacy",
+   "reasonText": "Firmware Upgrade Core Switches",
+   "days": null,
+   "hours": 4.5
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-09-05",
+   "type": "time_off",
+   "reasonText": "Bank, Personal",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-osafo-sam",
+   "date": "2023-09-06",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": null,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2023-09-07",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2023-09-07",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2023-09-07",
+   "type": "callout_legacy",
+   "reasonText": "Firmware Upgrade Core Switches",
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2023-09-08",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-asif",
+   "date": "2023-09-12",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-09-14",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2023-09-18",
+   "type": "time_off",
+   "reasonText": "Emergency",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-stefan",
+   "date": "2023-09-22",
+   "type": "reported_sick",
+   "reasonText": "Medical Submitted",
+   "days": 5.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-tramayne-henry",
+   "date": "2023-09-23",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2023-09-29",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-09-29",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2023-09-30",
+   "type": "reported_sick",
+   "reasonText": "Report Sick",
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2023-10-04",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.5
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-10-05",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2023-10-06",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-ex-joel-samuels",
+   "date": "2023-10-18",
+   "type": "time_off",
+   "reasonText": "Family emergency",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2023-10-20",
+   "type": "callout_legacy",
+   "reasonText": "Livestreaming Police Officer Mess",
+   "days": null,
+   "hours": 0.5
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2023-10-21",
+   "type": "callout_legacy",
+   "reasonText": "Safecountry VPN Configuration",
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2023-10-22",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2023-10-23",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-10-25",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-10-27",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-10-30",
+   "type": "time_off",
+   "reasonText": "Family emergency",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-11-01",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2023-11-08",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2023-11-08",
+   "type": "time_off",
+   "reasonText": "Family emergency",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2023-11-09",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2023-11-09",
+   "type": "time_off",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-11-22",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2023-11-27",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2023-11-29",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-11-29",
+   "type": "work_from_home",
+   "reasonText": "No Water at home",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-12-05",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2023-12-05",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-asif",
+   "date": "2023-12-05",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2023-12-07",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2023-12-09",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2023-12-11",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2023-12-12",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2023-12-14",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-shemar",
+   "date": "2023-12-16",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2023-12-22",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2023-12-27",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2023-12-27",
+   "type": "time_off",
+   "reasonText": "Bank, Personal",
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-richie",
+   "date": "2023-12-28",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-joshua",
+   "date": "2024-01-10",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2024-01-12",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2024-01-15",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.5
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2024-01-15",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-ex-marcellous-bhagwandeen",
+   "date": "2024-01-16",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2024-01-17",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-01-18",
+   "type": "work_from_home",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2024-01-18",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2024-01-22",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-01-23",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2024-01-24",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-shemar",
+   "date": "2024-01-29",
+   "type": "time_off",
+   "reasonText": null,
+   "days": 7.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-marcellous-bhagwandeen",
+   "date": "2024-01-30",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-sachin",
+   "date": "2024-02-01",
+   "type": "work_from_home",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-02-02",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2024-02-02",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2024-02-02",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 6.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-02-06",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.5
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2024-02-06",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-shameer",
+   "date": "2024-02-06",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2024-02-12",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-02-13",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2024-02-16",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-asif",
+   "date": "2024-02-17",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2024-02-20",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-joshua",
+   "date": "2024-02-21",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2024-02-21",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2024-02-22",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-02-29",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2024-02-29",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-asif",
+   "date": "2024-03-03",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2024-03-08",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2024-03-09",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-03-13",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-marcellous-bhagwandeen",
+   "date": "2024-03-14",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2024-03-18",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 5.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-03-22",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2024-04-01",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2024-04-02",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-asif",
+   "date": "2024-04-08",
+   "type": "reported_sick",
+   "reasonText": "Medical Submitted",
+   "days": 8.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2024-04-16",
+   "type": "reported_sick",
+   "reasonText": "Medical Submitted",
+   "days": 7.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2024-04-17",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-04-23",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-richie",
+   "date": "2024-04-26",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2024-04-29",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-04-30",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2024-04-30",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-joshua",
+   "date": "2024-05-03",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-marcellous-bhagwandeen",
+   "date": "2024-05-08",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2024-05-10",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-05-14",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2024-05-14",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.0
+  },
+  {
+   "staffProfileId": "sp-shameer",
+   "date": "2024-05-15",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2024-05-16",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2024-05-17",
+   "type": "work_from_home",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2024-05-20",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-05-28",
+   "type": "work_from_home",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-richie",
+   "date": "2024-05-28",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-06-04",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-06-06",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 5.0
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2024-06-08",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2024-06-10",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2024-06-11",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-ex-joel-samuels",
+   "date": "2024-06-11",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2024-06-12",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2024-06-12",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2024-06-12",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2024-06-12",
+   "type": "reported_sick",
+   "reasonText": "Medical Submitted",
+   "days": 5.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2024-06-13",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2024-06-14",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2024-06-18",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-06-24",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-joshua",
+   "date": "2024-06-28",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2024-07-03",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2024-07-08",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2024-07-08",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2024-07-09",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2024-07-09",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-stefan",
+   "date": "2024-07-10",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 5.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2024-07-13",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-marcellous-bhagwandeen",
+   "date": "2024-07-24",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2024-07-28",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2024-07-29",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-stefan",
+   "date": "2024-07-29",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-asif",
+   "date": "2024-08-08",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-08-14",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2024-08-14",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2024-08-16",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2024-08-19",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2024-08-20",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-marcellous-bhagwandeen",
+   "date": "2024-08-21",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-08-26",
+   "type": "time_off",
+   "reasonText": "Bank Run",
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2024-08-26",
+   "type": "time_off",
+   "reasonText": "Son is in the hospital",
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2024-08-26",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-08-29",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2024-09-01",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-09-09",
+   "type": "work_from_home",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2024-09-09",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-richie",
+   "date": "2024-09-09",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2024-09-11",
+   "type": "time_off",
+   "reasonText": "Bank Run",
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2024-09-20",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-09-25",
+   "type": "work_from_home",
+   "reasonText": "Home is flooded",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-10-08",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2024-10-09",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-asif",
+   "date": "2024-10-10",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-stefan",
+   "date": "2024-10-10",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2024-10-14",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-joshua",
+   "date": "2024-10-15",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2024-10-15",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2024-10-17",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-shemar",
+   "date": "2024-10-18",
+   "type": "work_from_home",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2024-10-20",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2024-11-01",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 1.5
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-11-11",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2024-11-11",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2024-11-28",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-johnatan",
+   "date": "2024-11-28",
+   "type": "reported_sick",
+   "reasonText": "Medical Submitted",
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2024-12-05",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2024-12-09",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-timothy",
+   "date": "2025-01-06",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-joel-samuels",
+   "date": "2025-01-06",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2025-01-07",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2025-01-08",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-shemar",
+   "date": "2025-01-09",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2025-01-12",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-richie",
+   "date": "2025-01-14",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2025-01-20",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2025-01-21",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-alicia-arthur",
+   "date": "2025-01-23",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-joel-samuels",
+   "date": "2025-01-24",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-joel-samuels",
+   "date": "2025-01-29",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2025-01-30",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-timothy",
+   "date": "2025-01-30",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-joel-samuels",
+   "date": "2025-01-30",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2025-02-01",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2025-02-04",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-wynonna",
+   "date": "2025-02-19",
+   "type": "reported_sick",
+   "reasonText": "Medical Submitted",
+   "days": 4.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2025-02-19",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-stefan",
+   "date": "2025-02-20",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2025-02-25",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2025-02-25",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-johnatan",
+   "date": "2025-02-26",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2025-03-02",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2025-03-03",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2025-03-04",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-shemar",
+   "date": "2025-03-04",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-shameer",
+   "date": "2025-03-05",
+   "type": "reported_sick",
+   "reasonText": "Medical Submitted",
+   "days": 6.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2025-03-05",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2025-03-10",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ayeldre",
+   "date": "2025-03-18",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2025-03-19",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-wynonna",
+   "date": "2025-03-19",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-wynonna",
+   "date": "2025-03-28",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2025-03-31",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-asif",
+   "date": "2025-03-31",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-wynonna",
+   "date": "2025-04-01",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2025-04-04",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-shemar",
+   "date": "2025-04-07",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-asif",
+   "date": "2025-04-07",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-richie",
+   "date": "2025-04-08",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2025-04-08",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2025-04-14",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2025-04-14",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2025-04-16",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-wynonna",
+   "date": "2025-04-17",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2025-04-23",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2025-04-24",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-joel-samuels",
+   "date": "2025-04-24",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2025-04-28",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2025-05-04",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-timothy",
+   "date": "2025-05-08",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2025-05-13",
+   "type": "absent",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2025-05-14",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2025-05-20",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-joshua",
+   "date": "2025-05-21",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2025-05-27",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2025-05-27",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2025-05-28",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-wynonna",
+   "date": "2025-05-31",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2025-06-01",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2025-06-03",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-richie",
+   "date": "2025-06-03",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-johnatan",
+   "date": "2025-06-05",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-stefan",
+   "date": "2025-06-16",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2025-06-23",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-asif",
+   "date": "2025-06-26",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-shemar",
+   "date": "2025-07-16",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2025-07-18",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2025-07-22",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2025-07-29",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-joshua",
+   "date": "2025-07-30",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-wynonna",
+   "date": "2025-08-04",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-johnatan",
+   "date": "2025-08-12",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-shemar",
+   "date": "2025-08-12",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-wynonna",
+   "date": "2025-08-12",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2025-08-14",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2025-08-14",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2025-08-14",
+   "type": "time_off",
+   "reasonText": "Attended funeral",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-richie",
+   "date": "2025-08-15",
+   "type": "time_off",
+   "reasonText": "Bank",
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-richie",
+   "date": "2025-08-20",
+   "type": "time_off",
+   "reasonText": "Bank",
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2025-08-22",
+   "type": "time_off",
+   "reasonText": "Bank",
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2025-08-27",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-joshua",
+   "date": "2025-08-28",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2025-09-03",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2025-09-03",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2025-09-08",
+   "type": "reported_sick",
+   "reasonText": "Medical Submitted",
+   "days": 5.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2025-09-22",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-joel-samuels",
+   "date": "2025-09-23",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2025-09-25",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2025-09-27",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-asif",
+   "date": "2025-10-06",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-timothy",
+   "date": "2025-10-06",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-stefan",
+   "date": "2025-10-06",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-joshua",
+   "date": "2025-10-07",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2025-10-07",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-joshua",
+   "date": "2025-10-15",
+   "type": "time_off",
+   "reasonText": "Driving test",
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2025-10-17",
+   "type": "time_off",
+   "reasonText": "Clinic",
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2025-10-19",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2025-10-22",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-wynonna",
+   "date": "2025-10-23",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-johnatan",
+   "date": "2025-11-03",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-shemar",
+   "date": "2025-11-04",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2025-11-18",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 3.0
+  },
+  {
+   "staffProfileId": "sp-johnatan",
+   "date": "2025-11-24",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-richie",
+   "date": "2025-11-25",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2025-12-19",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2025-12-23",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2025-12-24",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ayeldre",
+   "date": "2025-12-27",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-timothy",
+   "date": "2025-12-30",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2025-12-31",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-richie",
+   "date": "2026-01-02",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-richie",
+   "date": "2026-01-07",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2026-01-09",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2026-01-14",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2026-01-15",
+   "type": "absent",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2026-01-18",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-gerard",
+   "date": "2026-01-20",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-joshua",
+   "date": "2026-01-21",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-shameer",
+   "date": "2026-01-22",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2026-01-26",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ex-curlyann-morrise",
+   "date": "2026-01-29",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-wynonna",
+   "date": "2026-02-02",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-shemar",
+   "date": "2026-02-05",
+   "type": "absent",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2026-02-11",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2026-02-12",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2026-02-18",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2026-02-21",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2026-02-24",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-stefan",
+   "date": "2026-02-25",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-johnatan",
+   "date": "2026-02-25",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-timothy",
+   "date": "2026-03-02",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-nicolai",
+   "date": "2026-03-02",
+   "type": "reported_sick",
+   "reasonText": "Did also work from home",
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2026-03-03",
+   "type": "work_from_home",
+   "reasonText": "He has a medical but we are short on staff, no one else to fill in",
+   "days": 4.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-stefan",
+   "date": "2026-03-04",
+   "type": "work_from_home",
+   "reasonText": "Taxi did not pick him up",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-shemar",
+   "date": "2026-03-04",
+   "type": "work_from_home",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ayeldre",
+   "date": "2026-03-04",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-richie",
+   "date": "2026-03-04",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-devon",
+   "date": "2026-03-04",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2026-03-09",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-shemar",
+   "date": "2026-03-09",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 2.0
+  },
+  {
+   "staffProfileId": "sp-wynonna",
+   "date": "2026-03-12",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-bheesham",
+   "date": "2026-03-16",
+   "type": "time_off",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-keoma",
+   "date": "2026-03-17",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ataybia",
+   "date": "2026-03-18",
+   "type": "time_off",
+   "reasonText": null,
+   "days": null,
+   "hours": 4.0
+  },
+  {
+   "staffProfileId": "sp-stefan",
+   "date": "2026-03-19",
+   "type": "work_from_home",
+   "reasonText": "sachin approved",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2026-03-24",
+   "type": "work_from_home",
+   "reasonText": "sachin approved",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2026-03-24",
+   "type": "work_from_home",
+   "reasonText": "Religious Reason",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2026-03-25",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2026-03-25",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-asif",
+   "date": "2026-03-29",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-johnatan",
+   "date": "2026-03-31",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-dennis",
+   "date": "2026-04-04",
+   "type": "work_from_home",
+   "reasonText": "sachin approved",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-wynonna",
+   "date": "2026-04-04",
+   "type": "work_from_home",
+   "reasonText": "sachin approved",
+   "days": 1.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-wynonna",
+   "date": "2026-04-20",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-joshua",
+   "date": "2026-04-24",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-ganesh",
+   "date": "2026-04-27",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-shemar",
+   "date": "2026-04-28",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 3.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-morrison",
+   "date": "2026-04-29",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 2.0,
+   "hours": null
+  },
+  {
+   "staffProfileId": "sp-kareem",
+   "date": "2026-04-29",
+   "type": "reported_sick",
+   "reasonText": null,
+   "days": 1.0,
+   "hours": null
+  }
+ ],
+ "skipped": {}
+}

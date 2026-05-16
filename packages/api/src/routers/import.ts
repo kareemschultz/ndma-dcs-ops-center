@@ -216,12 +216,16 @@ type ImportRowResult = {
   meta?: Record<string, string | null>;
 };
 
-// Leave import: 2026 dates only, existing staff only (never creates new staff)
+// Leave import: 2025 + 2026 dates only, existing staff only (never creates new staff)
 const leaveRowSchema = z.object({
   staffEmail: z.string().email(),
   leaveTypeCode: z.string().min(1), // e.g. AL, SL, ML
-  startDate: z.string().regex(/^2026-\d{2}-\d{2}$/, "startDate must be a 2026 date (YYYY-MM-DD)"),
-  endDate: z.string().regex(/^2026-\d{2}-\d{2}$/, "endDate must be a 2026 date (YYYY-MM-DD)"),
+  startDate: z
+    .string()
+    .regex(/^202[56]-\d{2}-\d{2}$/, "startDate must be a 2025 or 2026 date (YYYY-MM-DD)"),
+  endDate: z
+    .string()
+    .regex(/^202[56]-\d{2}-\d{2}$/, "endDate must be a 2025 or 2026 date (YYYY-MM-DD)"),
   totalDays: z.string().regex(/^\d+$/, "totalDays must be a number"),
   reason: z.string().optional(),
 });

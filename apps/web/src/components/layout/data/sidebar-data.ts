@@ -22,7 +22,6 @@ import {
   FileClock,
   FileSignature,
   FileText,
-  GanttChart,
   GitPullRequest,
   GraduationCap,
   IdCard,
@@ -82,7 +81,6 @@ export const sidebarData: Omit<SidebarData, "user"> = {
       items: [
         { title: "Directory", url: "/staff", icon: Users },
         { title: "Leave", url: "/leave", icon: TreePalm },
-        { title: "Leave Planner", url: "/leave/planner", icon: GanttChart, badge: "new" },
         { title: "Career Progression", url: "/career-progression", icon: TrendingUp },
         {
           title: "Contracts",
