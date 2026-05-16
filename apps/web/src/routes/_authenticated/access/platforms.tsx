@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ndma-dcs-staff-portal/ui/components/select";
+import { AccessSubNav } from "@/components/layout/access-sub-nav";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -167,6 +168,7 @@ function PlatformsPage() {
           <ThemeSwitch />
         </div>
       </Header>
+      <AccessSubNav activeView="platforms" />
       <Main>
         <div className="mb-4 max-w-3xl text-sm text-muted-foreground">
           The platforms reference table is Layer 1 of the 3-layer access registry. Each row represents a system NDMA staff have accounts on (Zabbix, Grafana, Fortigate, Uportal, biometric door systems, etc.). See master plan §5.2.

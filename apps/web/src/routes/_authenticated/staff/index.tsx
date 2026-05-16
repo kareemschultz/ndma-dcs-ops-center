@@ -35,6 +35,7 @@ import { Main } from "@/components/layout/main";
 import { useTeamFilter } from "@/lib/team-filter";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { FormerTag, isFormerStatus } from "@/components/former-tag";
+import { DataPagination, usePagination } from "@/components/data-pagination";
 import { TONES, LIFECYCLE_STATUS_TONE } from "@/lib/status-colors";
 import { orpc } from "@/utils/orpc";
 import { authClient } from "@/lib/auth-client";
@@ -446,6 +447,8 @@ function StaffPage() {
     return true;
   });
 
+  const pagination = usePagination(filtered ?? [], 24);
+
   const activeCount = data?.filter((s) => s.status === "active").length ?? 0;
 
   return (
@@ -599,15 +602,25 @@ function StaffPage() {
                 {search ? "No staff matching your search." : "No staff found."}
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {filtered.map((staff) => (
-                  <StaffCard
-                    key={staff.id}
-                    staff={staff}
-                    onOpen={(id) => navigate({ to: "/staff/$staffId", params: { staffId: id } })}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {pagination.pageItems.map((staff) => (
+                    <StaffCard
+                      key={staff.id}
+                      staff={staff}
+                      onOpen={(id) => navigate({ to: "/staff/$staffId", params: { staffId: id } })}
+                    />
+                  ))}
+                </div>
+                <DataPagination
+                  page={pagination.page}
+                  pageCount={pagination.pageCount}
+                  total={pagination.total}
+                  rangeLabel={pagination.rangeLabel}
+                  onPageChange={pagination.setPage}
+                  className="mt-3"
+                />
+              </>
             )}
           </div>
         ) : (
@@ -642,7 +655,7 @@ function StaffPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((s) => (
+                  pagination.pageItems.map((s) => (
                     <TableRow key={s.id}>
                       <TableCell>
                         <Link
@@ -702,6 +715,15 @@ function StaffPage() {
                 )}
               </TableBody>
             </Table>
+            <div className="border-t px-2">
+              <DataPagination
+                page={pagination.page}
+                pageCount={pagination.pageCount}
+                total={pagination.total}
+                rangeLabel={pagination.rangeLabel}
+                onPageChange={pagination.setPage}
+              />
+            </div>
           </div>
         )}
       </Main>

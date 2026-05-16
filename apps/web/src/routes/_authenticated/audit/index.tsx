@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@ndma-dcs-staff-portal/ui/components/table";
+import { DataPagination, usePagination } from "@/components/data-pagination";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -128,6 +129,8 @@ function AuditPage() {
     })
   );
 
+  const pagination = usePagination(data ?? [], 25);
+
   return (
     <>
       <Header fixed>
@@ -203,10 +206,21 @@ function AuditPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                data.map((log) => <AuditRow key={log.id} log={log} />)
+                pagination.pageItems.map((log) => (
+                  <AuditRow key={log.id} log={log} />
+                ))
               )}
             </TableBody>
           </Table>
+          <div className="border-t px-2">
+            <DataPagination
+              page={pagination.page}
+              pageCount={pagination.pageCount}
+              total={pagination.total}
+              rangeLabel={pagination.rangeLabel}
+              onPageChange={pagination.setPage}
+            />
+          </div>
         </div>
       </Main>
     </>

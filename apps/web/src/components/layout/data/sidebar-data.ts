@@ -1,18 +1,19 @@
-// NDMA DCS Ops Center sidebar — synced 1:1 to canonical handoff prototype
-// (design handoff/sidebar.jsx). Unique icon per concept; "new" badges on
-// Leave Planner and Advance Requests per prototype.
+// NDMA DCS Ops Center sidebar.
+//
+// Consolidated to 9 groups (was 12) to cut scrolling — single-item groups were
+// merged into related ones and the Access trio collapsed into one tabbed hub.
 //
 // Hub pages have internal sub-navs (no sub-routes in sidebar):
 //   /attendance — tabs: Logs · Roll-Call · Lateness · Time-Off & Sick Days · Holidays · Analytics
 //   /scheduling — tabs: Calendar · DCS · NOC · Maintenance
 //   /training   — tabs: Overview · Plan · Exams · Vouchers · Events · In-House · Catalog
+//   /access     — tabs: Accounts · Registry · Platforms
 //   /settings   — tabs: General · Departments · Roles · Leave Types · Automation · Escalation
 
 import {
   Activity,
   BarChart3,
   BookOpen,
-  Boxes,
   CalendarDays,
   ClipboardCheck,
   ClipboardList,
@@ -24,7 +25,6 @@ import {
   FileText,
   GitPullRequest,
   GraduationCap,
-  IdCard,
   KeyRound,
   LayoutDashboard,
   Repeat,
@@ -66,12 +66,10 @@ export const sidebarData: Omit<SidebarData, "user"> = {
       ],
     },
     {
-      title: "Scheduling",
-      items: [{ title: "Calendar", url: "/scheduling", icon: CalendarDays }],
-    },
-    {
-      title: "Time & Attendance",
+      // Scheduling merged in here — it was a single-item group.
+      title: "Scheduling & Time",
       items: [
+        { title: "Scheduling", url: "/scheduling", icon: CalendarDays },
         { title: "Attendance", url: "/attendance", icon: Clock },
         { title: "Timesheets", url: "/timesheets", icon: FileClock },
       ],
@@ -97,23 +95,21 @@ export const sidebarData: Omit<SidebarData, "user"> = {
       ],
     },
     {
-      title: "Performance",
+      // Training merged in here — it was a single-item group.
+      title: "Performance & Training",
       items: [
         { title: "Appraisals", url: "/appraisals", icon: ClipboardCheck },
         { title: "Cycles", url: "/cycles", icon: Repeat },
         { title: "NOC Performance", url: "/noc-performance", icon: Activity },
+        { title: "Training", url: "/training", icon: GraduationCap },
       ],
     },
     {
-      title: "Training",
-      items: [{ title: "Training", url: "/training", icon: GraduationCap }],
-    },
-    {
+      // Identity & Access — Registry + Platforms collapsed into the /access
+      // hub's tab bar, so this is now a single sidebar entry.
       title: "Identity & Access",
       items: [
-        { title: "Accounts", url: "/access", icon: KeyRound, requiredResource: "access" },
-        { title: "Registry", url: "/access/registry", icon: IdCard, requiredResource: "access" },
-        { title: "Platforms", url: "/access/platforms", icon: Boxes, requiredResource: "access" },
+        { title: "Access", url: "/access", icon: KeyRound, requiredResource: "access" },
       ],
     },
     {
@@ -136,16 +132,12 @@ export const sidebarData: Omit<SidebarData, "user"> = {
       ],
     },
     {
-      title: "Reports & Analytics",
+      // Reports & Analytics + Admin merged — Admin was a single-item group.
+      title: "Reports & Admin",
       items: [
         { title: "Analytics", url: "/analytics", icon: BarChart3 },
         { title: "Reports", url: "/reports", icon: FileBarChart, requiredResource: "report" },
         { title: "Audit Log", url: "/audit", icon: ScrollText },
-      ],
-    },
-    {
-      title: "Admin",
-      items: [
         { title: "Settings", url: "/settings", icon: Settings, requiredResource: "settings" },
       ],
     },

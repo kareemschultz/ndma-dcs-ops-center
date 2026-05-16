@@ -42,6 +42,7 @@ import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
 import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
 import { Textarea } from "@ndma-dcs-staff-portal/ui/components/textarea";
 import { Switch } from "@ndma-dcs-staff-portal/ui/components/switch";
+import { AccessSubNav } from "@/components/layout/access-sub-nav";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -1134,6 +1135,8 @@ function PlatformAccountsPage() {
           <ThemeSwitch />
         </div>
       </Header>
+
+      <AccessSubNav activeView="accounts" />
 
       <Main>
         <div className="mb-6">

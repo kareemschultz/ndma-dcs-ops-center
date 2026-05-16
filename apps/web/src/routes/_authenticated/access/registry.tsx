@@ -20,6 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from "@ndma-dcs-staff-portal/ui/components/table";
+import { AccessSubNav } from "@/components/layout/access-sub-nav";
+import { DataPagination, usePagination } from "@/components/data-pagination";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -79,6 +81,8 @@ function AccessRegistryPage() {
     });
   }, [rows, search]);
 
+  const pagination = usePagination(filteredRows, 50);
+
   const selectedPlatform = platforms?.find((p) => p.id === platformId);
 
   return (
@@ -96,6 +100,7 @@ function AccessRegistryPage() {
           <ThemeSwitch />
         </div>
       </Header>
+      <AccessSubNav activeView="registry" />
       <Main>
         <div className="mb-6 max-w-3xl text-sm text-muted-foreground">
           Layer 3 of the 3-layer access registry — every (staff × platform) record. Phase 1 supports manual entry only;
@@ -191,7 +196,7 @@ function AccessRegistryPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredRows.map((r) => (
+                    pagination.pageItems.map((r) => (
                       <TableRow key={r.id}>
                         <TableCell>
                           <Link
@@ -252,6 +257,15 @@ function AccessRegistryPage() {
                   )}
                 </TableBody>
               </Table>
+              <div className="border-t px-2">
+                <DataPagination
+                  page={pagination.page}
+                  pageCount={pagination.pageCount}
+                  total={pagination.total}
+                  rangeLabel={pagination.rangeLabel}
+                  onPageChange={pagination.setPage}
+                />
+              </div>
             </div>
           </>
         )}
