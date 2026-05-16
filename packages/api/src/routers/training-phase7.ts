@@ -648,6 +648,37 @@ export const trainingEventsRouter = {
 
       return { success: true };
     }),
+
+  // Hard delete: removes a training event and its participants (cascade).
+  delete: requireRole("compliance", "delete")
+    .input(z.object({ id: z.number().int() }))
+    .handler(async ({ input, context }) => {
+      const actor = context.session?.user;
+      if (!actor) throw new ORPCError("UNAUTHORIZED");
+
+      const before = await db.query.trainingEvents.findFirst({
+        where: eq(trainingEvents.id, input.id),
+      });
+      if (!before) throw new ORPCError("NOT_FOUND");
+
+      await db.delete(trainingEvents).where(eq(trainingEvents.id, input.id));
+
+      await logAudit({
+        actorId: actor.id,
+        actorName: actor.name,
+        action: "training_event.delete",
+        module: "training",
+        resourceType: "training_event",
+        resourceId: String(input.id),
+        beforeValue: before as unknown as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+      });
+
+      return { success: true };
+    }),
 };
 
 // ─── In-House Training Log ────────────────────────────────────────────────────

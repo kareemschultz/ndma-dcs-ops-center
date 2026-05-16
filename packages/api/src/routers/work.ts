@@ -287,6 +287,75 @@ export const workRouter = {
       return updated;
     }),
 
+  // Soft-archive: cancel a non-draft work item (audit-preserving).
+  archive: requireRole("work", "update")
+    .input(z.object({ id: z.string() }))
+    .handler(async ({ input, context }) => {
+      const before = await db.query.workItems.findFirst({
+        where: eq(workItems.id, input.id),
+      });
+      if (!before) throw new ORPCError("NOT_FOUND");
+      if (before.status === "cancelled")
+        throw new ORPCError("CONFLICT", { message: "Work item is already cancelled" });
+
+      const [updated] = await db
+        .update(workItems)
+        .set({ status: "cancelled" })
+        .where(eq(workItems.id, input.id))
+        .returning();
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        action: "work_item.archive",
+        module: "work",
+        resourceType: "work_item",
+        resourceId: input.id,
+        beforeValue: { status: before.status },
+        afterValue: { status: "cancelled" },
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+      });
+
+      return updated;
+    }),
+
+  // Hard delete: only permitted for transient draft/backlog items.
+  delete: requireRole("work", "update")
+    .input(z.object({ id: z.string() }))
+    .handler(async ({ input, context }) => {
+      const before = await db.query.workItems.findFirst({
+        where: eq(workItems.id, input.id),
+      });
+      if (!before) throw new ORPCError("NOT_FOUND");
+      if (before.status !== "backlog" && before.status !== "todo") {
+        throw new ORPCError("CONFLICT", {
+          message:
+            "Only backlog or to-do work items can be deleted. Archive (cancel) items that are already in progress.",
+        });
+      }
+
+      await db.delete(workItems).where(eq(workItems.id, input.id));
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        action: "work_item.delete",
+        module: "work",
+        resourceType: "work_item",
+        resourceId: input.id,
+        beforeValue: before as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+      });
+
+      return { success: true };
+    }),
+
   assign: requireRole("work", "assign")
     .input(z.object({ id: z.string(), staffProfileId: z.string() }))
     .handler(async ({ input, context }) => {

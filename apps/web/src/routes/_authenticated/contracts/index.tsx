@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { differenceInDays, format, parseISO } from "date-fns";
-import { FileText, AlertCircle, ArrowRight, Plus, Pencil, FileDown } from "lucide-react";
+import { FileText, AlertCircle, Archive, ArrowRight, Plus, Pencil, FileDown } from "lucide-react";
 import { exportContractsExcel } from "@/utils/excel-export";
 import { toast } from "sonner";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
@@ -476,14 +476,27 @@ function EditContractDialog({
 
 function ContractsPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<ContractStatus | "">("");
   const [showCreate, setShowCreate] = useState(false);
   const [editingContract, setEditingContract] = useState<ContractRecord | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<ContractRecord | null>(null);
 
   const { data: allData, isLoading } = useQuery(
     orpc.contracts.list.queryOptions({
       input: { limit: 200, offset: 0 },
     }),
+  );
+
+  const archiveMutation = useMutation(
+    orpc.contracts.archive.mutationOptions({
+      onSuccess: async () => {
+        toast.success("Contract archived (terminated).");
+        await queryClient.invalidateQueries({ queryKey: orpc.contracts.list.key() });
+        setArchiveTarget(null);
+      },
+      onError: () => toast.error("Failed to archive contract."),
+    })
   );
 
   const { data: expiring } = useQuery(
@@ -706,6 +719,17 @@ function ContractsPage() {
                           >
                             <ArrowRight className="size-3.5" />
                           </Button>
+                          {contract.status !== "terminated" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-muted-foreground hover:text-foreground"
+                              onClick={() => setArchiveTarget(contract as ContractRecord)}
+                              title="Archive (terminate) contract"
+                            >
+                              <Archive className="size-3.5" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -731,6 +755,44 @@ function ContractsPage() {
             onClose={() => setEditingContract(null)}
           />
         )}
+      </Dialog>
+
+      <Dialog
+        open={!!archiveTarget}
+        onOpenChange={(open) => !open && setArchiveTarget(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Archive Contract</DialogTitle>
+            <DialogDescription>
+              This sets the contract for{" "}
+              <span className="font-medium text-foreground">
+                {archiveTarget?.staffProfile?.user?.name ??
+                  archiveTarget?.staffProfileId}
+              </span>{" "}
+              to <strong>Terminated</strong>. Signed contracts are never
+              deleted — the record stays available under the Terminated status
+              filter for audit.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setArchiveTarget(null)}
+              disabled={archiveMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                archiveTarget && archiveMutation.mutate({ id: archiveTarget.id })
+              }
+              disabled={archiveMutation.isPending}
+            >
+              {archiveMutation.isPending ? "Archiving…" : "Archive"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </>
   );

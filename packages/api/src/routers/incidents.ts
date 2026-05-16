@@ -256,6 +256,49 @@ export const incidentsRouter = {
       return updated;
     }),
 
+  // Soft-archive: close an incident (audit-preserving — incidents are never hard-deleted).
+  archive: requireRole("work", "update")
+    .input(z.object({ id: z.string() }))
+    .handler(async ({ input, context }) => {
+      const before = await db.query.incidents.findFirst({
+        where: eq(incidents.id, input.id),
+      });
+      if (!before) throw new ORPCError("NOT_FOUND");
+      if (before.status === "closed")
+        throw new ORPCError("CONFLICT", { message: "Incident is already closed" });
+
+      const [updated] = await db
+        .update(incidents)
+        .set({ status: "closed", closedAt: new Date() })
+        .where(eq(incidents.id, input.id))
+        .returning();
+
+      await db.insert(incidentTimeline).values({
+        incidentId: input.id,
+        authorId: context.session.user.id,
+        eventType: "status_change",
+        content: `Status changed: ${before.status} → closed (archived)`,
+        metadata: { from: before.status, to: "closed" },
+      });
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        action: "incident.archive",
+        module: "incident",
+        resourceType: "incident",
+        resourceId: input.id,
+        beforeValue: { status: before.status },
+        afterValue: { status: "closed" },
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+      });
+
+      return updated;
+    }),
+
   addTimelineEntry: requireRole("work", "update")
     .input(AddTimelineInput)
     .handler(async ({ input, context }) => {

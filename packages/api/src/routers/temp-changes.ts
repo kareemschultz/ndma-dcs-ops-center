@@ -259,6 +259,80 @@ export const tempChangesRouter = {
       return updated;
     }),
 
+  // Soft-cancel: mark a temp change cancelled (audit-preserving).
+  cancel: requireRole("work", "update")
+    .input(z.object({ id: z.string(), reason: z.string().optional() }))
+    .handler(async ({ input, context }) => {
+      const before = await db.query.temporaryChanges.findFirst({
+        where: eq(temporaryChanges.id, input.id),
+      });
+      if (!before) throw new ORPCError("NOT_FOUND");
+      if (before.status === "cancelled" || before.status === "removed")
+        throw new ORPCError("CONFLICT", {
+          message: "This change is already removed or cancelled",
+        });
+
+      const [updated] = await db
+        .update(temporaryChanges)
+        .set({
+          status: "cancelled",
+          followUpNotes: input.reason ?? before.followUpNotes ?? null,
+        })
+        .where(eq(temporaryChanges.id, input.id))
+        .returning();
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        action: "temp_change.cancel",
+        module: "changes",
+        resourceType: "temporary_change",
+        resourceId: input.id,
+        beforeValue: { status: before.status },
+        afterValue: { status: "cancelled" },
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+      });
+
+      return updated;
+    }),
+
+  // Hard delete: only permitted for transient planned (draft) changes.
+  delete: requireRole("work", "update")
+    .input(z.object({ id: z.string() }))
+    .handler(async ({ input, context }) => {
+      const before = await db.query.temporaryChanges.findFirst({
+        where: eq(temporaryChanges.id, input.id),
+      });
+      if (!before) throw new ORPCError("NOT_FOUND");
+      if (before.status !== "planned") {
+        throw new ORPCError("CONFLICT", {
+          message:
+            "Only planned (draft) changes can be deleted. Cancel changes that have been implemented.",
+        });
+      }
+
+      await db.delete(temporaryChanges).where(eq(temporaryChanges.id, input.id));
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        action: "temp_change.delete",
+        module: "changes",
+        resourceType: "temporary_change",
+        resourceId: input.id,
+        beforeValue: before as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+      });
+
+      return { success: true };
+    }),
+
   getOverdue: requireRole("work", "read").handler(async () => {
     const today = new Date().toISOString().slice(0, 10);
 

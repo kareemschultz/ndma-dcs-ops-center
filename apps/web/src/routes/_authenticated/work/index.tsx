@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   AlertCircle,
+  Archive,
   BarChart2,
   Building2,
   CalendarDays,
@@ -18,8 +20,17 @@ import {
   Plus,
   RefreshCw,
   Timer,
+  Trash2,
   User,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@ndma-dcs-staff-portal/ui/components/dialog";
 import { exportWorkItemsExcel } from "@/utils/excel-export";
 import { Badge } from "@ndma-dcs-staff-portal/ui/components/badge";
 import {
@@ -179,25 +190,34 @@ function isOverdue(item: WorkItem) {
 
 // ── Sub-views ─────────────────────────────────────────────────────────────
 
-function WorkListView({ items }: { items: WorkItem[] }) {
+function WorkListView({
+  items,
+  onArchive,
+  onDelete,
+}: {
+  items: WorkItem[];
+  onArchive: (item: WorkItem) => void;
+  onDelete: (item: WorkItem) => void;
+}) {
   if (!items.length) {
     return (
       <div className="rounded-xl border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[38%]">Title</TableHead>
+              <TableHead className="w-[34%]">Title</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Priority</TableHead>
               <TableHead>Assignee</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Due Date</TableHead>
+              <TableHead className="w-20 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableRow>
-              <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
+              <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
                 No work items found.{" "}
                 <Link to="/work/new" className="underline">
                   Create one
@@ -215,18 +235,21 @@ function WorkListView({ items }: { items: WorkItem[] }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[38%]">Title</TableHead>
+            <TableHead className="w-[34%]">Title</TableHead>
             <TableHead>Type</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Priority</TableHead>
             <TableHead>Assignee</TableHead>
             <TableHead>Department</TableHead>
             <TableHead>Due Date</TableHead>
+            <TableHead className="w-20 text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {items.map((item) => {
             const overdue = isOverdue(item);
+            const isDraft = item.status === "backlog" || item.status === "todo";
+            const isTerminal = item.status === "cancelled";
             return (
               <TableRow key={item.id} className="cursor-pointer">
                 <TableCell>
@@ -293,6 +316,35 @@ function WorkListView({ items }: { items: WorkItem[] }) {
                   ) : (
                     <span className="text-muted-foreground">—</span>
                   )}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    {isDraft ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        title="Delete draft work item"
+                        onClick={() => onDelete(item)}
+                      >
+                        <Trash2 className="size-3.5" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    ) : (
+                      !isTerminal && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-muted-foreground hover:text-foreground"
+                          title="Archive (cancel) work item"
+                          onClick={() => onArchive(item)}
+                        >
+                          <Archive className="size-3.5" />
+                          <span className="sr-only">Archive</span>
+                        </Button>
+                      )
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             );
@@ -819,6 +871,7 @@ function buildPeriodOptions(year: number): { value: string; label: string }[] {
 }
 
 function WorkPage() {
+  const queryClient = useQueryClient();
   const [view, setView] = useState<ViewMode>("list");
   const [status, setStatus] = useState<WorkStatus | "">("");
   const [type, setType] = useState<WorkType | "">("");
@@ -827,6 +880,8 @@ function WorkPage() {
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [yearFilter, setYearFilter] = useState<number>(0);
   const [periodFilter, setPeriodFilter] = useState<string>("");
+  const [archiveTarget, setArchiveTarget] = useState<WorkItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<WorkItem | null>(null);
   const { team } = useTeamFilter();
 
   const { data: departments } = useQuery(
@@ -858,6 +913,33 @@ function WorkPage() {
   );
 
   const { data: stats } = useQuery(orpc.work.stats.queryOptions());
+
+  function invalidateWork() {
+    queryClient.invalidateQueries({ queryKey: orpc.work.list.key() });
+    queryClient.invalidateQueries({ queryKey: orpc.work.stats.key() });
+  }
+
+  const archiveMutation = useMutation(
+    orpc.work.archive.mutationOptions({
+      onSuccess: () => {
+        toast.success("Work item archived (cancelled).");
+        invalidateWork();
+        setArchiveTarget(null);
+      },
+      onError: (err) => toast.error(err.message),
+    }),
+  );
+
+  const deleteMutation = useMutation(
+    orpc.work.delete.mutationOptions({
+      onSuccess: () => {
+        toast.success("Draft work item deleted.");
+        invalidateWork();
+        setDeleteTarget(null);
+      },
+      onError: (err) => toast.error(err.message),
+    }),
+  );
 
   const chartData = stats
     ? Object.entries(stats.byStatus)
@@ -1160,7 +1242,11 @@ function WorkPage() {
         ) : view === "analytics" ? (
           <WorkAnalyticsView items={data ?? []} />
         ) : (
-          <WorkListView items={data ?? []} />
+          <WorkListView
+            items={data ?? []}
+            onArchive={setArchiveTarget}
+            onDelete={setDeleteTarget}
+          />
         )}
 
         {data && data.length > 0 && (
@@ -1169,6 +1255,81 @@ function WorkPage() {
           </p>
         )}
       </Main>
+
+      {/* Archive (cancel) confirmation */}
+      <Dialog
+        open={!!archiveTarget}
+        onOpenChange={(open) => !open && setArchiveTarget(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Archive Work Item</DialogTitle>
+            <DialogDescription>
+              This sets{" "}
+              <span className="font-medium text-foreground">
+                {archiveTarget?.title}
+              </span>{" "}
+              to <strong>Cancelled</strong>. The record is preserved for audit
+              and remains visible under the Cancelled status filter.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setArchiveTarget(null)}
+              disabled={archiveMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                archiveTarget && archiveMutation.mutate({ id: archiveTarget.id })
+              }
+              disabled={archiveMutation.isPending}
+            >
+              {archiveMutation.isPending ? "Archiving…" : "Archive"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hard delete confirmation (drafts only) */}
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Draft Work Item</DialogTitle>
+            <DialogDescription>
+              This permanently deletes{" "}
+              <span className="font-medium text-foreground">
+                {deleteTarget?.title}
+              </span>
+              . Only backlog / to-do items can be deleted — this cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deleteTarget && deleteMutation.mutate({ id: deleteTarget.id })
+              }
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

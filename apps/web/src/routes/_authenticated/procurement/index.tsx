@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { ShoppingCart, Plus, RefreshCw, CheckCircle, XCircle, FileDown } from "lucide-react";
+import { ShoppingCart, Plus, RefreshCw, CheckCircle, XCircle, FileDown, Ban, Trash2 } from "lucide-react";
 import { exportProcurementExcel } from "@/utils/excel-export";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
@@ -18,6 +18,8 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@ndma-dcs-staff-portal/ui/components/dialog";
@@ -272,6 +274,8 @@ function PRTable({
   onApprove,
   onReject,
   onView,
+  onCancel,
+  onDelete,
   showActions,
 }: {
   data: any[] | undefined;
@@ -279,8 +283,11 @@ function PRTable({
   onApprove?: (id: string) => void;
   onReject?: (id: string) => void;
   onView?: (id: string) => void;
+  onCancel?: (pr: { id: string; title: string }) => void;
+  onDelete?: (pr: { id: string; title: string }) => void;
   showActions?: boolean;
 }) {
+  const hasActionsCol = showActions || !!onCancel || !!onDelete;
   if (isLoading) {
     return (
       <div className="rounded-xl border">
@@ -293,13 +300,13 @@ function PRTable({
               <TableHead>Status</TableHead>
               <TableHead>Total (GHS)</TableHead>
               <TableHead>Date</TableHead>
-              {showActions && <TableHead>Actions</TableHead>}
+              {hasActionsCol && <TableHead>Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {Array.from({ length: 4 }).map((_, i) => (
               <TableRow key={i}>
-                {Array.from({ length: showActions ? 7 : 6 }).map((_, j) => (
+                {Array.from({ length: hasActionsCol ? 7 : 6 }).map((_, j) => (
                   <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                 ))}
               </TableRow>
@@ -321,13 +328,13 @@ function PRTable({
             <TableHead>Status</TableHead>
             <TableHead>Total (GHS)</TableHead>
             <TableHead>Submitted</TableHead>
-            {showActions && <TableHead>Actions</TableHead>}
+            {hasActionsCol && <TableHead>Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {!data?.length ? (
             <TableRow>
-              <TableCell colSpan={showActions ? 7 : 6} className="py-12 text-center text-muted-foreground">
+              <TableCell colSpan={hasActionsCol ? 7 : 6} className="py-12 text-center text-muted-foreground">
                 No purchase requisitions found.
               </TableCell>
             </TableRow>
@@ -363,28 +370,55 @@ function PRTable({
                 <TableCell className="text-muted-foreground text-xs">
                   {pr.createdAt ? format(new Date(pr.createdAt), "dd MMM yyyy") : "—"}
                 </TableCell>
-                {showActions && (
+                {hasActionsCol && (
                   <TableCell>
-                    {pr.status === "submitted" && (
-                      <div className="flex gap-1">
+                    <div className="flex gap-1">
+                      {showActions && pr.status === "submitted" && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-blue-600 hover:text-blue-700 h-7"
+                            title="Approve"
+                            onClick={() => onApprove?.(pr.id)}
+                          >
+                            <CheckCircle className="size-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-600 hover:text-red-700 h-7"
+                            title="Reject"
+                            onClick={() => onReject?.(pr.id)}
+                          >
+                            <XCircle className="size-4" />
+                          </Button>
+                        </>
+                      )}
+                      {onCancel &&
+                        !["cancelled", "received", "draft"].includes(pr.status) && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                            title="Cancel requisition"
+                            onClick={() => onCancel({ id: pr.id, title: pr.title })}
+                          >
+                            <Ban className="size-4" />
+                          </Button>
+                        )}
+                      {onDelete && pr.status === "draft" && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-blue-600 hover:text-blue-700 h-7"
-                          onClick={() => onApprove?.(pr.id)}
+                          className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          title="Delete draft requisition"
+                          onClick={() => onDelete({ id: pr.id, title: pr.title })}
                         >
-                          <CheckCircle className="size-4" />
+                          <Trash2 className="size-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-600 hover:text-red-700 h-7"
-                          onClick={() => onReject?.(pr.id)}
-                        >
-                          <XCircle className="size-4" />
-                        </Button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </TableCell>
                 )}
               </TableRow>
@@ -400,6 +434,8 @@ function ProcurementPage() {
   const [status, setStatus] = useState<PRStatus | "">("");
   const [activeTab, setActiveTab] = useState<"all" | "mine" | "pending">("all");
   const [viewPrId, setViewPrId] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<{ id: string; title: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
 
   const { data: allPRs, isLoading: allLoading, refetch } = useQuery(
     orpc.procurement.list.queryOptions({
@@ -434,6 +470,35 @@ function ProcurementPage() {
         queryClient.invalidateQueries({ queryKey: orpc.procurement.list.key() });
         queryClient.invalidateQueries({ queryKey: orpc.procurement.getPendingApprovals.key() });
         toast.success("PR rejected");
+      },
+      onError: (err) => toast.error(err.message),
+    })
+  );
+
+  function invalidatePRs() {
+    queryClient.invalidateQueries({ queryKey: orpc.procurement.list.key() });
+    queryClient.invalidateQueries({ queryKey: orpc.procurement.getMyRequests.key() });
+    queryClient.invalidateQueries({ queryKey: orpc.procurement.getPendingApprovals.key() });
+    queryClient.invalidateQueries({ queryKey: orpc.procurement.stats.key() });
+  }
+
+  const cancelMutation = useMutation(
+    orpc.procurement.cancel.mutationOptions({
+      onSuccess: () => {
+        invalidatePRs();
+        setCancelTarget(null);
+        toast.success("Requisition cancelled");
+      },
+      onError: (err) => toast.error(err.message),
+    })
+  );
+
+  const deleteMutation = useMutation(
+    orpc.procurement.delete.mutationOptions({
+      onSuccess: () => {
+        invalidatePRs();
+        setDeleteTarget(null);
+        toast.success("Draft requisition deleted");
       },
       onError: (err) => toast.error(err.message),
     })
@@ -551,10 +616,22 @@ function ProcurementPage() {
 
         {/* Table content */}
         {activeTab === "all" && (
-          <PRTable data={allPRs} isLoading={allLoading} onView={setViewPrId} />
+          <PRTable
+            data={allPRs}
+            isLoading={allLoading}
+            onView={setViewPrId}
+            onCancel={setCancelTarget}
+            onDelete={setDeleteTarget}
+          />
         )}
         {activeTab === "mine" && (
-          <PRTable data={myPRs} isLoading={myLoading} onView={setViewPrId} />
+          <PRTable
+            data={myPRs}
+            isLoading={myLoading}
+            onView={setViewPrId}
+            onCancel={setCancelTarget}
+            onDelete={setDeleteTarget}
+          />
         )}
         {activeTab === "pending" && (
           <PRTable
@@ -567,6 +644,81 @@ function ProcurementPage() {
           />
         )}
       </Main>
+
+      {/* Cancel confirmation */}
+      <Dialog
+        open={!!cancelTarget}
+        onOpenChange={(open) => !open && setCancelTarget(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancel Requisition</DialogTitle>
+            <DialogDescription>
+              This marks{" "}
+              <span className="font-medium text-foreground">
+                {cancelTarget?.title}
+              </span>{" "}
+              as <strong>Cancelled</strong>. The record is preserved for audit
+              and stays visible under the Cancelled status filter.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCancelTarget(null)}
+              disabled={cancelMutation.isPending}
+            >
+              Keep requisition
+            </Button>
+            <Button
+              onClick={() =>
+                cancelTarget && cancelMutation.mutate({ id: cancelTarget.id })
+              }
+              disabled={cancelMutation.isPending}
+            >
+              {cancelMutation.isPending ? "Cancelling…" : "Cancel requisition"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hard delete confirmation (drafts only) */}
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Draft Requisition</DialogTitle>
+            <DialogDescription>
+              This permanently deletes{" "}
+              <span className="font-medium text-foreground">
+                {deleteTarget?.title}
+              </span>{" "}
+              and its line items. Only draft requisitions can be deleted — this
+              cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deleteTarget && deleteMutation.mutate({ id: deleteTarget.id })
+              }
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

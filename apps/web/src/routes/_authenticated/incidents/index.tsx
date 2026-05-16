@@ -1,11 +1,20 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, FileDown, Plus, RefreshCw } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { AlertTriangle, Archive, FileDown, Plus, RefreshCw } from "lucide-react";
 import { exportIncidentsExcel } from "@/utils/excel-export";
 import { format } from "date-fns";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@ndma-dcs-staff-portal/ui/components/dialog";
 import {
   Table,
   TableBody,
@@ -116,9 +125,13 @@ function IncidentStatusBadge({ status }: { status: string }) {
   );
 }
 
+type IncidentRow = { id: string; title: string; status: string };
+
 function IncidentsPage() {
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState("");
   const [severity, setSeverity] = useState("");
+  const [archiveTarget, setArchiveTarget] = useState<IncidentRow | null>(null);
 
   const { data, isLoading, refetch } = useQuery(
     orpc.incidents.list.queryOptions({
@@ -133,6 +146,19 @@ function IncidentsPage() {
 
   const { data: stats } = useQuery(orpc.incidents.stats.queryOptions());
   const { data: active } = useQuery(orpc.incidents.getActive.queryOptions());
+
+  const archiveMutation = useMutation(
+    orpc.incidents.archive.mutationOptions({
+      onSuccess: () => {
+        toast.success("Incident archived (closed).");
+        queryClient.invalidateQueries({ queryKey: orpc.incidents.list.key() });
+        queryClient.invalidateQueries({ queryKey: orpc.incidents.stats.key() });
+        queryClient.invalidateQueries({ queryKey: orpc.incidents.getActive.key() });
+        setArchiveTarget(null);
+      },
+      onError: (err) => toast.error(err.message),
+    })
+  );
 
   return (
     <>
@@ -240,20 +266,21 @@ function IncidentsPage() {
                 <TableHead>Commander</TableHead>
                 <TableHead>Detected</TableHead>
                 <TableHead>Resolved</TableHead>
+                <TableHead className="w-20 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
+                    {Array.from({ length: 7 }).map((_, j) => (
                       <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : !data?.length ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
                     No incidents found.{" "}
                     <Link to="/incidents/new" className="underline">
                       Declare one
@@ -298,6 +325,26 @@ function IncidentsPage() {
                         ? format(new Date(inc.resolvedAt), "dd MMM, HH:mm")
                         : <span className="text-red-500">Ongoing</span>}
                     </TableCell>
+                    <TableCell className="text-right">
+                      {inc.status !== "closed" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8 text-muted-foreground hover:text-foreground"
+                          title="Archive (close) incident"
+                          onClick={() =>
+                            setArchiveTarget({
+                              id: inc.id,
+                              title: inc.title,
+                              status: inc.status,
+                            })
+                          }
+                        >
+                          <Archive className="size-3.5" />
+                          <span className="sr-only">Archive</span>
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -305,6 +352,43 @@ function IncidentsPage() {
           </Table>
         </div>
       </Main>
+
+      {/* Archive (close) confirmation */}
+      <Dialog
+        open={!!archiveTarget}
+        onOpenChange={(open) => !open && setArchiveTarget(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Archive Incident</DialogTitle>
+            <DialogDescription>
+              This closes{" "}
+              <span className="font-medium text-foreground">
+                {archiveTarget?.title}
+              </span>
+              . Incidents are never deleted — the record stays available under
+              the Closed status filter for audit and post-incident review.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setArchiveTarget(null)}
+              disabled={archiveMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() =>
+                archiveTarget && archiveMutation.mutate({ id: archiveTarget.id })
+              }
+              disabled={archiveMutation.isPending}
+            >
+              {archiveMutation.isPending ? "Archiving…" : "Archive"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

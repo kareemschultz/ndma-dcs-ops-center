@@ -11,6 +11,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@ndma-dcs-staff-portal/ui/components/dialog";
@@ -99,6 +100,9 @@ export default function TrainingEventsPage() {
   const [addParticipantStaffId, setAddParticipantStaffId] = useState("");
   const [addParticipantStatus, setAddParticipantStatus] = useState<ParticipantStatus>("attended");
 
+  // Delete confirmation
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; institution: string } | null>(null);
+
   // Auto-sum total cost for create form
   const computedTotal = (
     parseFloat(form.travellingCost || "0") +
@@ -184,6 +188,17 @@ export default function TrainingEventsPage() {
         toast.success("Participant removed");
       },
       onError: () => toast.error("Failed to remove participant"),
+    }),
+  );
+
+  const deleteMutation = useMutation(
+    orpc.trainingEvents.delete.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: orpc.trainingEvents.list.key() });
+        setDeleteTarget(null);
+        toast.success("Training event deleted");
+      },
+      onError: () => toast.error("Failed to delete event"),
     }),
   );
 
@@ -357,6 +372,17 @@ export default function TrainingEventsPage() {
                             title="Edit event"
                           >
                             <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() =>
+                              setDeleteTarget({ id: e.id, institution: e.institution })
+                            }
+                            title="Delete event"
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
@@ -735,6 +761,43 @@ export default function TrainingEventsPage() {
               Close
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Event confirmation */}
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Training Event</DialogTitle>
+            <DialogDescription>
+              This permanently deletes the training event at{" "}
+              <span className="font-medium text-foreground">
+                {deleteTarget?.institution}
+              </span>{" "}
+              and all of its participant records. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deleteTarget && deleteMutation.mutate({ id: deleteTarget.id })
+              }
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

@@ -131,6 +131,41 @@ export const contractsRouter = {
       return updated;
     }),
 
+  // Soft-archive: terminate a contract (audit-preserving — contracts are never hard-deleted).
+  archive: requireRole("contract", "update")
+    .input(z.object({ id: z.string() }))
+    .handler(async ({ input, context }) => {
+      const before = await db.query.contracts.findFirst({
+        where: eq(contracts.id, input.id),
+      });
+      if (!before) throw new ORPCError("NOT_FOUND", { message: "Contract not found" });
+      if (before.status === "terminated")
+        throw new ORPCError("CONFLICT", { message: "Contract is already terminated" });
+
+      const [updated] = await db
+        .update(contracts)
+        .set({ status: "terminated", updatedAt: new Date() })
+        .where(eq(contracts.id, input.id))
+        .returning();
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+        action: "contract.archive",
+        module: "contracts",
+        resourceType: "contract",
+        resourceId: input.id,
+        beforeValue: { status: before.status },
+        afterValue: { status: "terminated" },
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+      });
+
+      return updated;
+    }),
+
   updateRenewalStatus: requireRole("contract", "update")
     .input(
       z.object({

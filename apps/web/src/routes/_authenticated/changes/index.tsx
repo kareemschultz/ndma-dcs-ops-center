@@ -7,6 +7,7 @@ import {
   Shuffle,
   Plus,
   AlertCircle,
+  Ban,
   Clock,
   Globe,
   Activity,
@@ -30,6 +31,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -718,12 +720,17 @@ function ActionButtons({
   change,
   onEdit,
   onMarkRemoved,
+  onCancel,
+  onDelete,
 }: {
   change: TempChange;
   onEdit: (c: TempChange) => void;
   onMarkRemoved: (c: TempChange) => void;
+  onCancel: (c: TempChange) => void;
+  onDelete: (c: TempChange) => void;
 }) {
   const isTerminal = change.status === "removed" || change.status === "cancelled";
+  const isDraft = change.status === "planned";
   return (
     <div className="flex items-center gap-1">
       <Button
@@ -746,6 +753,28 @@ function ActionButtons({
           <CheckCircle2 className="size-3.5" />
         </Button>
       )}
+      {!isTerminal && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+          onClick={() => onCancel(change)}
+          title="Cancel change"
+        >
+          <Ban className="size-3.5" />
+        </Button>
+      )}
+      {isDraft && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={() => onDelete(change)}
+          title="Delete draft change"
+        >
+          <Trash2 className="size-3.5" />
+        </Button>
+      )}
     </div>
   );
 }
@@ -759,6 +788,8 @@ function TempChangesPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editChange, setEditChange] = useState<TempChange | null>(null);
   const [removingChange, setRemovingChange] = useState<TempChange | null>(null);
+  const [cancellingChange, setCancellingChange] = useState<TempChange | null>(null);
+  const [deletingChange, setDeletingChange] = useState<TempChange | null>(null);
 
   // ── Queries ─────────────────────────────────────────────────────────────────
   const { data: allChanges, isLoading: loadingAll } = useQuery(
@@ -797,6 +828,28 @@ function TempChangesPage() {
         invalidateAll();
         setRemovingChange(null);
         toast.success("Change marked as removed");
+      },
+      onError: (err) => toast.error(err.message),
+    })
+  );
+
+  const cancelMut = useMutation(
+    orpc.tempChanges.cancel.mutationOptions({
+      onSuccess: () => {
+        invalidateAll();
+        setCancellingChange(null);
+        toast.success("Change cancelled");
+      },
+      onError: (err) => toast.error(err.message),
+    })
+  );
+
+  const deleteMut = useMutation(
+    orpc.tempChanges.delete.mutationOptions({
+      onSuccess: () => {
+        invalidateAll();
+        setDeletingChange(null);
+        toast.success("Draft change deleted");
       },
       onError: (err) => toast.error(err.message),
     })
@@ -1011,6 +1064,8 @@ function TempChangesPage() {
                             change={change}
                             onEdit={handleEdit}
                             onMarkRemoved={setRemovingChange}
+                            onCancel={setCancellingChange}
+                            onDelete={setDeletingChange}
                           />
                         </TableCell>
                       </TableRow>
@@ -1085,6 +1140,8 @@ function TempChangesPage() {
                               change={change}
                               onEdit={handleEdit}
                               onMarkRemoved={setRemovingChange}
+                              onCancel={setCancellingChange}
+                              onDelete={setDeletingChange}
                             />
                           </TableCell>
                         </TableRow>
@@ -1166,6 +1223,8 @@ function TempChangesPage() {
                               change={change}
                               onEdit={handleEdit}
                               onMarkRemoved={setRemovingChange}
+                              onCancel={setCancellingChange}
+                              onDelete={setDeletingChange}
                             />
                           </TableCell>
                         </TableRow>
@@ -1284,6 +1343,82 @@ function TempChangesPage() {
         onConfirm={handleMarkRemoved}
         isPending={markRemovedMut.isPending}
       />
+
+      {/* Cancel confirm dialog */}
+      <Dialog
+        open={!!cancellingChange}
+        onOpenChange={(open) => !open && setCancellingChange(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancel Temporary Change</DialogTitle>
+            <DialogDescription>
+              This marks{" "}
+              <span className="font-medium text-foreground">
+                {cancellingChange?.title}
+              </span>{" "}
+              as <strong>Cancelled</strong>. The record is preserved for audit
+              and remains listed in the All Changes register.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCancellingChange(null)}
+              disabled={cancelMut.isPending}
+            >
+              Keep change
+            </Button>
+            <Button
+              onClick={() =>
+                cancellingChange &&
+                cancelMut.mutate({ id: cancellingChange.id })
+              }
+              disabled={cancelMut.isPending}
+            >
+              {cancelMut.isPending ? "Cancelling…" : "Cancel change"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hard delete confirm dialog (drafts only) */}
+      <Dialog
+        open={!!deletingChange}
+        onOpenChange={(open) => !open && setDeletingChange(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Draft Change</DialogTitle>
+            <DialogDescription>
+              This permanently deletes{" "}
+              <span className="font-medium text-foreground">
+                {deletingChange?.title}
+              </span>
+              . Only planned (draft) changes can be deleted — this cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeletingChange(null)}
+              disabled={deleteMut.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deletingChange && deleteMut.mutate({ id: deletingChange.id })
+              }
+              disabled={deleteMut.isPending}
+            >
+              {deleteMut.isPending ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

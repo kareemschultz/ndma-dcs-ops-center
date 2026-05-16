@@ -418,6 +418,80 @@ export const procurementRouter = {
       return updated;
     }),
 
+  // Soft-cancel: mark a PR cancelled (audit-preserving).
+  cancel: requireRole("procurement", "update")
+    .input(z.object({ id: z.string(), reason: z.string().optional() }))
+    .handler(async ({ input, context }) => {
+      const before = await db.query.purchaseRequisitions.findFirst({
+        where: eq(purchaseRequisitions.id, input.id),
+      });
+      if (!before) throw new ORPCError("NOT_FOUND");
+      if (["cancelled", "received"].includes(before.status))
+        throw new ORPCError("CONFLICT", {
+          message: `Cannot cancel a PR with status '${before.status}'.`,
+        });
+
+      const [updated] = await db
+        .update(purchaseRequisitions)
+        .set({ status: "cancelled", notes: input.reason ?? before.notes ?? null })
+        .where(eq(purchaseRequisitions.id, input.id))
+        .returning();
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        action: "pr.cancel",
+        module: "procurement",
+        resourceType: "purchase_requisition",
+        resourceId: input.id,
+        beforeValue: { status: before.status },
+        afterValue: { status: "cancelled" },
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+      });
+
+      return updated;
+    }),
+
+  // Hard delete: only permitted for transient draft PRs.
+  delete: requireRole("procurement", "update")
+    .input(z.object({ id: z.string() }))
+    .handler(async ({ input, context }) => {
+      const before = await db.query.purchaseRequisitions.findFirst({
+        where: eq(purchaseRequisitions.id, input.id),
+      });
+      if (!before) throw new ORPCError("NOT_FOUND");
+      if (before.status !== "draft") {
+        throw new ORPCError("CONFLICT", {
+          message:
+            "Only draft PRs can be deleted. Cancel PRs that have already been submitted.",
+        });
+      }
+
+      // Line items and approvals cascade on delete.
+      await db
+        .delete(purchaseRequisitions)
+        .where(eq(purchaseRequisitions.id, input.id));
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        action: "pr.delete",
+        module: "procurement",
+        resourceType: "purchase_requisition",
+        resourceId: input.id,
+        beforeValue: before as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+      });
+
+      return { success: true };
+    }),
+
   getMyRequests: protectedProcedure.handler(async ({ context }) => {
     return db.query.purchaseRequisitions.findMany({
       where: eq(purchaseRequisitions.createdById, context.session.user.id),
