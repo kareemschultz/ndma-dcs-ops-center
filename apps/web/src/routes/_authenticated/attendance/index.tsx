@@ -55,6 +55,7 @@ import {
   TableRow,
 } from "@ndma-dcs-staff-portal/ui/components/table";
 
+import { DataPagination, usePagination } from "@/components/data-pagination";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -1073,6 +1074,8 @@ function ClockLogsTab() {
     }),
   );
 
+  const logsPagination = usePagination(logs ?? [], 25);
+
   // Draft timesheets for cross-reference. Lookup map keyed by
   // `${staffProfileId}|YYYY-MM` → timesheet id. Used to wire the
   // "View timesheet" action per attendance row to the draft timesheet
@@ -1321,7 +1324,7 @@ function ClockLogsTab() {
                   </TableCell>
                 </TableRow>
               ) : (
-                logs.map((row) => {
+                logsPagination.pageItems.map((row) => {
                   const late = minutesLate(row.clockIn);
                   return (
                     <TableRow
@@ -1430,6 +1433,15 @@ function ClockLogsTab() {
               )}
             </TableBody>
           </Table>
+          <div className="border-t px-2">
+            <DataPagination
+              page={logsPagination.page}
+              pageCount={logsPagination.pageCount}
+              total={logsPagination.total}
+              rangeLabel={logsPagination.rangeLabel}
+              onPageChange={logsPagination.setPage}
+            />
+          </div>
         </CardContent>
       </Card>
 
