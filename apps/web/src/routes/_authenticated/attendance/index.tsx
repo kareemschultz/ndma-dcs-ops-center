@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
+  CalendarOff,
   ClipboardList,
   Clock3,
   FileText,
@@ -1130,6 +1131,56 @@ function ClockLogsTab() {
     }
   }
 
+  // STAGE 3 — data linking: pull APPROVED leave for the selected date window
+  // so we can show staff who are on leave but have no explicit clock log.
+  // Only runs when an explicit From + To range is set (overlay is bounded).
+  const overlayEnabled = Boolean(fromDate && toDate && fromDate <= toDate);
+  const { data: leaveOverlay } = useQuery({
+    ...orpc.attendanceTime.leaveOverlay.queryOptions({
+      input: {
+        from: fromDate,
+        to: toDate,
+        staffProfileIds: staffFilter ? [staffFilter] : undefined,
+        team: !staffFilter && teamFilter !== "all" ? (teamFilter as "DCS" | "NOC") : undefined,
+      },
+    }),
+    enabled: overlayEnabled,
+  });
+
+  // Build the set of (staffId|date) pairs that already have a clock log so we
+  // only surface leave that is NOT already recorded as attendance.
+  const loggedKeys = useMemo(() => {
+    const set = new Set<string>();
+    for (const row of logs ?? []) set.add(`${row.staffId}|${row.date}`);
+    return set;
+  }, [logs]);
+
+  // Flatten the leave overlay map into inferred rows, skipping any day that
+  // already has an explicit clock log.
+  const staffNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const s of staffQuery.data ?? []) {
+      const person = s as { id: string; user?: { name?: string } | null };
+      map[person.id] = person.user?.name ?? person.id;
+    }
+    for (const row of logs ?? []) {
+      if (row.staffProfile?.user?.name) map[row.staffId] = row.staffProfile.user.name;
+    }
+    return map;
+  }, [staffQuery.data, logs]);
+
+  const inferredLeaveRows = useMemo(() => {
+    if (!leaveOverlay) return [] as Array<{ staffId: string; date: string; leaveType: string }>;
+    const rows: Array<{ staffId: string; date: string; leaveType: string }> = [];
+    for (const [staffId, byDate] of Object.entries(leaveOverlay)) {
+      for (const [date, day] of Object.entries(byDate)) {
+        if (loggedKeys.has(`${staffId}|${date}`)) continue;
+        rows.push({ staffId, date, leaveType: day.leaveType });
+      }
+    }
+    return rows.sort((a, b) => a.date.localeCompare(b.date));
+  }, [leaveOverlay, loggedKeys]);
+
   return (
     <>
       <input
@@ -1381,6 +1432,55 @@ function ClockLogsTab() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* STAGE 3 — inferred leave: approved leave with no clock log in range */}
+      {overlayEnabled && inferredLeaveRows.length > 0 && (
+        <Card className="mt-4 border-amber-200 dark:border-amber-900/40">
+          <CardHeader className="flex flex-row items-center gap-2 pb-2">
+            <CalendarOff className="size-4 text-amber-600 dark:text-amber-400" />
+            <CardTitle className="text-base">
+              On Approved Leave — no clock log
+            </CardTitle>
+            <span className="text-xs text-muted-foreground">
+              {inferredLeaveRows.length} day{inferredLeaveRows.length !== 1 ? "s" : ""} inferred from the Leave module
+            </span>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Staff</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Leave Type</TableHead>
+                  <TableHead>Source</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inferredLeaveRows.map((row) => (
+                  <TableRow key={`${row.staffId}|${row.date}`} className="opacity-70">
+                    <TableCell className="font-medium">
+                      {staffNameById[row.staffId] ?? row.staffId}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-sm">
+                      {format(parseISO(row.date), "dd MMM yyyy")}
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                        {row.leaveType}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px]">
+                        Inferred · not recorded
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Log dialog */}
       {dialog?.mode === "create" && (

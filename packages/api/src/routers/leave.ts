@@ -643,9 +643,22 @@ export const leaveRouter = {
         });
 
         if (balance) {
-          const requestedDays = Math.ceil(
+          const grossDays = Math.ceil(
             (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
           ) + 1;
+
+          // STAGE 3 — data linking: public holidays inside the leave window
+          // are NOT counted as consumed leave days. Holidays live in
+          // calendar_events with event_type = 'public_holiday'.
+          const holidayRows = await db.query.calendarEvents.findMany({
+            where: and(
+              eq(calendarEvents.eventType, "public_holiday"),
+              gte(calendarEvents.eventDate, input.startDate),
+              lte(calendarEvents.eventDate, input.endDate),
+            ),
+          });
+          const requestedDays = Math.max(0, grossDays - holidayRows.length);
+
           const available = balance.entitlement + balance.carriedOver + balance.adjustment - balance.used;
           if (requestedDays > available) {
             violations.push("insufficient_balance");

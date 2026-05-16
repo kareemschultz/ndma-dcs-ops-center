@@ -11,8 +11,12 @@ import {
 
 import { requireRole } from "../index";
 import { logAudit } from "../lib/audit";
+import { getApprovedLeaveForRange } from "../lib/leave-overlay";
 import { getTeamStaffIds } from "../lib/team";
 import { getCallerStaffProfile, getManagedStaffIds } from "../lib/scope";
+
+/** Cap the leave-overlay window so a stray query can't scan the whole table. */
+const MAX_OVERLAY_DAYS = 45;
 
 const attendanceStatusSchema = z.enum(["Workday", "Restday", "Absent", "Leave", "Holiday"]);
 
@@ -447,4 +451,40 @@ export const attendanceTimeRouter = {
         return { success: true };
       }),
   },
+
+  // ── Leave overlay (STAGE 3 — data linking) ─────────────────────────────────
+  // Read-time projection of APPROVED leave onto a date range so attendance /
+  // clock-log views can show inferred "on leave" days for staff who have no
+  // explicit attendance row. NEVER persists anything — pure read.
+  leaveOverlay: requireRole("attendance", "read")
+    .input(
+      z.object({
+        from: z.string(),
+        to: z.string(),
+        staffProfileIds: z.array(z.string()).optional(),
+        team: z.enum(["DCS", "NOC"]).optional(),
+      }),
+    )
+    .handler(async ({ input }) => {
+      // Bound the window — overlays are meant for one month at a time.
+      const fromMs = new Date(`${input.from}T00:00:00Z`).getTime();
+      const toMs = new Date(`${input.to}T00:00:00Z`).getTime();
+      if (Number.isNaN(fromMs) || Number.isNaN(toMs) || toMs < fromMs) {
+        return {};
+      }
+      const spanDays = Math.round((toMs - fromMs) / 86_400_000) + 1;
+      if (spanDays > MAX_OVERLAY_DAYS) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: `Leave overlay window is limited to ${MAX_OVERLAY_DAYS} days.`,
+        });
+      }
+
+      let staffIds = input.staffProfileIds;
+      if (!staffIds && input.team) {
+        staffIds = await getTeamStaffIds(input.team);
+        if (staffIds.length === 0) return {};
+      }
+
+      return getApprovedLeaveForRange(input.from, input.to, staffIds);
+    }),
 };

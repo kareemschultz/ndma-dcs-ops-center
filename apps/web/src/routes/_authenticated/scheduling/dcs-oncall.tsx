@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { CalendarCheck2, Pencil, Plus, User } from "lucide-react";
+import { CalendarCheck2, Pencil, Plus, TriangleAlert, User } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
 import { toast } from "sonner";
 
@@ -98,16 +98,27 @@ const ROLE_FIELDS: Array<{ key: RoleFormKeys; label: string }> = [
 
 // ── Inline role cell — click chip to pop open staff picker ────────────────────
 
+// STAGE 3 — a single leave clash for an on-call assignment.
+type LeaveConflict = {
+  staffProfileId: string;
+  role: string;
+  leaveType: string;
+  startDate: string;
+  endDate: string;
+};
+
 function InlineRoleCell({
   week,
   roleKey,
   staffList,
   onAssign,
+  conflict,
 }: {
   week: WeekRow;
   roleKey: RoleFormKeys;
   staffList: StaffItem[];
   onAssign: (weekId: string, roleKey: RoleFormKeys, staffId: string | null) => void;
+  conflict?: LeaveConflict;
 }) {
   const [open, setOpen] = useState(false);
   const currentStaffId = week[roleKey] as string | null;
@@ -122,6 +133,7 @@ function InlineRoleCell({
   const roleLabel = ROLE_FIELDS.find((r) => r.key === roleKey)?.label ?? roleKey;
 
   return (
+    <div className="flex items-center gap-1.5">
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         className={[
@@ -173,6 +185,17 @@ function InlineRoleCell({
         </div>
       </PopoverContent>
     </Popover>
+      {/* STAGE 3 — approved leave clashes with this on-call assignment */}
+      {conflict && currentName && (
+        <span
+          className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+          title={`On approved ${conflict.leaveType} (${conflict.startDate} → ${conflict.endDate}) — overlaps this on-call week`}
+        >
+          <TriangleAlert className="size-2.5" />
+          On leave
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -479,6 +502,17 @@ function DcsOnCallPage() {
   );
   const staffList: StaffItem[] = (staffData ?? []) as StaffItem[];
 
+  // STAGE 3 — data linking: approved leave that overlaps any on-call week.
+  // Keyed by weekId → list of clashes (role + leave type + dates).
+  const { data: leaveConflicts } = useQuery(
+    orpc.scheduling.dcsOnCall.leaveConflicts.queryOptions({ input: { year } }),
+  );
+
+  // Look up the conflict for a specific (week, role) cell, if any.
+  function conflictFor(weekId: string, roleLabel: string): LeaveConflict | undefined {
+    return (leaveConflicts?.[weekId] ?? []).find((c) => c.role === roleLabel);
+  }
+
   // Find the logged-in user's staff profile ID by matching user.id
   const myStaffId = staffList.find((s) => s.user?.id === currentUserId || s.userId === currentUserId)?.id ?? null;
 
@@ -642,16 +676,16 @@ function DcsOnCallPage() {
                         })()}
                       </TableCell>
                       <TableCell>
-                        <InlineRoleCell week={w} roleKey="leadEngineerId" staffList={staffList} onAssign={handleQuickAssign} />
+                        <InlineRoleCell week={w} roleKey="leadEngineerId" staffList={staffList} onAssign={handleQuickAssign} conflict={conflictFor(w.id, "Lead Engineer")} />
                       </TableCell>
                       <TableCell>
-                        <InlineRoleCell week={w} roleKey="asnSupportId" staffList={staffList} onAssign={handleQuickAssign} />
+                        <InlineRoleCell week={w} roleKey="asnSupportId" staffList={staffList} onAssign={handleQuickAssign} conflict={conflictFor(w.id, "ASN Support")} />
                       </TableCell>
                       <TableCell>
-                        <InlineRoleCell week={w} roleKey="enterpriseSupportId" staffList={staffList} onAssign={handleQuickAssign} />
+                        <InlineRoleCell week={w} roleKey="enterpriseSupportId" staffList={staffList} onAssign={handleQuickAssign} conflict={conflictFor(w.id, "Enterprise Support")} />
                       </TableCell>
                       <TableCell>
-                        <InlineRoleCell week={w} roleKey="coreSupportId" staffList={staffList} onAssign={handleQuickAssign} />
+                        <InlineRoleCell week={w} roleKey="coreSupportId" staffList={staffList} onAssign={handleQuickAssign} conflict={conflictFor(w.id, "CORE Support")} />
                       </TableCell>
                       <TableCell>
                         <Button

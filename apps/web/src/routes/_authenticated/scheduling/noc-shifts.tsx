@@ -26,6 +26,7 @@ import {
   ChevronRight,
   Download,
   Search,
+  TriangleAlert,
   Upload,
   User,
   X,
@@ -383,6 +384,17 @@ function NocShiftsPage() {
     orpc.staff.list.queryOptions({ input: { limit: 200, offset: 0 } }),
   );
 
+  // STAGE 3 — data linking: approved leave overlapping the displayed month.
+  // Used to warn when a working shift is scheduled on a staff member's leave day.
+  const monthFrom = `${year}-${String(month).padStart(2, "0")}-01`;
+  const monthLastDay = new Date(year, month, 0).getDate();
+  const monthTo = `${year}-${String(month).padStart(2, "0")}-${String(monthLastDay).padStart(2, "0")}`;
+  const { data: leaveOverlay } = useQuery(
+    orpc.attendanceTime.leaveOverlay.queryOptions({
+      input: { from: monthFrom, to: monthTo },
+    }),
+  );
+
   // ── Mutations ────────────────────────────────────────────────────────────────
 
   // Single-cell / small-batch save (upsert, used for interactive edits)
@@ -566,6 +578,28 @@ function NocShiftsPage() {
       else Off++;
     }
     return { D, N, S, Leave, Off };
+  }
+
+  // ── Leave conflict detection (STAGE 3) ───────────────────────────────────────
+  // A staff member is "in conflict" when a *working* shift (Day/Night/Swing/
+  // Training/Outreach/Custom) is scheduled on a day they have approved leave.
+  const WORKING_SHIFTS: ReadonlySet<ShiftType> = new Set<ShiftType>([
+    "Day Shift", "Night Shift", "Swing Shift", "Training", "Training Half Day",
+    "Outreach", "Custom",
+  ]);
+
+  function leaveConflictDays(staffId: string): { date: string; leaveType: string }[] {
+    const byDate = leaveOverlay?.[staffId];
+    if (!byDate) return [];
+    const hits: { date: string; leaveType: string }[] = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const shift = shiftMap[staffId]?.[d]?.type;
+      if (!shift || !WORKING_SHIFTS.has(shift)) continue;
+      const dateStr = makeDateStr(d);
+      const leave = byDate[dateStr];
+      if (leave) hits.push({ date: dateStr, leaveType: leave.leaveType });
+    }
+    return hits;
   }
 
   // ── Excel import ─────────────────────────────────────────────────────────────
@@ -977,6 +1011,7 @@ function NocShiftsPage() {
                     const isMyRow = staffId === myStaffId;
                     const sum = summarise(staffId);
                     const displayName = staffNames[staffId] ?? "Unknown";
+                    const conflicts = leaveConflictDays(staffId);
                     return (
                       <tr
                         key={staffId}
@@ -987,7 +1022,20 @@ function NocShiftsPage() {
                           className="sticky left-0 z-10 w-44 min-w-[176px] max-w-[176px] truncate bg-background px-3 py-1 font-medium whitespace-nowrap"
                           title={displayName}
                         >
-                          {displayName}
+                          <span className="inline-flex items-center gap-1">
+                            <span className="truncate">{displayName}</span>
+                            {conflicts.length > 0 && (
+                              <span
+                                className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                                title={`Approved leave clashes with ${conflicts.length} scheduled shift${conflicts.length !== 1 ? "s" : ""}: ${conflicts
+                                  .map((c) => `${c.date} (${c.leaveType})`)
+                                  .join(", ")}`}
+                              >
+                                <TriangleAlert className="size-2.5" />
+                                {conflicts.length}
+                              </span>
+                            )}
+                          </span>
                         </td>
                         {/* Shift cells */}
                         {days.map(({ day, weekStart, isWeekend, isToday, holiday }) => {

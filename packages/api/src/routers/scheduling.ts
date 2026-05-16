@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/server";
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -7,6 +7,7 @@ import {
   db,
   dcsOncallSwaps,
   dcsOnCallWeeks,
+  leaveRequests,
   nocShifts,
   quarterlyMaintenanceTasks,
   staffProfiles,
@@ -251,6 +252,88 @@ export const schedulingRouter = {
         });
         if (!row) throw new ORPCError("NOT_FOUND");
         return row;
+      }),
+
+    // ── Leave conflicts (STAGE 3 — data linking) ──────────────────────────
+    // For a given year's on-call weeks, return which assigned staff have
+    // APPROVED leave overlapping their week. Read-only; never auto-cancels.
+    // Returns: weekId → array of { staffProfileId, role, leaveType, startDate, endDate }
+    leaveConflicts: requireRole("rota", "read")
+      .input(z.object({ year: z.number().int() }))
+      .handler(async ({ input }) => {
+        type Conflict = {
+          staffProfileId: string;
+          role: string;
+          leaveType: string;
+          startDate: string;
+          endDate: string;
+        };
+        const result: Record<string, Conflict[]> = {};
+
+        const weeks = await db.query.dcsOnCallWeeks.findMany({
+          where: eq(dcsOnCallWeeks.year, input.year),
+        });
+        if (weeks.length === 0) return result;
+
+        // Collect every assigned staff id across all roles.
+        const assignedIds = new Set<string>();
+        for (const w of weeks) {
+          for (const id of [
+            w.leadEngineerId, w.asnSupportId, w.enterpriseSupportId, w.coreSupportId,
+          ]) {
+            if (id) assignedIds.add(id);
+          }
+        }
+        if (assignedIds.size === 0) return result;
+
+        // Year-bounded approved leave for those staff.
+        const yearStart = `${input.year}-01-01`;
+        const yearEnd = `${input.year}-12-31`;
+        const leaveRows = await db.query.leaveRequests.findMany({
+          where: and(
+            eq(leaveRequests.status, "approved"),
+            inArray(leaveRequests.staffProfileId, [...assignedIds]),
+            lte(leaveRequests.startDate, yearEnd),
+            gte(leaveRequests.endDate, yearStart),
+          ),
+          with: { leaveType: true },
+        });
+
+        const ROLE_BY_FIELD: Record<string, string> = {
+          leadEngineerId: "Lead Engineer",
+          asnSupportId: "ASN Support",
+          enterpriseSupportId: "Enterprise Support",
+          coreSupportId: "CORE Support",
+        };
+
+        for (const w of weeks) {
+          const hits: Conflict[] = [];
+          const roleEntries: Array<[string, string | null]> = [
+            ["leadEngineerId", w.leadEngineerId],
+            ["asnSupportId", w.asnSupportId],
+            ["enterpriseSupportId", w.enterpriseSupportId],
+            ["coreSupportId", w.coreSupportId],
+          ];
+          for (const [field, staffId] of roleEntries) {
+            if (!staffId) continue;
+            for (const lr of leaveRows) {
+              if (lr.staffProfileId !== staffId) continue;
+              // Date-range overlap: leave overlaps the week.
+              if (lr.startDate <= w.weekEndDate && lr.endDate >= w.weekStartDate) {
+                hits.push({
+                  staffProfileId: staffId,
+                  role: ROLE_BY_FIELD[field] ?? field,
+                  leaveType: lr.leaveType?.name ?? "Leave",
+                  startDate: lr.startDate,
+                  endDate: lr.endDate,
+                });
+              }
+            }
+          }
+          if (hits.length > 0) result[w.id] = hits;
+        }
+
+        return result;
       }),
 
     upsertWeek: requireRole("rota", "create")

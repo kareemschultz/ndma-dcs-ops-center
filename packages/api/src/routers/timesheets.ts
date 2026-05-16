@@ -1,9 +1,10 @@
 import { ORPCError } from "@orpc/server";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { z } from "zod";
 
 import {
   db,
+  latenessRecords,
   staffProfiles,
   timesheetEntries,
   timesheets,
@@ -11,6 +12,13 @@ import {
 
 import { requireRole } from "../index";
 import { logAudit } from "../lib/audit";
+import { getApprovedLeaveForRange } from "../lib/leave-overlay";
+
+/** Full month name → 1-indexed month, for matching quarterly lateness rows. */
+const MONTH_INDEX: Record<string, number> = {
+  January: 1, February: 2, March: 3, April: 4, May: 5, June: 6,
+  July: 7, August: 8, September: 9, October: 10, November: 11, December: 12,
+};
 import {
   canAccessStaffPrivate,
   getCallerStaffProfile,
@@ -127,6 +135,58 @@ export const timesheetsRouter = {
 
       await assertTimesheetAccess(context, row.staffProfileId);
       return row;
+    }),
+
+  // ── Period overlay (STAGE 3 — data linking) ────────────────────────────────
+  // Read-only join: approved leave days + lateness records that overlap a
+  // timesheet's [periodStart, periodEnd]. Lets the timesheet detail surface
+  // context entered in other modules (Leave, Lateness) without duplicating it.
+  periodOverlay: requireRole("timesheet", "read")
+    .input(z.object({ id: z.string() }))
+    .handler(async ({ input, context }) => {
+      const sheet = await db.query.timesheets.findFirst({
+        where: eq(timesheets.id, input.id),
+      });
+      if (!sheet) throw new ORPCError("NOT_FOUND");
+      await assertTimesheetAccess(context, sheet.staffProfileId);
+
+      // Approved leave overlapping the period → flat list of leave days.
+      const overlay = await getApprovedLeaveForRange(
+        sheet.periodStart,
+        sheet.periodEnd,
+        [sheet.staffProfileId],
+      );
+      const leaveDays = Object.entries(overlay[sheet.staffProfileId] ?? {})
+        .map(([date, day]) => ({ date, leaveType: day.leaveType, requestId: day.requestId }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      // Lateness records whose (year, month) falls inside the period.
+      const startYear = Number(sheet.periodStart.slice(0, 4));
+      const endYear = Number(sheet.periodEnd.slice(0, 4));
+      const latenessRows = await db.query.latenessRecords.findMany({
+        where: and(
+          eq(latenessRecords.staffId, sheet.staffProfileId),
+          gte(latenessRecords.year, startYear),
+          lte(latenessRecords.year, endYear),
+        ),
+      });
+      const lateness = latenessRows
+        .filter((r) => {
+          const monthIdx = MONTH_INDEX[r.month];
+          if (!monthIdx) return false;
+          // First day of that month — is it within the timesheet period?
+          const monthStart = `${r.year}-${String(monthIdx).padStart(2, "0")}-01`;
+          return monthStart >= sheet.periodStart.slice(0, 7) + "-01"
+            && monthStart <= sheet.periodEnd;
+        })
+        .map((r) => ({
+          year: r.year,
+          month: r.month,
+          totalTimeLate: r.totalTimeLate,
+          daysLate: r.daysLate,
+        }));
+
+      return { leaveDays, lateness };
     }),
 
   mine: requireRole("timesheet", "read").handler(async ({ context }) => {
