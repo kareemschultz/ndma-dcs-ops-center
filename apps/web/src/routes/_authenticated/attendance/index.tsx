@@ -1403,7 +1403,7 @@ function AttendancePage() {
           <Clock3 className="size-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">Time &amp; Attendance</span>
           <span className="text-muted-foreground">/</span>
-          <span className="text-sm font-medium">Attendance Logs</span>
+          <h1 className="text-sm font-medium">Attendance Logs</h1>
         </div>
         <div className="ms-auto flex items-center gap-2">
           <ThemeSwitch />

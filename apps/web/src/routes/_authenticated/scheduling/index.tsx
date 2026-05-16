@@ -104,7 +104,7 @@ function SchedulingHubPage() {
       <Header fixed>
         <div className="flex items-center gap-2">
           <CalendarCheck2 className="size-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Scheduling &amp; Rosters</span>
+          <h1 className="text-sm font-medium">Scheduling &amp; Rosters</h1>
         </div>
         <div className="ms-auto flex items-center gap-2">
           <ThemeSwitch />
