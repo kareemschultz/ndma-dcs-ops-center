@@ -6,36 +6,54 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ── Maia style — blue/indigo primary, soft rounded surfaces ────────────── */
+/* ───────────────────────────────────────────────────────────────────────────
+ * DCS Ops Center — Theme Tokens
+ *
+ * NDMA blue is the single brand hue (oklch hue ≈ 240). Do NOT change the
+ * primary hue. No green/emerald anywhere — the chart ramp stays blue-family.
+ * Every token below is defined in BOTH :root (light) and .dark for parity.
+ * shadcn "base" (Base UI) token set + sidebar + chart palette.
+ * ──────────────────────────────────────────────────────────────────────────*/
 :root {
+  /* ── Surfaces ─────────────────────────────────────────────────────────── */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  /* Blue/indigo primary — was achromatic near-black */
+
+  /* ── Brand / primary — NDMA blue ──────────────────────────────────────── */
   --primary: oklch(0.52 0.158 240);
   --primary-foreground: oklch(0.985 0 0);
-  /* Soft blue-tinted secondary/muted surfaces */
+
+  /* ── Low-emphasis surfaces (soft blue-tinted) ─────────────────────────── */
   --secondary: oklch(0.94 0.025 262);
   --secondary-foreground: oklch(0.3 0.12 262);
   --muted: oklch(0.96 0.012 262);
   --muted-foreground: oklch(0.5 0.06 262);
   --accent: oklch(0.94 0.025 262);
   --accent-foreground: oklch(0.3 0.12 262);
+
+  /* ── Feedback ─────────────────────────────────────────────────────────── */
   --destructive: oklch(0.58 0.22 27);
+
+  /* ── Structural — border / input / focus ring ────────────────────────── */
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  /* Ring matches primary for consistent focus indicators */
-  --ring: oklch(0.52 0.158 240);
+  --ring: oklch(0.52 0.158 240); /* matches --primary for consistent focus */
+
+  /* ── Chart palette — monochrome NDMA-blue ramp, light → dark ──────────── */
   --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
+  --chart-2: oklch(0.707 0.165 254.624);
+  --chart-3: oklch(0.623 0.214 259.815);
+  --chart-4: oklch(0.546 0.245 262.881);
+  --chart-5: oklch(0.457 0.221 264.376);
+
+  /* ── Radius scale base ────────────────────────────────────────────────── */
   --radius: 1rem;
-  /* Sidebar — light background, blue active items */
+
+  /* ── Sidebar — light surface, blue active items ───────────────────────── */
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.52 0.158 240);
@@ -47,31 +65,43 @@
 }
 
 .dark {
+  /* ── Surfaces ─────────────────────────────────────────────────────────── */
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  /* Brighter blue for legibility on dark backgrounds */
+
+  /* ── Brand / primary — brighter NDMA blue for dark legibility ─────────── */
   --primary: oklch(0.65 0.155 240);
   --primary-foreground: oklch(0.15 0 0);
+
+  /* ── Low-emphasis surfaces ────────────────────────────────────────────── */
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.3 0.05 262);
   --accent-foreground: oklch(0.88 0.08 262);
+
+  /* ── Feedback ─────────────────────────────────────────────────────────── */
   --destructive: oklch(0.704 0.191 22.216);
+
+  /* ── Structural — border / input / focus ring ────────────────────────── */
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.65 0.155 240);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
-  /* Sidebar — dark background, blue active items */
+  --ring: oklch(0.65 0.155 240); /* matches --primary for consistent focus */
+
+  /* ── Chart palette — brightened blue ramp so series stay legible on
+   *    dark surfaces (ascending lightness, same blue hue family) ────────── */
+  --chart-1: oklch(0.491 0.221 264.376);
+  --chart-2: oklch(0.588 0.222 262.881);
+  --chart-3: oklch(0.673 0.196 259.815);
+  --chart-4: oklch(0.755 0.142 254.624);
+  --chart-5: oklch(0.833 0.094 251.813);
+
+  /* ── Sidebar — dark surface, blue active items ────────────────────────── */
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.65 0.155 240);
@@ -82,6 +112,8 @@
   --sidebar-ring: oklch(0.65 0.155 240);
 }
 
+/* Expose the tokens above to Tailwind as utilities (bg-*, text-*, ring-*…).
+ * Grouped to mirror the :root / .dark ordering so the two stay in sync. */
 @theme inline {
   /* Font — Geist per design handoff §3 (loaded via Google Fonts in index.html) */
   --font-sans: "Geist", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
@@ -112,37 +144,52 @@
   --color-brand-900: oklch(0.27 0.1 240);
   --color-brand-950: oklch(0.2 0.08 240);
 
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-foreground: var(--foreground);
+  /* Surfaces */
   --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  /* Brand / primary */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  /* Low-emphasis surfaces */
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  /* Feedback */
+  --color-destructive: var(--destructive);
+
+  /* Structural */
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Chart palette */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Radius scale — derived from --radius */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
