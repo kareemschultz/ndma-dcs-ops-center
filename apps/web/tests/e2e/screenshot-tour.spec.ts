@@ -23,6 +23,13 @@ const PAGES = [
   ["/training", "training"],
   ["/work/workload", "workload"],
   ["/cycles", "cycles"],
+  // Phase 17 — changed / consolidated pages
+  ["/attendance", "attendance-logs"],
+  ["/attendance/roll-call", "attendance-roll-call"],
+  ["/attendance/tosd", "attendance-tosd"],
+  ["/timesheets", "timesheets"],
+  ["/lateness", "lateness"],
+  ["/scheduling/noc-shifts", "scheduling-noc-shifts"],
 ];
 
 for (const [path, name] of PAGES) {
