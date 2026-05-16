@@ -16,7 +16,14 @@ import {
 } from "@ndma-dcs-staff-portal/ui/components/table";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { StatusLegend } from "@/components/status-legend";
 import { ThemeSwitch } from "@/components/theme-switch";
+import {
+  TONES,
+  INCIDENT_STATUS_TONE,
+  SEVERITY_TONE,
+  legendFromMap,
+} from "@/lib/status-colors";
 import { orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_authenticated/incidents/")({
@@ -33,22 +40,25 @@ type IncidentStatus =
   | "post_mortem"
   | "closed";
 
+// Colours come from the central status-color system (@/lib/status-colors).
 const SEV_COLORS: Record<IncidentSeverity, string> = {
-  sev1: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 font-bold",
-  sev2: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
-  sev3: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  sev4: "bg-muted text-muted-foreground",
+  sev1: `${TONES[SEVERITY_TONE.sev1].badge} font-bold`,
+  sev2: TONES[SEVERITY_TONE.sev2].badge,
+  sev3: TONES[SEVERITY_TONE.sev3].badge,
+  sev4: TONES[SEVERITY_TONE.sev4].badge,
 };
 
 const STATUS_COLORS: Record<IncidentStatus, string> = {
-  detected: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
-  investigating: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
-  identified: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  mitigating: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
-  resolved: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  post_mortem: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  closed: "bg-muted text-muted-foreground",
+  detected: TONES[INCIDENT_STATUS_TONE.detected].badge,
+  investigating: TONES[INCIDENT_STATUS_TONE.investigating].badge,
+  identified: TONES[INCIDENT_STATUS_TONE.identified].badge,
+  mitigating: TONES[INCIDENT_STATUS_TONE.mitigating].badge,
+  resolved: TONES[INCIDENT_STATUS_TONE.resolved].badge,
+  post_mortem: TONES[INCIDENT_STATUS_TONE.post_mortem].badge,
+  closed: TONES[INCIDENT_STATUS_TONE.closed].badge,
 };
+
+const INCIDENT_STATUS_LEGEND = legendFromMap(INCIDENT_STATUS_TONE);
 
 const STATUS_OPTIONS = [
   { value: "", label: "All Statuses" },
@@ -212,6 +222,12 @@ function IncidentsPage() {
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
+
+          <StatusLegend
+            items={INCIDENT_STATUS_LEGEND}
+            label="Status"
+            className="ml-auto"
+          />
         </div>
 
         <div className="rounded-xl border">

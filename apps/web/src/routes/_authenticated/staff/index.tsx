@@ -34,6 +34,8 @@ import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { useTeamFilter } from "@/lib/team-filter";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { FormerTag, isFormerStatus } from "@/components/former-tag";
+import { TONES, LIFECYCLE_STATUS_TONE } from "@/lib/status-colors";
 import { orpc } from "@/utils/orpc";
 import { authClient } from "@/lib/auth-client";
 import {
@@ -55,11 +57,12 @@ const STATUS_OPTIONS = [
   { value: "terminated", label: "Terminated" },
 ];
 
+// Colours from the central status-color system (@/lib/status-colors).
 const STATUS_COLORS: Record<string, string> = {
-  active: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  inactive: "bg-muted text-muted-foreground",
-  on_leave: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
-  terminated: "bg-muted text-muted-foreground line-through",
+  active: TONES[LIFECYCLE_STATUS_TONE.active].badge,
+  inactive: TONES[LIFECYCLE_STATUS_TONE.inactive].badge,
+  on_leave: TONES[LIFECYCLE_STATUS_TONE.on_leave].badge,
+  terminated: `${TONES[LIFECYCLE_STATUS_TONE.terminated].badge} line-through`,
 };
 
 function initials(name?: string | null): string {
@@ -102,7 +105,10 @@ function StaffCard({
             {initials(staff.user?.name)}
           </div>
           <div className="min-w-0">
-            <p className="font-semibold truncate">{staff.user?.name ?? "—"}</p>
+            <p className="font-semibold truncate">
+              {staff.user?.name ?? "—"}
+              {isFormerStatus(staff.status) && <FormerTag />}
+            </p>
             <p className="text-xs text-muted-foreground truncate">{staff.jobTitle}</p>
           </div>
         </div>
@@ -402,11 +408,18 @@ function StaffPage() {
   const [deptId, setDeptId] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [view, setView] = useState<"grid" | "table">("grid");
+  // Staff who have left NDMA are hidden by default — toggle to include them.
+  const [showFormer, setShowFormer] = useState(false);
   const { team } = useTeamFilter();
 
   const { data, isLoading } = useQuery(
     orpc.staff.list.queryOptions({
-      input: { limit: 200, offset: 0, team: team === "All" ? undefined : team },
+      input: {
+        limit: 200,
+        offset: 0,
+        team: team === "All" ? undefined : team,
+        includeFormer: showFormer,
+      },
     }),
   );
   const { data: departments } = useQuery(orpc.staff.getDepartments.queryOptions());
@@ -518,6 +531,20 @@ function StaffPage() {
               Table
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setShowFormer((v) => !v)}
+            aria-pressed={showFormer}
+            className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-sm transition-colors ${
+              showFormer
+                ? "bg-primary text-primary-foreground"
+                : "bg-background text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Users className="size-3.5" />
+            {showFormer ? "Showing former staff" : "Show former staff"}
+          </button>
         </div>
 
         {/* Department filter pills */}
@@ -628,6 +655,7 @@ function StaffPage() {
                         {s.isTeamLead && (
                           <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">Lead</span>
                         )}
+                        {isFormerStatus(s.status) && <FormerTag />}
                       </TableCell>
                       <TableCell className="font-mono text-muted-foreground text-xs">
                         {s.employeeId}

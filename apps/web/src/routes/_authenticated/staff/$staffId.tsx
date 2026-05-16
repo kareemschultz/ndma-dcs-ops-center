@@ -25,12 +25,15 @@ import {
   TrendingUp,
   FileText,
   HeartHandshake,
+  UserCheck,
+  UserX,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@ndma-dcs-staff-portal/ui/components/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@ndma-dcs-staff-portal/ui/components/dialog";
+import { FormerTag, isFormerStatus } from "@/components/former-tag";
 import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
 import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@ndma-dcs-staff-portal/ui/components/select";
@@ -947,9 +950,35 @@ function StaffProfilePage() {
   const [editOpen, setEditOpen] = useState(false);
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
   const [advancesOpen, setAdvancesOpen] = useState(false);
+  const [lifecycleOpen, setLifecycleOpen] = useState(false);
+  const lifecycleQc = useQueryClient();
 
   const { data: profile, isLoading, error } = useQuery(
     orpc.staff.get.queryOptions({ input: { id: staffId } }),
+  );
+
+  function onLifecycleDone() {
+    lifecycleQc.invalidateQueries({ queryKey: orpc.staff.get.key() });
+    lifecycleQc.invalidateQueries({ queryKey: orpc.staff.list.key() });
+    setLifecycleOpen(false);
+  }
+  const deactivateMutation = useMutation(
+    orpc.staff.deactivate.mutationOptions({
+      onSuccess: () => {
+        toast.success("Staff member marked as former staff.");
+        onLifecycleDone();
+      },
+      onError: (e) => toast.error(e.message),
+    }),
+  );
+  const reactivateMutation = useMutation(
+    orpc.staff.reactivate.mutationOptions({
+      onSuccess: () => {
+        toast.success("Staff member reactivated.");
+        onLifecycleDone();
+      },
+      onError: (e) => toast.error(e.message),
+    }),
   );
 
   const { data: staffContracts } = useQuery(
@@ -1041,16 +1070,82 @@ function StaffProfilePage() {
             <ArrowLeft className="size-4" />
             Directory
           </Link>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => setEditOpen(true)}
-          >
-            <Pencil className="size-3.5" />
-            Edit
-          </Button>
+          <div className="flex items-center gap-2">
+            {isFormerStatus(profile.status) ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setLifecycleOpen(true)}
+              >
+                <UserCheck className="size-3.5" />
+                Reactivate
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-red-600 hover:text-red-700"
+                onClick={() => setLifecycleOpen(true)}
+              >
+                <UserX className="size-3.5" />
+                Deactivate
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setEditOpen(true)}
+            >
+              <Pencil className="size-3.5" />
+              Edit
+            </Button>
+          </div>
         </div>
+
+        {/* Deactivate / Reactivate confirmation */}
+        <Dialog open={lifecycleOpen} onOpenChange={setLifecycleOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {isFormerStatus(profile.status)
+                  ? "Reactivate staff member"
+                  : "Mark as former staff"}
+              </DialogTitle>
+              <DialogDescription>
+                {isFormerStatus(profile.status)
+                  ? `${profile.user?.name ?? "This person"} will be returned to active employment and reappear in active staff lists.`
+                  : `${profile.user?.name ?? "This person"} will be marked as former staff and hidden from active staff lists. Their historical records (leave, attendance, appraisals) are preserved.`}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setLifecycleOpen(false)}
+                disabled={deactivateMutation.isPending || reactivateMutation.isPending}
+              >
+                Cancel
+              </Button>
+              {isFormerStatus(profile.status) ? (
+                <Button
+                  onClick={() => reactivateMutation.mutate({ id: staffId })}
+                  disabled={reactivateMutation.isPending}
+                >
+                  {reactivateMutation.isPending ? "Reactivating…" : "Reactivate"}
+                </Button>
+              ) : (
+                <Button
+                  variant="destructive"
+                  onClick={() => deactivateMutation.mutate({ id: staffId })}
+                  disabled={deactivateMutation.isPending}
+                >
+                  {deactivateMutation.isPending ? "Updating…" : "Mark as former"}
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Header card */}
         <div className="mb-6 rounded-xl border p-5">
@@ -1060,7 +1155,10 @@ function StaffProfilePage() {
                 {profileInitials(profile.user?.name)}
               </div>
               <div>
-                <h1 className="text-2xl font-bold">{profile.user?.name}</h1>
+                <h1 className="text-2xl font-bold">
+                  {profile.user?.name}
+                  {isFormerStatus(profile.status) && <FormerTag />}
+                </h1>
                 <p className="text-sm text-muted-foreground">
                   {profile.jobTitle}
                   {profile.department?.name ? ` · ${profile.department.name}` : ""}

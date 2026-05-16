@@ -123,7 +123,7 @@ export const leaveRouter = {
 
   // ── Leave Balances ────────────────────────────────────────────────────────
   balances: {
-    getByStaff: protectedProcedure
+    getByStaff: requireRole("leave", "read")
       .input(z.object({ staffProfileId: z.string() }))
       .handler(async ({ input, context }) => {
         const role = context.userRole;
@@ -197,7 +197,7 @@ export const leaveRouter = {
 
   // ── Leave Requests ────────────────────────────────────────────────────────
   requests: {
-    list: protectedProcedure
+    list: requireRole("leave", "read")
       .input(
         z.object({
           staffProfileId: z.string().optional(),

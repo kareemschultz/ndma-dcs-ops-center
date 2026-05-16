@@ -37,20 +37,28 @@ import {
   type NavGroup as NavGroupProps,
 } from "./types";
 
-// Role → resources the role can access. Mirrors the RBAC table in packages/auth/src/index.ts.
-// This is a UX filter only — the server enforces real RBAC via requireRole().
+// Role → resources the role can access. Mirrors the RBAC table in
+// packages/auth/src/index.ts (roles: readOnly, staff, manager, teamLead,
+// personalAssistant, hrAdminOps, admin). This is a UX filter only — the
+// server enforces real RBAC via requireRole().
+//
+// EVERY role must have an entry: canAccess() fails CLOSED, so an unlisted
+// role (or a still-loading session) hides resource-gated nav items rather
+// than leaking admin-only pages.
 const ROLE_RESOURCES: Record<string, string[] | ["*"]> = {
-  admin:      ["*"],
-  hrAdminOps: ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "report", "audit", "settings", "procurement", "notification", "access"],
-  manager:    ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "report", "audit", "procurement", "notification", "access"],
-  staff:      ["staff", "work", "leave", "rota", "compliance", "contract", "procurement", "notification", "access"],
-  readOnly:   ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "report", "audit", "procurement", "notification", "access"],
+  admin:             ["*"],
+  hrAdminOps:        ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "report", "audit", "settings", "procurement", "notification", "access"],
+  manager:           ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "report", "audit", "procurement", "notification", "access"],
+  teamLead:          ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "procurement", "notification", "access"],
+  personalAssistant: ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "procurement", "notification", "access"],
+  staff:             ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "procurement", "notification", "access"],
+  readOnly:          ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "report", "audit", "procurement", "notification", "access"],
 };
 
 function canAccess(role: string | null | undefined, resource?: string): boolean {
-  if (!resource) return true; // no restriction on this item
+  if (!resource) return true; // ungated item — always visible
   const allowed = ROLE_RESOURCES[role ?? ""];
-  if (!allowed) return true; // unknown role → show everything (server will reject if needed)
+  if (!allowed) return false; // unknown / still-loading role → fail closed
   if (allowed[0] === "*") return true;
   return (allowed as string[]).includes(resource);
 }

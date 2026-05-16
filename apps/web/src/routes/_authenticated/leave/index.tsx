@@ -40,7 +40,10 @@ import { LeaveViolationsBadge } from "@/components/leave-violations-badge";
 import { LeaveSubNav } from "@/components/layout/leave-sub-nav";
 import { Main } from "@/components/layout/main";
 import { PageHeader } from "@/components/layout/page-header";
+import { StatusLegend } from "@/components/status-legend";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { FormerTag, isFormerStatus } from "@/components/former-tag";
+import { TONES } from "@/lib/status-colors";
 import { useTeamFilter } from "@/lib/team-filter";
 import {
   getLeaveTypeDisplayName, isVisibleLeaveType, sortLeaveTypesByCanonicalOrder,
@@ -54,29 +57,35 @@ export const Route = createFileRoute("/_authenticated/leave/")({
 type LeaveStatus = "pending" | "approved" | "rejected" | "cancelled";
 type ViewMode = "list" | "detailed" | "board" | "gantt";
 
+// Colours come from the central status-color system (@/lib/status-colors) so
+// a hue means the same thing across the whole app. pending=amber, approved=
+// blue, rejected=red, cancelled=neutral/muted.
 const STATUS_COLORS: Record<LeaveStatus, string> = {
-  pending:   "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  approved:  "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  rejected:  "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
-  cancelled: "bg-muted text-muted-foreground",
+  pending:   TONES.amber.badge,
+  approved:  TONES.blue.badge,
+  rejected:  TONES.red.badge,
+  cancelled: TONES.neutral.badge,
 };
 const STATUS_LABELS: Record<LeaveStatus, string> = {
   pending: "Pending", approved: "Approved", rejected: "Rejected", cancelled: "Cancelled",
 };
-// Solid fills for Gantt bars. No green — approved is blue (see CLAUDE.md).
 const STATUS_BAR: Record<LeaveStatus, string> = {
-  pending:   "bg-amber-500",
-  approved:  "bg-blue-500",
-  rejected:  "bg-red-500",
-  cancelled: "bg-muted-foreground/40",
+  pending:   TONES.amber.bar,
+  approved:  TONES.blue.bar,
+  rejected:  TONES.red.bar,
+  cancelled: TONES.neutral.bar,
 };
-// Board column accent borders — kept as literal classes so Tailwind picks them up.
 const STATUS_BORDER: Record<LeaveStatus, string> = {
-  pending:   "border-l-amber-500",
-  approved:  "border-l-blue-500",
-  rejected:  "border-l-red-500",
-  cancelled: "border-l-muted-foreground/40",
+  pending:   TONES.amber.border,
+  approved:  TONES.blue.border,
+  rejected:  TONES.red.border,
+  cancelled: TONES.neutral.border,
 };
+const LEAVE_STATUS_LEGEND = (
+  Object.keys(STATUS_LABELS) as LeaveStatus[]
+).map((s) => ({ label: STATUS_LABELS[s], tone: TONES[
+  s === "pending" ? "amber" : s === "approved" ? "blue" : s === "rejected" ? "red" : "neutral"
+] }));
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -100,16 +109,10 @@ type LeaveRow = {
   approvedBy?: { name?: string | null } | null;
 };
 
-// Records for people who have left NDMA carry a gentle "Former" tag.
+// Records for people who have left NDMA carry a gentle "Former" tag
+// (shared component — see @/components/former-tag).
 function isFormer(r: LeaveRow): boolean {
-  return r.staffProfile?.status === "inactive" || r.staffProfile?.status === "terminated";
-}
-function FormerTag() {
-  return (
-    <span className="ml-1.5 inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground align-middle">
-      Former
-    </span>
-  );
+  return isFormerStatus(r.staffProfile?.status);
 }
 
 function LeaveStatusBadge({ status }: { status: string }) {
@@ -682,6 +685,9 @@ function LeavePage() {
             ))}
           </div>
         </div>
+
+        {/* Status legend — keeps badge colours unambiguous */}
+        <StatusLegend items={LEAVE_STATUS_LEGEND} label="Status" />
 
         {/* Active view */}
         {isLoading ? (

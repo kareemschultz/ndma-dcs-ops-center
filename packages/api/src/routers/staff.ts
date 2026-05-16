@@ -1,7 +1,7 @@
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import { db, staffProfiles, departments } from "@ndma-dcs-staff-portal/db";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, notInArray } from "drizzle-orm";
 
 import { protectedProcedure, requireRole } from "../index";
 import { logAudit } from "../lib/audit";
@@ -25,13 +25,22 @@ export const staffRouter = {
         status: z
           .enum(["active", "inactive", "on_leave", "terminated"])
           .optional(),
+        // When false (default), staff who have left NDMA (inactive /
+        // terminated) are excluded. An explicit `status` filter always wins.
+        includeFormer: z.boolean().default(false),
         limit: z.number().min(1).max(500).default(100),
         offset: z.number().min(0).default(0),
       }),
     )
     .handler(async ({ input }) => {
       const conditions = [];
-      if (input.status) conditions.push(eq(staffProfiles.status, input.status));
+      if (input.status) {
+        conditions.push(eq(staffProfiles.status, input.status));
+      } else if (!input.includeFormer) {
+        conditions.push(
+          notInArray(staffProfiles.status, ["inactive", "terminated"]),
+        );
+      }
       if (input.departmentIds && input.departmentIds.length > 0) {
         conditions.push(
           inArray(staffProfiles.departmentId, input.departmentIds),
@@ -216,6 +225,40 @@ export const staffRouter = {
         resourceId: input.id,
         beforeValue: { status: before.status },
         afterValue: { status: "terminated" },
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+      });
+
+      return updated;
+    }),
+
+  // Bring a former staff member back to active employment.
+  reactivate: requireRole("staff", "update")
+    .input(z.object({ id: z.string() }))
+    .handler(async ({ input, context }) => {
+      const before = await db.query.staffProfiles.findFirst({
+        where: eq(staffProfiles.id, input.id),
+      });
+      if (!before) throw new ORPCError("NOT_FOUND");
+
+      const updatedRows = await db
+        .update(staffProfiles)
+        .set({ status: "active" })
+        .where(eq(staffProfiles.id, input.id))
+        .returning();
+      const updated = updatedRows[0];
+
+      await logAudit({
+        actorId: context.session.user.id,
+        actorName: context.session.user.name,
+        action: "staff.reactivate",
+        module: "staff",
+        resourceType: "staff_profile",
+        resourceId: input.id,
+        beforeValue: { status: before.status },
+        afterValue: { status: "active" },
         ipAddress: context.ipAddress,
         userAgent: context.userAgent,
         actorRole: context.userRole ?? undefined,

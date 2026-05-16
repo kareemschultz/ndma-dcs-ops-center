@@ -72,6 +72,7 @@ import {
   TabsTrigger,
 } from "@ndma-dcs-staff-portal/ui/components/tabs";
 import { Textarea } from "@ndma-dcs-staff-portal/ui/components/textarea";
+import { TONES } from "@/lib/status-colors";
 
 export const Route = createFileRoute("/_authenticated/timesheets/")({
   component: TimesheetsPage,
@@ -89,12 +90,14 @@ const STATUS_LABEL: Record<TimesheetStatus, string> = {
   closed: "Closed",
 };
 
+// Colours come from the central status-color system (@/lib/status-colors):
+// draft=cyan, submitted=amber, approved=blue, rejected=red, closed=slate.
 const STATUS_CLASS: Record<TimesheetStatus, string> = {
-  draft: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  submitted: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  approved: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-  closed: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
+  draft: TONES.cyan.badge,
+  submitted: TONES.amber.badge,
+  approved: TONES.blue.badge,
+  rejected: TONES.red.badge,
+  closed: TONES.slate.badge,
 };
 
 const ENTRY_CATEGORIES = [

@@ -59,6 +59,12 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { useTeamFilter } from "@/lib/team-filter";
 import { getLeaveTypeDisplayName } from "@/lib/leave-types";
+import {
+  TONES,
+  LEAVE_TYPE_TONE,
+  LEAVE_CODE_LABEL,
+  leaveCodeFromName,
+} from "@/lib/status-colors";
 import { orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_authenticated/leave/planner")({
@@ -83,62 +89,33 @@ interface LeaveTypeStyle {
 
 // Map a display name (or code) to a single-letter category and styling.
 function classifyLeaveType(name: string): LeaveTypeStyle {
-  const n = name.toLowerCase();
-  if (n.startsWith("annual"))     return LEAVE_STYLES.A;
-  if (n.startsWith("sick"))       return LEAVE_STYLES.S;
-  if (n.startsWith("maternity") ||
-      n.startsWith("paternity") ||
-      n.startsWith("mat"))        return LEAVE_STYLES.M;
-  if (n.startsWith("compassion")) return LEAVE_STYLES.C;
-  if (n.startsWith("half"))       return LEAVE_STYLES.H;
-  if (n.startsWith("wfh") ||
-      n.includes("work from home")) return LEAVE_STYLES.W;
-  return LEAVE_STYLES.O;
+  return LEAVE_STYLES[leaveCodeFromName(name)];
+}
+
+// Leave-type styling derives from the central status-color system so leave-
+// type hues match the rest of the app (see @/lib/status-colors).
+function styleForCode(code: LeaveCode): LeaveTypeStyle {
+  const t = TONES[LEAVE_TYPE_TONE[code]];
+  return {
+    code,
+    label: LEAVE_CODE_LABEL[code],
+    bg: t.bg,
+    tc: t.text,
+    pillBg: t.bg,
+    pillTc: t.text,
+    barBg: t.bar,
+    barTc: "text-white",
+  };
 }
 
 const LEAVE_STYLES: Record<LeaveCode, LeaveTypeStyle> = {
-  A: {
-    code: "A", label: "Annual",
-    bg: "bg-violet-100 dark:bg-violet-950/40", tc: "text-violet-800 dark:text-violet-200",
-    pillBg: "bg-violet-100 dark:bg-violet-950/30", pillTc: "text-violet-800 dark:text-violet-200",
-    barBg: "bg-violet-500", barTc: "text-white",
-  },
-  S: {
-    code: "S", label: "Sick",
-    bg: "bg-red-100 dark:bg-red-950/40", tc: "text-red-700 dark:text-red-300",
-    pillBg: "bg-red-100 dark:bg-red-950/30", pillTc: "text-red-700 dark:text-red-300",
-    barBg: "bg-red-500", barTc: "text-white",
-  },
-  M: {
-    code: "M", label: "Mat / Pat",
-    bg: "bg-pink-100 dark:bg-pink-950/40", tc: "text-pink-700 dark:text-pink-300",
-    pillBg: "bg-pink-100 dark:bg-pink-950/30", pillTc: "text-pink-700 dark:text-pink-300",
-    barBg: "bg-pink-500", barTc: "text-white",
-  },
-  C: {
-    code: "C", label: "Compassion.",
-    bg: "bg-purple-100 dark:bg-purple-950/40", tc: "text-purple-700 dark:text-purple-300",
-    pillBg: "bg-purple-100 dark:bg-purple-950/30", pillTc: "text-purple-700 dark:text-purple-300",
-    barBg: "bg-purple-500", barTc: "text-white",
-  },
-  H: {
-    code: "H", label: "Half Day",
-    bg: "bg-amber-100 dark:bg-amber-950/40", tc: "text-amber-700 dark:text-amber-300",
-    pillBg: "bg-amber-100 dark:bg-amber-950/30", pillTc: "text-amber-700 dark:text-amber-300",
-    barBg: "bg-amber-500", barTc: "text-white",
-  },
-  W: {
-    code: "W", label: "WFH",
-    bg: "bg-blue-100 dark:bg-blue-950/40", tc: "text-blue-700 dark:text-blue-300",
-    pillBg: "bg-blue-100 dark:bg-blue-950/30", pillTc: "text-blue-700 dark:text-blue-300",
-    barBg: "bg-blue-500", barTc: "text-white",
-  },
-  O: {
-    code: "O", label: "Other",
-    bg: "bg-slate-100 dark:bg-slate-900/60", tc: "text-slate-700 dark:text-slate-300",
-    pillBg: "bg-slate-100 dark:bg-slate-900/40", pillTc: "text-slate-700 dark:text-slate-300",
-    barBg: "bg-slate-500", barTc: "text-white",
-  },
+  A: styleForCode("A"),
+  S: styleForCode("S"),
+  M: styleForCode("M"),
+  C: styleForCode("C"),
+  H: styleForCode("H"),
+  W: styleForCode("W"),
+  O: styleForCode("O"),
 };
 
 // Order shown in the always-visible stats strip + Summary view columns.
@@ -146,8 +123,13 @@ const STAT_ORDER: LeaveCode[] = ["A", "S", "M", "C", "H", "W"];
 
 // Chart hex per leave code (categorical — no green, per CLAUDE.md design rules).
 const CODE_HEX: Record<LeaveCode, string> = {
-  A: "#8b5cf6", S: "#ef4444", M: "#ec4899", C: "#a855f7",
-  H: "#f59e0b", W: "#3b82f6", O: "#94a3b8",
+  A: TONES[LEAVE_TYPE_TONE.A].hex,
+  S: TONES[LEAVE_TYPE_TONE.S].hex,
+  M: TONES[LEAVE_TYPE_TONE.M].hex,
+  C: TONES[LEAVE_TYPE_TONE.C].hex,
+  H: TONES[LEAVE_TYPE_TONE.H].hex,
+  W: TONES[LEAVE_TYPE_TONE.W].hex,
+  O: TONES[LEAVE_TYPE_TONE.O].hex,
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────
