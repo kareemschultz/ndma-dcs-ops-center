@@ -24,6 +24,7 @@ import {
 } from "@ndma-dcs-staff-portal/ui/components/select";
 
 import { AttendanceSubNav } from "@/components/layout/attendance-sub-nav";
+import { MonthlyGrid } from "@/features/attendance/monthly-grid";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -290,6 +291,9 @@ function RollCallPage() {
   const [date, setDate] = useState(today);
   const [bulkStatus, setBulkStatus] = useState<AttendanceDailyStatus>("on_site");
   const [pendingSet, setPendingSet] = useState<Set<string>>(new Set());
+  // Roll-Call hosts two views: the daily mark-up grid and the monthly grid
+  // (the old /attendance/monthly page, merged here).
+  const [view, setView] = useState<"daily" | "monthly">("daily");
 
   const qc = useQueryClient();
 
@@ -386,7 +390,7 @@ function RollCallPage() {
       <Header fixed>
         <div className="flex items-center gap-2">
           <CheckSquare className="size-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Daily Roll Call</span>
+          <span className="text-sm font-medium">Roll-Call</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
           <ThemeSwitch />
@@ -398,28 +402,54 @@ function RollCallPage() {
       <Main className="space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Daily Roll Call</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Roll-Call</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Mark daily attendance for all staff.
+              {view === "daily"
+                ? "Mark daily attendance for all staff."
+                : "Per-staff daily attendance grid for the selected month."}
             </p>
           </div>
 
-          {/* Date picker */}
-          <div className="flex items-center gap-2">
-            <Input
-              type="date"
-              className="w-40"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Daily / Monthly view toggle */}
+            <div className="inline-flex rounded-lg border p-0.5">
+              {(["daily", "monthly"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setView(v)}
+                  className={`rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
+                    view === v
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+
+            {/* Date picker — daily view only */}
+            {view === "daily" && (
+              <Input
+                type="date"
+                className="w-40"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            )}
           </div>
         </div>
 
+        {view === "monthly" && <MonthlyGrid />}
+
         {/* Stats strip */}
-        {!isLoading && (
+        {view === "daily" && !isLoading && (
           <StatsStrip logsByStaff={logsByStaff} totalStaff={staffAll.length} />
         )}
 
+        {view === "daily" && (
+        <>
         {/* Bulk actions */}
         <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card px-4 py-3">
           <Users className="size-4 text-muted-foreground shrink-0" />
@@ -495,6 +525,8 @@ function RollCallPage() {
               </div>
             )}
           </div>
+        )}
+        </>
         )}
       </Main>
     </>

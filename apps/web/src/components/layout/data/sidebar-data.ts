@@ -3,7 +3,7 @@
 // Leave Planner and Advance Requests per prototype.
 //
 // Hub pages have internal sub-navs (no sub-routes in sidebar):
-//   /attendance — tabs: Logs · Roll-Call · Monthly · Holidays · Lateness
+//   /attendance — tabs: Logs · Roll-Call · Lateness · Time-Off & Sick Days · Holidays · Analytics
 //   /scheduling — tabs: Calendar · DCS · NOC · Maintenance
 //   /training   — tabs: Overview · Plan · Exams · Vouchers · Events · In-House · Catalog
 //   /settings   — tabs: General · Departments · Roles · Leave Types · Automation · Escalation

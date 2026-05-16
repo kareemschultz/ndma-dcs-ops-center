@@ -90,6 +90,7 @@ import { Route as AuthenticatedCompliancePpeRouteImport } from './routes/_authen
 import { Route as AuthenticatedComplianceItemsRouteImport } from './routes/_authenticated/compliance/items'
 import { Route as AuthenticatedChangesNewRouteImport } from './routes/_authenticated/changes/new'
 import { Route as AuthenticatedChangesChangeIdRouteImport } from './routes/_authenticated/changes/$changeId'
+import { Route as AuthenticatedAttendanceTosdRouteImport } from './routes/_authenticated/attendance/tosd'
 import { Route as AuthenticatedAttendanceRollCallRouteImport } from './routes/_authenticated/attendance/roll-call'
 import { Route as AuthenticatedAttendanceMonthlyRouteImport } from './routes/_authenticated/attendance/monthly'
 import { Route as AuthenticatedAttendanceHolidaysRouteImport } from './routes/_authenticated/attendance/holidays'
@@ -577,6 +578,12 @@ const AuthenticatedChangesChangeIdRoute =
     path: '/changes/$changeId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAttendanceTosdRoute =
+  AuthenticatedAttendanceTosdRouteImport.update({
+    id: '/attendance/tosd',
+    path: '/attendance/tosd',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAttendanceRollCallRoute =
   AuthenticatedAttendanceRollCallRouteImport.update({
     id: '/attendance/roll-call',
@@ -701,6 +708,7 @@ export interface FileRoutesByFullPath {
   '/attendance/holidays': typeof AuthenticatedAttendanceHolidaysRoute
   '/attendance/monthly': typeof AuthenticatedAttendanceMonthlyRoute
   '/attendance/roll-call': typeof AuthenticatedAttendanceRollCallRoute
+  '/attendance/tosd': typeof AuthenticatedAttendanceTosdRoute
   '/changes/$changeId': typeof AuthenticatedChangesChangeIdRoute
   '/changes/new': typeof AuthenticatedChangesNewRoute
   '/compliance/items': typeof AuthenticatedComplianceItemsRoute
@@ -801,6 +809,7 @@ export interface FileRoutesByTo {
   '/attendance/holidays': typeof AuthenticatedAttendanceHolidaysRoute
   '/attendance/monthly': typeof AuthenticatedAttendanceMonthlyRoute
   '/attendance/roll-call': typeof AuthenticatedAttendanceRollCallRoute
+  '/attendance/tosd': typeof AuthenticatedAttendanceTosdRoute
   '/changes/$changeId': typeof AuthenticatedChangesChangeIdRoute
   '/changes/new': typeof AuthenticatedChangesNewRoute
   '/compliance/items': typeof AuthenticatedComplianceItemsRoute
@@ -903,6 +912,7 @@ export interface FileRoutesById {
   '/_authenticated/attendance/holidays': typeof AuthenticatedAttendanceHolidaysRoute
   '/_authenticated/attendance/monthly': typeof AuthenticatedAttendanceMonthlyRoute
   '/_authenticated/attendance/roll-call': typeof AuthenticatedAttendanceRollCallRoute
+  '/_authenticated/attendance/tosd': typeof AuthenticatedAttendanceTosdRoute
   '/_authenticated/changes/$changeId': typeof AuthenticatedChangesChangeIdRoute
   '/_authenticated/changes/new': typeof AuthenticatedChangesNewRoute
   '/_authenticated/compliance/items': typeof AuthenticatedComplianceItemsRoute
@@ -1005,6 +1015,7 @@ export interface FileRouteTypes {
     | '/attendance/holidays'
     | '/attendance/monthly'
     | '/attendance/roll-call'
+    | '/attendance/tosd'
     | '/changes/$changeId'
     | '/changes/new'
     | '/compliance/items'
@@ -1105,6 +1116,7 @@ export interface FileRouteTypes {
     | '/attendance/holidays'
     | '/attendance/monthly'
     | '/attendance/roll-call'
+    | '/attendance/tosd'
     | '/changes/$changeId'
     | '/changes/new'
     | '/compliance/items'
@@ -1206,6 +1218,7 @@ export interface FileRouteTypes {
     | '/_authenticated/attendance/holidays'
     | '/_authenticated/attendance/monthly'
     | '/_authenticated/attendance/roll-call'
+    | '/_authenticated/attendance/tosd'
     | '/_authenticated/changes/$changeId'
     | '/_authenticated/changes/new'
     | '/_authenticated/compliance/items'
@@ -1866,6 +1879,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChangesChangeIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/attendance/tosd': {
+      id: '/_authenticated/attendance/tosd'
+      path: '/attendance/tosd'
+      fullPath: '/attendance/tosd'
+      preLoaderRoute: typeof AuthenticatedAttendanceTosdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/attendance/roll-call': {
       id: '/_authenticated/attendance/roll-call'
       path: '/attendance/roll-call'
@@ -2054,6 +2074,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAttendanceHolidaysRoute: typeof AuthenticatedAttendanceHolidaysRoute
   AuthenticatedAttendanceMonthlyRoute: typeof AuthenticatedAttendanceMonthlyRoute
   AuthenticatedAttendanceRollCallRoute: typeof AuthenticatedAttendanceRollCallRoute
+  AuthenticatedAttendanceTosdRoute: typeof AuthenticatedAttendanceTosdRoute
   AuthenticatedChangesChangeIdRoute: typeof AuthenticatedChangesChangeIdRoute
   AuthenticatedChangesNewRoute: typeof AuthenticatedChangesNewRoute
   AuthenticatedComplianceItemsRoute: typeof AuthenticatedComplianceItemsRoute
@@ -2153,6 +2174,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAttendanceHolidaysRoute: AuthenticatedAttendanceHolidaysRoute,
   AuthenticatedAttendanceMonthlyRoute: AuthenticatedAttendanceMonthlyRoute,
   AuthenticatedAttendanceRollCallRoute: AuthenticatedAttendanceRollCallRoute,
+  AuthenticatedAttendanceTosdRoute: AuthenticatedAttendanceTosdRoute,
   AuthenticatedChangesChangeIdRoute: AuthenticatedChangesChangeIdRoute,
   AuthenticatedChangesNewRoute: AuthenticatedChangesNewRoute,
   AuthenticatedComplianceItemsRoute: AuthenticatedComplianceItemsRoute,

@@ -1,6 +1,7 @@
 // Shared sub-navigation for the Attendance hub.
-// One sidebar entry "Attendance" → internal tabs matching the design prototype:
-// Clock Logs · Daily Roll-Call · Monthly Grid · Lateness · Holidays.
+// One sidebar entry "Attendance" → internal tabs:
+// Clock Logs · Roll-Call (daily + monthly) · Lateness · Time-Off & Sick Days ·
+// Holidays · Analytics.
 //
 // Usage in each attendance route:
 //   import { AttendanceSubNav } from "@/components/layout/attendance-sub-nav";
@@ -10,8 +11,8 @@ import { useNavigate } from "@tanstack/react-router";
 import {
   BarChart3,
   CalendarCheck,
-  CalendarDays,
   ClipboardCheck,
+  ClipboardList,
   Clock,
   Timer,
 } from "lucide-react";
@@ -19,8 +20,8 @@ import {
 export type AttendanceView =
   | "logs"
   | "roll-call"
-  | "monthly"
   | "lateness"
+  | "tosd"
   | "holidays"
   | "analytics";
 
@@ -32,11 +33,11 @@ const TABS: Array<{
   isNew?: boolean;
 }> = [
   { value: "logs",      label: "Clock Logs",      Icon: Clock,          route: "/attendance" },
-  { value: "roll-call", label: "Daily Roll-Call", Icon: ClipboardCheck, route: "/attendance/roll-call", isNew: true },
-  { value: "monthly",   label: "Monthly Grid",    Icon: CalendarDays,   route: "/attendance/monthly",   isNew: true },
+  { value: "roll-call", label: "Roll-Call",       Icon: ClipboardCheck, route: "/attendance/roll-call" },
   { value: "lateness",  label: "Lateness",        Icon: Timer,          route: "/lateness" },
-  { value: "holidays",  label: "Holidays",        Icon: CalendarCheck,  route: "/attendance/holidays",  isNew: true },
-  { value: "analytics", label: "Analytics",       Icon: BarChart3,      route: "/attendance/analytics", isNew: true },
+  { value: "tosd",      label: "Time-Off & Sick Days", Icon: ClipboardList, route: "/attendance/tosd" },
+  { value: "holidays",  label: "Holidays",        Icon: CalendarCheck,  route: "/attendance/holidays" },
+  { value: "analytics", label: "Analytics",       Icon: BarChart3,      route: "/attendance/analytics" },
 ];
 
 export function AttendanceSubNav({ activeView }: { activeView: AttendanceView }) {

@@ -1,15 +1,17 @@
-// Leave Sub-Nav — persistent tabs across all leave pages
-// Create: apps/web/src/components/layout/leave-sub-nav.tsx
-// Import in: leave/index.tsx, leave/calendar.tsx, leave/tosd.tsx
+// Leave Sub-Nav — persistent tabs across all leave pages.
+// Import in: leave/index.tsx, leave/planner.tsx, leave/calendar.tsx,
+// leave/balances.tsx.
+//
+// Time-Off & Sick Days moved to the Time & Attendance module — TOSD is
+// attendance data, not leave.
 
 import { useNavigate, useLocation } from "@tanstack/react-router";
-import { Calendar, CalendarOff, Clock, GanttChart, Wallet } from "lucide-react";
+import { Calendar, CalendarOff, GanttChart, Wallet } from "lucide-react";
 
 const LEAVE_TABS = [
   { to: "/leave",          label: "Requests",   Icon: CalendarOff },
   { to: "/leave/planner",  label: "Planner",    Icon: GanttChart  },
   { to: "/leave/calendar", label: "Calendar",   Icon: Calendar    },
-  { to: "/leave/tosd",     label: "Time-Off & Sick Days", Icon: Clock },
   { to: "/leave/balances", label: "Balances",   Icon: Wallet      },
 ] as const;
 

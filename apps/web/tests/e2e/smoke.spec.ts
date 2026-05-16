@@ -33,6 +33,8 @@ const PAGES: ReadonlyArray<readonly [string, RegExp, string]> = [
 
   // Time & Attendance
   ["/attendance", /attendance/i, "Attendance Logs"],
+  ["/attendance/roll-call", /roll-call|attendance/i, "Roll-Call"],
+  ["/attendance/tosd", /tosd|time off|sick/i, "TOSD Register"],
   ["/lateness", /lateness/i, "Lateness Report"],
   ["/timesheets", /timesheet/i, "Timesheets"],
   ["/timesheets/documents", /timesheet|document/i, "Timesheet Documents"],
@@ -40,7 +42,6 @@ const PAGES: ReadonlyArray<readonly [string, RegExp, string]> = [
   // People
   ["/staff", /staff|director/i, "Staff Directory"],
   ["/leave", /leave/i, "Leave Management"],
-  ["/leave/tosd", /tosd|time off|sick/i, "TOSD Register"],
   ["/leave/calendar", /calendar|leave/i, "Leave Calendar"],
   ["/career-progression", /career|progression/i, "Career Progression"],
   ["/contracts", /contract/i, "Contracts"],
