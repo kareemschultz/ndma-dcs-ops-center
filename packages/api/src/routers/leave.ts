@@ -10,7 +10,7 @@ import {
   tosdRecords,
   tosdTypeEnum,
 } from "@ndma-dcs-staff-portal/db";
-import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, notInArray, sql } from "drizzle-orm";
 
 /**
  * Inclusive calendar-day span between two dates (UTC-day granularity).
@@ -93,6 +93,91 @@ export function annualLeaveEntitlementForRole(
 /** True when a leave type is the Annual Leave category. */
 function isAnnualLeaveType(name: string | null | undefined): boolean {
   return Boolean(name && name.toLowerCase().includes("annual"));
+}
+
+// A leave-balance row as stored, with its `leaveType` relation loaded.
+type LeaveBalanceWithType = typeof leaveBalances.$inferSelect & {
+  leaveType: typeof leaveTypes.$inferSelect | null;
+};
+
+/**
+ * Shared enrichment for a single staff member's leave balances. Used by both
+ * `balances.getByStaff` (one staff) and `balances.listAll` (every staff) so the
+ * effective-entitlement / remaining / carry-over logic is defined exactly once.
+ *
+ * - `effectiveEntitlement` — explicit entitlement, or the role-based 28/45-day
+ *   default for Annual Leave when none is recorded.
+ * - `effectiveCarriedOver` — carried-over days only count toward the allowance
+ *   when the leave type explicitly allows carry-over (NDMA use-it-or-lose-it);
+ *   the stored value is preserved, just not applied to the math otherwise.
+ * - `remaining` = allowance − used, where allowance = effective entitlement +
+ *   effective carried-over + adjustment.
+ *
+ * When `annualType` is supplied and the staff member has NO Annual Leave row,
+ * a synthetic one is prepended so taken-vs-remaining is always visible.
+ */
+function enrichLeaveBalances(
+  staffProfileId: string,
+  rows: LeaveBalanceWithType[],
+  userRole: string | null | undefined,
+  annualType: typeof leaveTypes.$inferSelect | null | undefined,
+) {
+  const annualDefault = annualLeaveEntitlementForRole(userRole);
+  const roleTier = MANAGER_TIER_ROLES.has(userRole ?? "")
+    ? ("manager" as const)
+    : ("staff" as const);
+
+  const enriched = rows.map((b) => {
+    const isAnnual = isAnnualLeaveType(b.leaveType?.name);
+    const effectiveEntitlement =
+      isAnnual && b.entitlement <= 0 ? annualDefault : b.entitlement;
+    const allowsCarryOver = b.leaveType?.allowsCarryOver ?? false;
+    const effectiveCarriedOver = allowsCarryOver ? b.carriedOver : 0;
+    const allowance =
+      effectiveEntitlement + effectiveCarriedOver + b.adjustment;
+    const remaining = allowance - b.used;
+    return {
+      ...b,
+      effectiveEntitlement,
+      effectiveCarriedOver,
+      allowsCarryOver,
+      allowance,
+      remaining,
+      annualEntitlementDefault: annualDefault,
+      roleTier,
+      isSynthetic: false,
+    };
+  });
+
+  const hasAnnual = enriched.some((b) => isAnnualLeaveType(b.leaveType?.name));
+  if (!hasAnnual && annualType) {
+    const now = new Date();
+    const year = now.getFullYear();
+    enriched.unshift({
+      id: `synthetic-annual-${staffProfileId}`,
+      staffProfileId,
+      leaveTypeId: annualType.id,
+      contractYearStart: `${year}-01-01`,
+      contractYearEnd: `${year}-12-31`,
+      entitlement: 0,
+      used: 0,
+      carriedOver: 0,
+      adjustment: 0,
+      createdAt: now,
+      updatedAt: now,
+      leaveType: annualType,
+      effectiveEntitlement: annualDefault,
+      effectiveCarriedOver: 0,
+      allowsCarryOver: annualType.allowsCarryOver ?? false,
+      allowance: annualDefault,
+      remaining: annualDefault,
+      annualEntitlementDefault: annualDefault,
+      roleTier,
+      isSynthetic: true,
+    });
+  }
+
+  return enriched;
 }
 
 export const leaveRouter = {
@@ -254,87 +339,94 @@ export const leaveRouter = {
           with: { user: true },
         });
         const userRole = profile?.user?.role ?? null;
-        const annualDefault = annualLeaveEntitlementForRole(userRole);
 
         const rows = await db.query.leaveBalances.findMany({
           where: eq(leaveBalances.staffProfileId, input.staffProfileId),
           with: { leaveType: true },
         });
 
-        const roleTier = MANAGER_TIER_ROLES.has(userRole ?? "")
-          ? ("manager" as const)
-          : ("staff" as const);
-
-        // Enrich every row with an effective entitlement + remaining figure.
-        // For Annual Leave, `effectiveEntitlement` is the explicit
-        // `entitlement` if one is set (> 0), otherwise the role-based default.
-        const enriched = rows.map((b) => {
-          const isAnnual = isAnnualLeaveType(b.leaveType?.name);
-          const effectiveEntitlement =
-            isAnnual && b.entitlement <= 0 ? annualDefault : b.entitlement;
-          // NDMA use-it-or-lose-it: carried-over days only count toward the
-          // allowance when the leave type explicitly allows carry-over.
-          // When it doesn't, treat carried-over as 0 for the math — the stored
-          // `carriedOver` value is preserved, just not applied.
-          const allowsCarryOver = b.leaveType?.allowsCarryOver ?? false;
-          const effectiveCarriedOver = allowsCarryOver ? b.carriedOver : 0;
-          const allowance =
-            effectiveEntitlement + effectiveCarriedOver + b.adjustment;
-          const remaining = allowance - b.used;
-          return {
-            ...b,
-            effectiveEntitlement,
-            effectiveCarriedOver,
-            allowsCarryOver,
-            allowance,
-            remaining,
-            annualEntitlementDefault: annualDefault,
-            roleTier,
-            isSynthetic: false,
-          };
-        });
-
-        // If the staff member has NO Annual Leave balance row at all, surface
-        // a synthetic one so taken-vs-remaining is always visible. It carries
-        // the role-based default entitlement (28 / 45 calendar days) and zero
-        // used until an explicit balance is recorded. `isSynthetic` lets the
-        // UI flag it as a default rather than a stored figure.
-        const hasAnnual = enriched.some((b) =>
+        // Only look up the Annual Leave type when we need a synthetic row.
+        const hasAnnualRow = rows.some((b) =>
           isAnnualLeaveType(b.leaveType?.name),
         );
-        if (!hasAnnual) {
-          const annualType = await db.query.leaveTypes.findFirst({
-            where: sql`lower(${leaveTypes.name}) LIKE '%annual%'`,
-          });
-          if (annualType) {
-            const now = new Date();
-            const year = now.getFullYear();
-            enriched.unshift({
-              id: `synthetic-annual-${input.staffProfileId}`,
-              staffProfileId: input.staffProfileId,
-              leaveTypeId: annualType.id,
-              contractYearStart: `${year}-01-01`,
-              contractYearEnd: `${year}-12-31`,
-              entitlement: 0,
-              used: 0,
-              carriedOver: 0,
-              adjustment: 0,
-              createdAt: now,
-              updatedAt: now,
-              leaveType: annualType,
-              effectiveEntitlement: annualDefault,
-              effectiveCarriedOver: 0,
-              allowsCarryOver: annualType.allowsCarryOver ?? false,
-              allowance: annualDefault,
-              remaining: annualDefault,
-              annualEntitlementDefault: annualDefault,
-              roleTier,
-              isSynthetic: true,
-            });
-          }
+        const annualType = hasAnnualRow
+          ? null
+          : ((await db.query.leaveTypes.findFirst({
+              where: sql`lower(${leaveTypes.name}) LIKE '%annual%'`,
+            })) ?? null);
+
+        return enrichLeaveBalances(
+          input.staffProfileId,
+          rows,
+          userRole,
+          annualType,
+        );
+      }),
+
+    // ── All-staff balances ─────────────────────────────────────────────────
+    // Returns, for EVERY active staff profile, their enriched leave balances —
+    // synthesising the Annual Leave row for anyone with no recorded balances
+    // so the all-staff Balances page can show everyone, taken vs remaining.
+    listAll: requireRole("leave", "read")
+      .input(
+        z
+          .object({ team: z.enum(["DCS", "NOC"]).optional() })
+          .optional(),
+      )
+      .handler(async ({ input }) => {
+        // Active staff only (mirrors staff.list default), optionally one team.
+        const conditions = [
+          notInArray(staffProfiles.status, ["inactive", "terminated"]),
+        ];
+        if (input?.team) {
+          const teamStaffIds = await getTeamStaffIds(input.team);
+          if (teamStaffIds.length === 0) return [];
+          conditions.push(inArray(staffProfiles.id, teamStaffIds));
         }
 
-        return enriched;
+        const profiles = await db.query.staffProfiles.findMany({
+          where: and(...conditions),
+          with: { user: true, department: true },
+        });
+        if (profiles.length === 0) return [];
+
+        // One batched query for every balance row across all staff.
+        const profileIds = profiles.map((p) => p.id);
+        const allBalances = await db.query.leaveBalances.findMany({
+          where: inArray(leaveBalances.staffProfileId, profileIds),
+          with: { leaveType: true },
+        });
+        const byStaff = new Map<string, LeaveBalanceWithType[]>();
+        for (const b of allBalances) {
+          const list = byStaff.get(b.staffProfileId) ?? [];
+          list.push(b);
+          byStaff.set(b.staffProfileId, list);
+        }
+
+        // The Annual Leave type — looked up once, shared for all synthetics.
+        const annualType =
+          (await db.query.leaveTypes.findFirst({
+            where: sql`lower(${leaveTypes.name}) LIKE '%annual%'`,
+          })) ?? null;
+
+        return profiles
+          .map((profile) => {
+            const rows = byStaff.get(profile.id) ?? [];
+            return {
+              staffProfileId: profile.id,
+              employeeId: profile.employeeId,
+              staffName: profile.user?.name ?? profile.employeeId,
+              departmentName: profile.department?.name ?? null,
+              status: profile.status,
+              balances: enrichLeaveBalances(
+                profile.id,
+                rows,
+                profile.user?.role ?? null,
+                annualType,
+              ),
+            };
+          })
+          .sort((a, b) => a.staffName.localeCompare(b.staffName));
       }),
 
     adjust: requireRole("leave", "update")
