@@ -117,7 +117,14 @@ function LeaveStatusBadge({ row }: { row: LeaveRow }) {
   const eff   = effectiveLeaveStatus(row.status, row.endDate);
   const cls   = STATUS_COLORS[eff] ?? "bg-muted text-muted-foreground";
   const label = STATUS_LABELS[eff] ?? row.status;
-  return <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${cls}`}>{label}</span>;
+  return (
+    <span
+      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${cls}`}
+      title={eff === "completed" ? "An approved leave whose end date has passed." : undefined}
+    >
+      {label}
+    </span>
+  );
 }
 
 function staffName(r: LeaveRow): string {
@@ -421,11 +428,11 @@ type ViewProps = {
   busy: boolean;
 };
 
-const VIEW_OPTIONS: { mode: ViewMode; label: string; Icon: typeof List }[] = [
-  { mode: "list",     label: "List",     Icon: List },
-  { mode: "detailed", label: "Detailed", Icon: LayoutList },
-  { mode: "board",    label: "Board",    Icon: Columns3 },
-  { mode: "gantt",    label: "Gantt",    Icon: GanttChartSquare },
+const VIEW_OPTIONS: { mode: ViewMode; label: string; title: string; Icon: typeof List }[] = [
+  { mode: "list",     label: "List",     title: "List view",     Icon: List },
+  { mode: "detailed", label: "Detailed", title: "Detailed view", Icon: LayoutList },
+  { mode: "board",    label: "Board",    title: "Board view",    Icon: Columns3 },
+  { mode: "gantt",    label: "Gantt",    title: "Timeline view", Icon: GanttChartSquare },
 ];
 
 function LeavePage() {
@@ -600,6 +607,7 @@ function LeavePage() {
               <Button
                 variant="outline"
                 size="sm"
+                title="Download the current filtered list as an Excel file."
                 onClick={() => exportLeaveExcel(rows, `Leave_Requests_${new Date().toISOString().slice(0, 10)}.xlsx`)}
                 disabled={!rows.length}
               >
@@ -655,9 +663,10 @@ function LeavePage() {
         <div className="flex flex-wrap items-center gap-3">
           {/* View-mode toggle */}
           <div className="inline-flex rounded-lg border p-0.5">
-            {VIEW_OPTIONS.map(({ mode, label, Icon }) => (
+            {VIEW_OPTIONS.map(({ mode, label, title, Icon }) => (
               <button
                 key={mode}
+                title={title}
                 onClick={() => setViewMode(mode)}
                 className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
                   viewMode === mode
@@ -718,7 +727,7 @@ function LeavePage() {
           )}
 
           {/* Type filter pills */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5" title="Filter requests by leave category">
             <button
               onClick={() => setTypeFilter("")}
               className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${!typeFilter ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}

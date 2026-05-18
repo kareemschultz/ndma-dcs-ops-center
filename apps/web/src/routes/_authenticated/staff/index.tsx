@@ -465,6 +465,7 @@ function StaffPage() {
           <Button
             variant="outline"
             size="sm"
+            title="Download the current filtered list as an Excel file."
             onClick={() => exportStaffExcel(data ?? [], `Staff_List_${new Date().toISOString().slice(0, 10)}.xlsx`)}
             disabled={!data?.length}
           >
@@ -514,6 +515,7 @@ function StaffPage() {
           <div className="inline-flex rounded-xl border bg-background p-0.5">
             <button
               type="button"
+              title="Grid view"
               onClick={() => setView("grid")}
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
                 view === "grid"
@@ -526,6 +528,7 @@ function StaffPage() {
             </button>
             <button
               type="button"
+              title="List view"
               onClick={() => setView("table")}
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
                 view === "table"
@@ -540,6 +543,7 @@ function StaffPage() {
 
           <button
             type="button"
+            title="Switches to a former-staff-only view. Their records and history are preserved."
             onClick={() => setShowFormer((v) => !v)}
             aria-pressed={showFormer}
             className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-sm transition-colors ${

@@ -154,7 +154,7 @@ function InlineRoleCell({
             ? "bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-200 dark:hover:bg-blue-900/60"
             : "italic text-muted-foreground hover:text-foreground",
         ].join(" ")}
-        title="Click to reassign"
+        title="Click to assign or change who covers this role."
       >
         {currentName ? (
           <>
@@ -752,6 +752,7 @@ function DcsOnCallPage() {
               <Button
                 size="sm"
                 variant={myOnlyMode ? "default" : "outline"}
+                title="Show only the weeks you are on call."
                 onClick={() => setMyOnlyMode((v) => !v)}
               >
                 <User className="mr-1.5 size-3.5" />

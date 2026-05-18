@@ -43,6 +43,7 @@ import {
   TabsTrigger,
 } from "@ndma-dcs-staff-portal/ui/components/tabs";
 import { Card, CardContent } from "@ndma-dcs-staff-portal/ui/components/card";
+import { InfoPopover } from "@/components/info-popover";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -622,6 +623,10 @@ function ChangeFormDialog({
                 />
                 <span className="text-sm font-medium">External Exposure</span>
               </label>
+              <InfoPopover label="About External Exposure" className="ml-1.5">
+                Turn on if this change exposes a service outside the NDMA
+                network. This raises the calculated risk level.
+              </InfoPopover>
             </div>
           </div>
 
@@ -705,7 +710,8 @@ function ChangeFormDialog({
               <option value="critical">Critical</option>
             </select>
             <p className="text-xs text-muted-foreground mt-1">
-              Auto-derived from exposure settings; override if needed.
+              Set automatically from exposure, public IP and environment — shown
+              here for reference.
             </p>
           </div>
 
@@ -786,7 +792,7 @@ function ActionButtons({
           variant="ghost"
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
           onClick={() => onCancel(change)}
-          title="Cancel change"
+          title="Archive — keeps the record for audit and moves it to Cancelled. Reversible."
         >
           <Ban className="size-3.5" />
         </Button>
@@ -797,7 +803,7 @@ function ActionButtons({
           variant="ghost"
           className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
           onClick={() => onDelete(change)}
-          title="Delete draft change"
+          title="Delete permanently — cannot be undone."
         >
           <Trash2 className="size-3.5" />
         </Button>

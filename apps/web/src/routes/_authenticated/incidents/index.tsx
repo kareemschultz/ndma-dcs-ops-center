@@ -174,6 +174,7 @@ function IncidentsPage() {
           <Button
             variant="outline"
             size="sm"
+            title="Download the current filtered list as an Excel file."
             onClick={() => exportIncidentsExcel(data ?? [], `Incidents_${new Date().toISOString().slice(0, 10)}.xlsx`)}
             disabled={!data?.length}
           >
@@ -331,7 +332,7 @@ function IncidentsPage() {
                           variant="ghost"
                           size="icon"
                           className="size-8 text-muted-foreground hover:text-foreground"
-                          title="Archive (close) incident"
+                          title="Archive — keeps the record for audit. Reversible."
                           onClick={() =>
                             setArchiveTarget({
                               id: inc.id,

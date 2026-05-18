@@ -179,6 +179,10 @@ function ServiceDialog({
                 <SelectItem value="maintenance">Maintenance</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              Active services appear in monitoring; inactive ones are hidden but
+              kept on record.
+            </p>
           </div>
 
           {/* Runbook URL */}

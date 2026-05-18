@@ -45,6 +45,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ndma-dcs-staff-portal/ui/components/tabs";
 
 import { AttendanceSubNav } from "@/components/layout/attendance-sub-nav";
+import { InfoPopover } from "@/components/info-popover";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -749,7 +750,11 @@ function QuarterGrid({
                 </div>
               </TableHead>
             ))}
-            <TableHead colSpan={2} className="text-center border-l min-w-32 bg-muted/40">
+            <TableHead
+              colSpan={2}
+              className="text-center border-l min-w-32 bg-muted/40"
+              title="Combined late time and late days across all three months of the quarter."
+            >
               <span className="font-semibold">Quarter Total</span>
             </TableHead>
           </TableRow>
@@ -767,16 +772,30 @@ function QuarterGrid({
                 Days Late
               </TableHead>,
               <TableHead key={`${m}-dm`} className="text-xs text-muted-foreground min-w-14">
-                Missing
+                <span className="inline-flex items-center gap-1">
+                  Missing
+                  <InfoPopover label="About the Missing column">
+                    Days the person had no attendance record at all — neither
+                    present nor on leave.
+                  </InfoPopover>
+                </span>
               </TableHead>,
               <TableHead key={`${m}-dos`} className="text-xs text-muted-foreground min-w-14">
-                Scheduled
+                <span className="inline-flex items-center gap-1">
+                  Scheduled
+                  <InfoPopover label="About the Scheduled column">
+                    Days the person arrived on time.
+                  </InfoPopover>
+                </span>
               </TableHead>,
             ])}
             <TableHead className="text-xs text-muted-foreground border-l min-w-20 bg-muted/40">
               Time Late
             </TableHead>
-            <TableHead className="text-xs text-muted-foreground min-w-14 bg-muted/40">
+            <TableHead
+              className="text-xs text-muted-foreground min-w-14 bg-muted/40"
+              title="Combined late time and late days across all three months of the quarter."
+            >
               Days Late
             </TableHead>
           </TableRow>
@@ -802,7 +821,7 @@ function QuarterGrid({
                 return [
                   <TableCell
                     key={`${m}-tl`}
-                    title={!rec && der ? "Derived from clock-in logs" : undefined}
+                    title={!rec && der ? "Inferred from clock-in logs — no record was entered for this month." : undefined}
                     className={`text-sm border-l cursor-pointer hover:bg-muted/40 ${
                       hasLate ? "text-red-600 dark:text-red-400"
                         : !rec && der ? "italic text-amber-600 dark:text-amber-400"
@@ -814,7 +833,7 @@ function QuarterGrid({
                   </TableCell>,
                   <TableCell
                     key={`${m}-dl`}
-                    title={!rec && der ? "Derived from clock-in logs" : undefined}
+                    title={!rec && der ? "Inferred from clock-in logs — no record was entered for this month." : undefined}
                     className={`text-center text-sm cursor-pointer hover:bg-muted/40 ${
                       hasLate ? "font-semibold text-red-600 dark:text-red-400"
                         : !rec && der ? "italic text-amber-600 dark:text-amber-400"

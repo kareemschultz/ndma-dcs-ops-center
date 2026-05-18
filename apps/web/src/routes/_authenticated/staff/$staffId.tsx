@@ -1119,6 +1119,12 @@ function StaffProfilePage() {
                   : `${profile.user?.name ?? "This person"} will be marked as former staff and hidden from active staff lists. Their historical records (leave, attendance, appraisals) are preserved.`}
               </DialogDescription>
             </DialogHeader>
+            {!isFormerStatus(profile.status) && (
+              <p className="text-xs text-muted-foreground">
+                Marks this person as former staff. Their attendance, leave and
+                appraisal history stay intact and they can be reactivated later.
+              </p>
+            )}
             <DialogFooter>
               <Button
                 variant="outline"

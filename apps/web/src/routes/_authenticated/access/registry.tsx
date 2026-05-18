@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@ndma-dcs-staff-portal/ui/components/table";
 import { AccessSubNav } from "@/components/layout/access-sub-nav";
+import { InfoPopover } from "@/components/info-popover";
 import { DataPagination, usePagination } from "@/components/data-pagination";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
@@ -102,9 +103,15 @@ function AccessRegistryPage() {
       </Header>
       <AccessSubNav activeView="registry" />
       <Main>
-        <div className="mb-6 max-w-3xl text-sm text-muted-foreground">
-          A record of every staff member's access on each platform. Add and maintain
-          these records manually below.
+        <div className="mb-6 flex max-w-3xl items-start gap-1.5 text-sm text-muted-foreground">
+          <span>
+            A record of every staff member's access on each platform. Add and maintain
+            these records manually below.
+          </span>
+          <InfoPopover label="About the Access Registry">
+            One row per staff member per platform. Records who can log into what
+            — keep it current as access changes.
+          </InfoPopover>
         </div>
 
         <div className="mb-4 flex flex-wrap items-end gap-3">

@@ -8,7 +8,11 @@ export function DepartmentFilter() {
   return (
     <div className="ml-2 min-w-36">
       <Select value={team} onValueChange={(value) => setTeam((value as "All" | "DCS" | "NOC") ?? "All")}>
-        <SelectTrigger className="h-9 rounded-full bg-background text-xs">
+        <SelectTrigger
+          className="h-9 rounded-full bg-background text-xs"
+          title="Filter to one department, or All."
+          aria-label="Filter to one department, or All."
+        >
           <SelectValue placeholder="Department" />
         </SelectTrigger>
         <SelectContent>

@@ -401,7 +401,7 @@ function PRTable({
                             size="sm"
                             variant="ghost"
                             className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                            title="Cancel requisition"
+                            title="Archive — keeps the record for audit. Reversible."
                             onClick={() => onCancel({ id: pr.id, title: pr.title })}
                           >
                             <Ban className="size-4" />
@@ -412,7 +412,7 @@ function PRTable({
                           size="sm"
                           variant="ghost"
                           className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          title="Delete draft requisition"
+                          title="Delete permanently — only for drafts. Cannot be undone."
                           onClick={() => onDelete({ id: pr.id, title: pr.title })}
                         >
                           <Trash2 className="size-4" />
@@ -524,6 +524,7 @@ function ProcurementPage() {
           <Button
             variant="outline"
             size="sm"
+            title="Download the current filtered list as an Excel file."
             onClick={() => exportProcurementExcel(allPRs ?? [], `Procurement_${new Date().toISOString().slice(0, 10)}.xlsx`)}
             disabled={!allPRs?.length}
           >

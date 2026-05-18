@@ -24,6 +24,7 @@ import {
 } from "@ndma-dcs-staff-portal/ui/components/select";
 
 import { AttendanceSubNav } from "@/components/layout/attendance-sub-nav";
+import { InfoPopover } from "@/components/info-popover";
 import { MonthlyGrid } from "@/features/attendance/monthly-grid";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
@@ -456,6 +457,7 @@ function RollCallPage() {
                 <button
                   key={v}
                   type="button"
+                  title="Daily: mark today. Monthly: review the whole month per person."
                   onClick={() => setView(v)}
                   className={`rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
                     view === v
@@ -512,21 +514,28 @@ function RollCallPage() {
             size="sm"
             variant="outline"
             className="h-8 text-xs"
+            title="Applies the selected status to every staff member with no status yet."
             onClick={markUnmarked}
             disabled={upsertMut.isPending || isLoading}
           >
             Mark Unmarked
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 text-xs gap-1.5"
-            onClick={() => setDayRespectLeaveMut.mutate({ date })}
-            disabled={setDayRespectLeaveMut.isPending || isLoading}
-          >
-            <RefreshCw className="size-3.5" />
-            Set Day (Respect Leave)
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => setDayRespectLeaveMut.mutate({ date })}
+              disabled={setDayRespectLeaveMut.isPending || isLoading}
+            >
+              <RefreshCw className="size-3.5" />
+              Set Day (Respect Leave)
+            </Button>
+            <InfoPopover label="About Set Day (Respect Leave)">
+              Auto-fills attendance for everyone on approved leave today, using
+              their leave type. Won't overwrite statuses you've already set.
+            </InfoPopover>
+          </div>
         </div>
 
         {/* Status legend */}

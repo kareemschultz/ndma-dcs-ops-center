@@ -194,7 +194,12 @@ function ScoreBar({ score }: { score: number | null | undefined }) {
   const pct = Math.min(score, 100);
   return (
     <div className="space-y-0.5">
-      <span className="tabular-nums font-semibold">{pct}%</span>
+      <span
+        className="tabular-nums font-semibold"
+        title="Total score as a percentage of the maximum (100)."
+      >
+        {pct}%
+      </span>
       <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
         <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
       </div>
@@ -757,7 +762,12 @@ function PipelineCard({
             <span className="text-muted-foreground tabular-nums">
               {score}/{max}
             </span>
-            <span className={`font-semibold tabular-nums ${pctColor}`}>{pct}%</span>
+            <span
+              className={`font-semibold tabular-nums ${pctColor}`}
+              title="Total score as a percentage of the maximum (100)."
+            >
+              {pct}%
+            </span>
           </div>
           <div className="h-1 overflow-hidden rounded-full bg-muted">
             <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />

@@ -325,7 +325,7 @@ function WorkListView({
                         variant="ghost"
                         size="icon"
                         className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        title="Delete draft work item"
+                        title="Delete permanently — only for drafts. Cannot be undone."
                         onClick={() => onDelete(item)}
                       >
                         <Trash2 className="size-3.5" />
@@ -337,7 +337,7 @@ function WorkListView({
                           variant="ghost"
                           size="icon"
                           className="size-8 text-muted-foreground hover:text-foreground"
-                          title="Archive (cancel) work item"
+                          title="Archive — keeps the record for audit. Reversible."
                           onClick={() => onArchive(item)}
                         >
                           <Archive className="size-3.5" />
@@ -995,6 +995,7 @@ function WorkPage() {
           <Button
             variant="outline"
             size="sm"
+            title="Download the current filtered list as an Excel file."
             onClick={() => exportWorkItemsExcel(data ?? [], `Work_Register_${new Date().toISOString().slice(0, 10)}.xlsx`)}
             disabled={!data?.length}
           >
