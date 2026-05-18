@@ -11,6 +11,26 @@ import {
   tosdTypeEnum,
 } from "@ndma-dcs-staff-portal/db";
 import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
+
+/**
+ * Inclusive calendar-day span between two dates (UTC-day granularity).
+ * Leave is counted in raw calendar days — the annual entitlement explicitly
+ * includes Sundays and public holidays — so there is NO weekend exclusion and
+ * NO holiday subtraction. A single-day leave (start == end) returns 1.
+ */
+function inclusiveCalendarDays(start: Date, end: Date): number {
+  const startUtc = Date.UTC(
+    start.getUTCFullYear(),
+    start.getUTCMonth(),
+    start.getUTCDate(),
+  );
+  const endUtc = Date.UTC(
+    end.getUTCFullYear(),
+    end.getUTCMonth(),
+    end.getUTCDate(),
+  );
+  return Math.floor((endUtc - startUtc) / (1000 * 60 * 60 * 24)) + 1;
+}
 import { protectedProcedure, requireRole } from "../index";
 import { logAudit } from "../lib/audit";
 import { createNotification } from "../lib/notify";
@@ -724,6 +744,7 @@ export const leaveRouter = {
     .handler(async ({ input }) => {
       const violations: string[] = [];
       let status: "ok" | "warning" | "blocked" = "ok";
+      let holidaysInWindow = 0;
 
       const start = new Date(input.startDate);
       const end = new Date(input.endDate);
@@ -749,23 +770,24 @@ export const leaveRouter = {
           ),
         });
 
+        // Leave is counted in raw, inclusive calendar days — the annual
+        // entitlement explicitly includes Sundays and public holidays.
+        // No weekend exclusion, no holiday subtraction from the day total.
+        const requestedDays = Math.max(1, inclusiveCalendarDays(start, end));
+
+        // Informational only: how many public holidays fall in the window.
+        // This is NOT subtracted from requestedDays — holidays are consumed
+        // leave days per NDMA policy. Surfaced so the UI can show a note.
+        const holidayRows = await db.query.calendarEvents.findMany({
+          where: and(
+            eq(calendarEvents.eventType, "public_holiday"),
+            gte(calendarEvents.eventDate, input.startDate),
+            lte(calendarEvents.eventDate, input.endDate),
+          ),
+        });
+        holidaysInWindow = holidayRows.length;
+
         if (balance) {
-          const grossDays = Math.ceil(
-            (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
-          ) + 1;
-
-          // STAGE 3 — data linking: public holidays inside the leave window
-          // are NOT counted as consumed leave days. Holidays live in
-          // calendar_events with event_type = 'public_holiday'.
-          const holidayRows = await db.query.calendarEvents.findMany({
-            where: and(
-              eq(calendarEvents.eventType, "public_holiday"),
-              gte(calendarEvents.eventDate, input.startDate),
-              lte(calendarEvents.eventDate, input.endDate),
-            ),
-          });
-          const requestedDays = Math.max(0, grossDays - holidayRows.length);
-
           const available = balance.entitlement + balance.carriedOver + balance.adjustment - balance.used;
           if (requestedDays > available) {
             violations.push("insufficient_balance");
@@ -781,7 +803,7 @@ export const leaveRouter = {
         }
       }
 
-      return { status, violations };
+      return { status, violations, holidaysInWindow };
     }),
 
   // ── TOSD Records (Time Off & Sick Days) ───────────────────────────────────

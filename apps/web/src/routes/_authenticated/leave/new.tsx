@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { differenceInBusinessDays, parseISO } from "date-fns";
+import { differenceInCalendarDays, parseISO } from "date-fns";
 import { ArrowLeft, CalendarOff } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
@@ -57,9 +57,12 @@ function NewLeavePage() {
 
   const startDate = watch("startDate");
   const endDate = watch("endDate");
+  // Leave is counted as the inclusive calendar-day span — annual entitlement
+  // (28 staff / 45 manager) explicitly includes Sundays and public holidays.
+  // No weekend exclusion, no holiday subtraction.
   const totalDays =
     startDate && endDate && endDate >= startDate
-      ? Math.max(1, differenceInBusinessDays(parseISO(endDate), parseISO(startDate)) + 1)
+      ? Math.max(1, differenceInCalendarDays(parseISO(endDate), parseISO(startDate)) + 1)
       : null;
 
   const mutation = useMutation(
@@ -179,7 +182,7 @@ function NewLeavePage() {
             <p className="text-sm text-muted-foreground">
               Duration:{" "}
               <strong className="text-foreground">
-                {totalDays} business day{totalDays !== 1 ? "s" : ""}
+                {totalDays} calendar day{totalDays !== 1 ? "s" : ""}
               </strong>
             </p>
           )}
