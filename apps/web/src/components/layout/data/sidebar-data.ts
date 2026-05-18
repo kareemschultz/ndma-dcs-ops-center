@@ -20,7 +20,6 @@ import {
   Clock,
   CreditCard,
   FileBarChart,
-  FileClock,
   FileSignature,
   FileText,
   GitPullRequest,
@@ -71,7 +70,6 @@ export const sidebarData: Omit<SidebarData, "user"> = {
       items: [
         { title: "Scheduling", url: "/scheduling", icon: CalendarDays },
         { title: "Attendance", url: "/attendance", icon: Clock },
-        { title: "Timesheets", url: "/timesheets", icon: FileClock },
       ],
     },
     {

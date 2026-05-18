@@ -27,7 +27,7 @@ const PAGES = [
   ["/attendance", "attendance-logs"],
   ["/attendance/roll-call", "attendance-roll-call"],
   ["/attendance/tosd", "attendance-tosd"],
-  ["/timesheets", "timesheets"],
+  ["/attendance/timesheet-documents", "attendance-timesheet-documents"],
   ["/lateness", "lateness"],
   ["/scheduling/noc-shifts", "scheduling-noc-shifts"],
 ];

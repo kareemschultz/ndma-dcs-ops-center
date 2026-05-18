@@ -14,6 +14,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   Clock,
+  FileText,
   Timer,
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ export type AttendanceView =
   | "lateness"
   | "tosd"
   | "holidays"
+  | "timesheet-documents"
   | "analytics";
 
 const TABS: Array<{
@@ -37,6 +39,7 @@ const TABS: Array<{
   { value: "lateness",  label: "Lateness",        Icon: Timer,          route: "/lateness" },
   { value: "tosd",      label: "Time-Off & Sick Days", Icon: ClipboardList, route: "/attendance/tosd" },
   { value: "holidays",  label: "Holidays",        Icon: CalendarCheck,  route: "/attendance/holidays" },
+  { value: "timesheet-documents", label: "Timesheet Documents", Icon: FileText, route: "/attendance/timesheet-documents" },
   { value: "analytics", label: "Analytics",       Icon: BarChart3,      route: "/attendance/analytics" },
 ];
 
