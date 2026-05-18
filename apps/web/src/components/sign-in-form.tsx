@@ -1,18 +1,22 @@
 // DCS Ops Center login form
-// Shows both local email/password AND Active Directory (LDAP) options — CLAUDE.md mandate
-import { useState } from "react";
+// ONE unified sign-in form: a single identifier + password field. The submit
+// handler auto-routes between local Better Auth email/password and Active
+// Directory (LDAP) without the user choosing a mode.
+//   - Identifier with "@"  → try LOCAL first, fall back to AD (if LDAP enabled).
+//   - Bare username        → try AD first (if LDAP enabled), fall back to LOCAL.
+// Local email+password login (the break-glass admin@ndma.gov account) always
+// works — AD is purely additive (CLAUDE.md "Auth Design Rules").
 import { useNavigate } from "@tanstack/react-router";
 import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Shield, Loader2, Building2 } from "lucide-react";
+import { Shield, Loader2 } from "lucide-react";
 import z from "zod";
 
 import { env } from "@ndma-dcs-staff-portal/env/web";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
 import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
-import { Separator } from "@ndma-dcs-staff-portal/ui/components/separator";
 import { authClient } from "@/lib/auth-client";
 
 // Resolve the server origin (same logic as auth-client) so the AD endpoints
@@ -21,11 +25,42 @@ const serverBase =
   env.VITE_SERVER_URL ||
   (typeof window !== "undefined" ? window.location.origin : "");
 
+/** Attempt a local Better Auth email+password sign-in. */
+async function tryLocalSignIn(
+  identifier: string,
+  password: string,
+): Promise<{ ok: boolean }> {
+  const { error } = await authClient.signIn.email({
+    email: identifier,
+    password,
+  });
+  return { ok: !error };
+}
+
+/** Attempt an Active Directory sign-in via the Hono /api/ldap/login endpoint. */
+async function tryAdSignIn(
+  identifier: string,
+  password: string,
+): Promise<{ ok: boolean }> {
+  try {
+    const res = await fetch(`${serverBase}/api/ldap/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ username: identifier, password }),
+    });
+    const data = (await res.json()) as { success: boolean; error?: string };
+    return { ok: res.ok && data.success };
+  } catch {
+    return { ok: false };
+  }
+}
+
 export default function SignInForm() {
   const navigate = useNavigate();
-  const [showAd, setShowAd] = useState(false);
 
   // Is Active Directory login enabled on the server? (LDAP_ENABLED env var)
+  // Used only to decide whether the AD fallback is even attempted — no UI toggle.
   const ldapStatus = useQuery({
     queryKey: ["ldap-status"],
     queryFn: async (): Promise<{ enabled: boolean }> => {
@@ -37,65 +72,46 @@ export default function SignInForm() {
   });
   const ldapEnabled = ldapStatus.data?.enabled ?? false;
 
-  // ── Local email + password (always enabled — emergency admin fallback) ──
   const form = useForm({
     defaultValues: {
-      email: "",
+      identifier: "",
       password: "",
     },
     onSubmit: async ({ value }) => {
-      await authClient.signIn.email(
-        { email: value.email, password: value.password },
-        {
-          onSuccess: () => {
-            toast.success("Signed in successfully");
-            navigate({ to: "/" });
-          },
-          onError: (ctx) => {
-            toast.error(ctx.error.message || "Invalid credentials");
-          },
-        },
-      );
-    },
-    validators: {
-      onSubmit: z.object({
-        email: z.email("Enter a valid email address"),
-        password: z.string().min(1, "Password is required"),
-      }),
-    },
-  });
+      const identifier = value.identifier.trim();
+      const { password } = value;
+      const looksLikeEmail = identifier.includes("@");
 
-  // ── Active Directory (LDAP) sign-in ──
-  const adForm = useForm({
-    defaultValues: {
-      username: "",
-      password: "",
-    },
-    onSubmit: async ({ value }) => {
-      try {
-        const res = await fetch(`${serverBase}/api/ldap/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            username: value.username,
-            password: value.password,
-          }),
-        });
-        const data = (await res.json()) as { success: boolean; error?: string };
-        if (res.ok && data.success) {
-          toast.success("Signed in with Active Directory");
+      // Decide the order of attempts. The user never picks a mode.
+      //  - email-shaped  → local first, then AD
+      //  - bare username → AD first, then local
+      const attempts: Array<() => Promise<{ ok: boolean }>> = looksLikeEmail
+        ? [
+            () => tryLocalSignIn(identifier, password),
+            ...(ldapEnabled
+              ? [() => tryAdSignIn(identifier, password)]
+              : []),
+          ]
+        : [
+            ...(ldapEnabled ? [() => tryAdSignIn(identifier, password)] : []),
+            () => tryLocalSignIn(identifier, password),
+          ];
+
+      for (const attempt of attempts) {
+        const { ok } = await attempt();
+        if (ok) {
+          toast.success("Signed in successfully");
           navigate({ to: "/" });
-        } else {
-          toast.error(data.error || "Active Directory sign-in failed");
+          return;
         }
-      } catch {
-        toast.error("Could not reach the Active Directory login service");
       }
+
+      // Never reveal which method matched — one generic error.
+      toast.error("Invalid username or password");
     },
     validators: {
       onSubmit: z.object({
-        username: z.string().min(1, "AD username is required"),
+        identifier: z.string().trim().min(1, "Username or email is required"),
         password: z.string().min(1, "Password is required"),
       }),
     },
@@ -112,7 +128,7 @@ export default function SignInForm() {
         <p className="text-sm text-muted-foreground">NDMA Data Centre Services</p>
       </div>
 
-      {/* Email + Password form — always enabled (CLAUDE.md: emergency fallback) */}
+      {/* One unified sign-in form — auto-routes local vs Active Directory. */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -121,16 +137,16 @@ export default function SignInForm() {
         }}
         className="space-y-4"
       >
-        <form.Field name="email">
+        <form.Field name="identifier">
           {(field) => (
             <div className="space-y-1.5">
-              <Label htmlFor={field.name}>Email address</Label>
+              <Label htmlFor={field.name}>Username or email</Label>
               <Input
                 id={field.name}
                 name={field.name}
-                type="email"
-                autoComplete="email"
-                placeholder="you@ndma.gov"
+                type="text"
+                autoComplete="username"
+                placeholder="kareem.schultz or you@ndma.gov"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
@@ -170,7 +186,10 @@ export default function SignInForm() {
         </form.Field>
 
         <form.Subscribe
-          selector={(state) => ({ canSubmit: state.canSubmit, isSubmitting: state.isSubmitting })}
+          selector={(state) => ({
+            canSubmit: state.canSubmit,
+            isSubmitting: state.isSubmitting,
+          })}
         >
           {({ canSubmit, isSubmitting }) => (
             <Button
@@ -185,121 +204,9 @@ export default function SignInForm() {
         </form.Subscribe>
       </form>
 
-      {/* Active Directory SSO */}
-      <div className="my-6 flex items-center gap-3">
-        <Separator className="flex-1" />
-        <span className="text-xs text-muted-foreground">or</span>
-        <Separator className="flex-1" />
-      </div>
-
-      {!showAd ? (
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          disabled={!ldapEnabled}
-          onClick={() => setShowAd(true)}
-          title={
-            ldapEnabled
-              ? "Sign in with your NDMA network account"
-              : "Active Directory integration is not enabled — contact IT"
-          }
-        >
-          <Building2 className="mr-2 size-4" />
-          Sign in with Active Directory
-        </Button>
-      ) : (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            adForm.handleSubmit();
-          }}
-          className="space-y-4"
-        >
-          <p className="flex items-center gap-2 text-sm font-medium">
-            <Building2 className="size-4" />
-            Active Directory sign-in
-          </p>
-
-          <adForm.Field name="username">
-            {(field) => (
-              <div className="space-y-1.5">
-                <Label htmlFor={field.name}>AD username</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="text"
-                  autoComplete="username"
-                  placeholder="jdoe"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  aria-invalid={field.state.meta.errors.length > 0}
-                />
-                {field.state.meta.errors.map((err) => (
-                  <p key={err?.message} className="text-xs text-destructive">
-                    {err?.message}
-                  </p>
-                ))}
-              </div>
-            )}
-          </adForm.Field>
-
-          <adForm.Field name="password">
-            {(field) => (
-              <div className="space-y-1.5">
-                <Label htmlFor={`ad-${field.name}`}>Password</Label>
-                <Input
-                  id={`ad-${field.name}`}
-                  name={field.name}
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  aria-invalid={field.state.meta.errors.length > 0}
-                />
-                {field.state.meta.errors.map((err) => (
-                  <p key={err?.message} className="text-xs text-destructive">
-                    {err?.message}
-                  </p>
-                ))}
-              </div>
-            )}
-          </adForm.Field>
-
-          <adForm.Subscribe
-            selector={(state) => ({
-              canSubmit: state.canSubmit,
-              isSubmitting: state.isSubmitting,
-            })}
-          >
-            {({ canSubmit, isSubmitting }) => (
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="flex-1"
-                  onClick={() => setShowAd(false)}
-                  disabled={isSubmitting}
-                >
-                  Back
-                </Button>
-                <Button
-                  type="submit"
-                  className="flex-1"
-                  disabled={!canSubmit || isSubmitting}
-                >
-                  {isSubmitting && <Loader2 className="mr-2 size-4 animate-spin" />}
-                  Sign in
-                </Button>
-              </div>
-            )}
-          </adForm.Subscribe>
-        </form>
-      )}
+      <p className="mt-4 text-center text-xs text-muted-foreground">
+        Use your NDMA network login or a local account.
+      </p>
     </div>
   );
 }
