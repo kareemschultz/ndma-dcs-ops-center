@@ -41,6 +41,26 @@ function minutesToHm(mins: number): string {
   return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, "0")}`;
 }
 
+/**
+ * Normalise a stored month value to its canonical full name ("April").
+ * Tolerates casing and abbreviations ("apr", "Apr", "APRIL", "sept") so a
+ * record keyed slightly differently still lands in the right grid column.
+ */
+function canonicalMonth(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const s = raw.trim().toLowerCase();
+  if (!s) return null;
+  const exact = MONTHS.find((m) => m.toLowerCase() === s);
+  if (exact) return exact;
+  const prefix = s.slice(0, 3);
+  return MONTHS.find((m) => m.toLowerCase().startsWith(prefix)) ?? null;
+}
+
+/** The quarter (1-4) a canonical month name belongs to. */
+function quarterOfMonth(canonical: string): number {
+  return Math.ceil((MONTHS.indexOf(canonical as (typeof MONTHS)[number]) + 1) / 3);
+}
+
 export const latenessRouter = {
   // List lateness records — optionally filtered by year / quarter / staff
   list: requireRole("compliance", "read")
@@ -96,13 +116,12 @@ export const latenessRouter = {
     )
     .handler(async ({ input }) => {
       const months = QUARTER_MONTHS[input.quarter] ?? [];
-      const conditions = [
-        eq(latenessRecords.year, input.year),
-        eq(latenessRecords.quarter, input.quarter),
-      ];
 
+      // Query by YEAR only — the quarter is derived from each record's month
+      // name below, not trusted from the stored `quarter` column (which can be
+      // null or stale on older / imported rows, hiding e.g. April records).
       const records = await db.query.latenessRecords.findMany({
-        where: and(...conditions),
+        where: eq(latenessRecords.year, input.year),
         with: { staffProfile: { with: { user: true } } },
         orderBy: [asc(latenessRecords.staffId), asc(latenessRecords.month)],
       });
@@ -139,12 +158,17 @@ export const latenessRouter = {
       }
 
       for (const rec of records) {
+        // Normalise the month and derive the quarter from it — only keep
+        // records that actually fall in the requested quarter.
+        const month = canonicalMonth(rec.month);
+        if (!month || quarterOfMonth(month) !== input.quarter) continue;
+
         const row = ensureRow(
           rec.staffId,
           rec.staffProfile?.user?.name ?? rec.staffProfile?.employeeId ?? "Unknown",
           rec.staffProfile?.departmentId ?? null,
         );
-        row.months[rec.month] = {
+        row.months[month] = {
           id: rec.id,
           totalTimeLate: rec.totalTimeLate,
           daysLate: rec.daysLate,
