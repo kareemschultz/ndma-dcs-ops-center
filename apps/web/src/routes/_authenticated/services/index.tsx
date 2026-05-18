@@ -414,7 +414,7 @@ function ServiceRegistryPage() {
           </div>
         )}
 
-        <div className="rounded-xl border">
+        <div className="rounded-xl border overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>

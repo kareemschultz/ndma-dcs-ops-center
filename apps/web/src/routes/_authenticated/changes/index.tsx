@@ -1018,7 +1018,7 @@ function TempChangesPage() {
 
           {/* ── All Changes tab ────────────────────────────────────────────── */}
           <TabsContent value="all">
-            <div className="rounded-xl border">
+            <div className="rounded-xl border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -1105,7 +1105,7 @@ function TempChangesPage() {
 
           {/* ── Overdue tab ────────────────────────────────────────────────── */}
           <TabsContent value="overdue">
-            <div className="rounded-xl border">
+            <div className="rounded-xl border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -1182,7 +1182,7 @@ function TempChangesPage() {
 
           {/* ── Expiring Soon tab ──────────────────────────────────────────── */}
           <TabsContent value="expiring">
-            <div className="rounded-xl border">
+            <div className="rounded-xl border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -1265,7 +1265,7 @@ function TempChangesPage() {
 
           {/* ── Public IPs tab ────────────────────────────────────────────── */}
           <TabsContent value="public-ips">
-            <div className="rounded-xl border">
+            <div className="rounded-xl border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>

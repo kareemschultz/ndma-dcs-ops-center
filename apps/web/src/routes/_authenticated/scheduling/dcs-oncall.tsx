@@ -33,6 +33,7 @@ import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@ndma-dcs-staff-portal/ui/components/table";
+import { DataPagination, usePagination } from "@/components/data-pagination";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -541,6 +542,20 @@ function DcsOnCallPage() {
       )
     : allWeeks;
 
+  // Paginate the 52-week roster (13 weeks / page ≈ one quarter).
+  const pagination = usePagination(displayedWeeks, 13);
+
+  // On first load, jump to the page that holds the current week.
+  const didInitPage = useRef(false);
+  useEffect(() => {
+    if (isLoading || didInitPage.current || currentWeekNum == null) return;
+    const idx = displayedWeeks.findIndex((w) => w.weekNum === currentWeekNum);
+    if (idx >= 0) {
+      pagination.setPage(Math.floor(idx / 13) + 1);
+      didInitPage.current = true;
+    }
+  }, [isLoading, currentWeekNum, displayedWeeks, pagination]);
+
   return (
     <>
       <Header fixed>
@@ -620,7 +635,7 @@ function DcsOnCallPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                displayedWeeks.map((w) => {
+                pagination.pageItems.map((w) => {
                   const isCurrent = w.weekNum === currentWeekNum && w.year === CURRENT_YEAR;
                   // Highlight weeks where the current user is on-call
                   const isMyWeek = myStaffId && (
@@ -701,6 +716,15 @@ function DcsOnCallPage() {
               )}
             </TableBody>
           </Table>
+        </div>
+        <div className="mx-6 mb-6">
+          <DataPagination
+            page={pagination.page}
+            pageCount={pagination.pageCount}
+            total={pagination.total}
+            rangeLabel={pagination.rangeLabel}
+            onPageChange={pagination.setPage}
+          />
         </div>
       </Main>
 

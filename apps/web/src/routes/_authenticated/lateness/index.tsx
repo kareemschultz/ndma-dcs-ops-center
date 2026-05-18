@@ -850,9 +850,13 @@ function QuarterGrid({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 function LatenessPage() {
-  const currentYear = new Date().getFullYear();
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  // Open on the quarter that contains today's date (Q1 Jan–Mar … Q4 Oct–Dec)
+  // so freshly-logged data for the current month is visible without switching.
+  const currentQuarter = String(Math.floor(now.getMonth() / 3) + 1);
   const [year, setYear] = useState(currentYear);
-  const [activeQuarter, setActiveQuarter] = useState("1");
+  const [activeQuarter, setActiveQuarter] = useState(currentQuarter);
 
   // Upsert dialog state
   const [upsertDialog, setUpsertDialog] = useState<{
