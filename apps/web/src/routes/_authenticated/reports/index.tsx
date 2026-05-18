@@ -621,8 +621,14 @@ const STAFF_STATUS_CONFIG: Record<
 };
 
 function StaffByStatusSection() {
+  // includeFormer: true — this section reports the headcount distribution
+  // across ALL statuses. Without it, staff.list silently drops inactive /
+  // terminated staff (its default), so the "Inactive" row never appears and
+  // the total under-counts the real headcount.
   const { data, isLoading } = useQuery(
-    orpc.staff.list.queryOptions({ input: { limit: 200, offset: 0 } })
+    orpc.staff.list.queryOptions({
+      input: { limit: 500, offset: 0, includeFormer: true },
+    })
   );
 
   const staffArray = Array.isArray(data) ? data : [];

@@ -139,21 +139,31 @@ const WORK_STATUS_COLORS: Record<string, string> = {
   cancelled: "#94a3b8",
 };
 
+// Incident severity enum: sev1 (highest) … sev4 (lowest).
 const SEVERITY_COLORS: Record<string, string> = {
-  critical: C.red,
-  high: C.orange,
-  medium: C.amber,
-  low: C.green,
   sev1: C.red,
   sev2: C.orange,
   sev3: C.amber,
-  sev4: C.blue,
+  sev4: C.slate,
 };
 
+// Human labels for the sevN severity codes (raw codes are not user-facing).
+const SEVERITY_LABELS: Record<string, string> = {
+  sev1: "SEV 1",
+  sev2: "SEV 2",
+  sev3: "SEV 3",
+  sev4: "SEV 4",
+};
+
+// Incident status enum has SEVEN values — each gets a distinct hue so the
+// chart never collapses two different statuses onto the same colour.
 const INCIDENT_STATUS_COLORS: Record<string, string> = {
-  open: C.red,
-  investigating: C.amber,
-  resolved: C.green,
+  detected: C.red,
+  investigating: C.orange,
+  identified: C.amber,
+  mitigating: C.indigo,
+  resolved: C.blue,
+  post_mortem: C.violet,
   closed: C.slate,
 };
 
@@ -213,27 +223,37 @@ const LEAVE_STATUS_COLORS: Record<string, string> = {
   cancelled: "#94a3b8",
 };
 
+// Training-record status enum: current / expiring_soon / expired /
+// not_applicable. Each gets a distinct hue.
 const TRAINING_STATUS_COLORS: Record<string, string> = {
-  current: C.green,
-  expired: C.red,
+  current: C.blue,
   expiring_soon: C.amber,
-  scheduled: C.blue,
-  completed: C.teal,
+  expired: C.red,
+  not_applicable: C.slate,
 };
 
+// Appraisal status enum: draft / in_progress / submitted / approved /
+// rejected / completed / overdue — seven values, each a distinct hue so the
+// pie never collapses several statuses onto the same colour.
 const APPRAISAL_STATUS_COLORS: Record<string, string> = {
-  pending: C.amber,
-  in_progress: C.blue,
-  completed: C.green,
-  overdue: C.red,
+  draft: C.slate,
+  in_progress: C.indigo,
+  submitted: C.amber,
+  approved: C.blue,
+  rejected: C.red,
+  completed: C.cyan,
+  overdue: C.orange,
 };
 
 // ── Roster colors ──────────────────────────────────────────────────────────
 
+// Each role gets a DISTINCT hue — C.green is a blue alias, so using it for
+// "Core Support" alongside C.blue "ASN Support" made the two stacked segments
+// indistinguishable. Use sky for Core instead.
 const ROTA_ROLE_CONFIG = [
   { key: "leadCount", label: "Lead Engineer", color: C.indigo },
   { key: "asnCount", label: "ASN Support", color: C.blue },
-  { key: "coreCount", label: "Core Support", color: C.green },
+  { key: "coreCount", label: "Core Support", color: C.sky },
   { key: "enterpriseCount", label: "Enterprise Support", color: C.purple },
 ] as const;
 
@@ -445,7 +465,7 @@ function IncidentsTab({
   };
 }) {
   const severityData = data.bySeverity.map((d) => ({
-    name: labelCase(d.severity),
+    name: SEVERITY_LABELS[d.severity] ?? labelCase(d.severity),
     count: d.count,
     fill: SEVERITY_COLORS[d.severity] ?? C.blue,
   }));
@@ -592,18 +612,40 @@ function LeaveTab({
     .slice(0, 15)
     .map((d) => ({ name: d.name, count: d.totalDays }));
 
-  const typeData = data.byType.map((d, i) => ({
-    name: d.typeName,
-    count: d.count,
-    totalDays: d.totalDays,
-    fill: LEAVE_TYPE_COLORS[i % LEAVE_TYPE_COLORS.length],
-  }));
+  // The leave_types table has duplicate rows for the same name (e.g. two
+  // "Annual Leave" type ids). The server aggregate groups by leaveTypeId, so
+  // it returns one slice per duplicate id — producing repeated legend entries
+  // and split counts. Merge by display name so each type appears exactly once.
+  const mergedTypes = new Map<string, { count: number; totalDays: number }>();
+  for (const d of data.byType) {
+    const key = d.typeName ?? "Unknown";
+    const m = mergedTypes.get(key) ?? { count: 0, totalDays: 0 };
+    m.count += d.count;
+    m.totalDays += d.totalDays;
+    mergedTypes.set(key, m);
+  }
+  const typeData = [...mergedTypes.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .map(([name, m], i) => ({
+      name,
+      count: m.count,
+      totalDays: m.totalDays,
+      fill: LEAVE_TYPE_COLORS[i % LEAVE_TYPE_COLORS.length],
+    }));
 
   // The server's byStatus aggregate only knows the DB statuses (no end date),
   // so it cannot tell "approved" from "completed". Fetch the leave requests
   // and derive the *effective* status (approved-but-past = completed) here.
+  // Scope to CURRENT_YEAR so the status summary matches the year-scoped
+  // charts above (the byStaff / byType aggregates are 2026-only).
   const { data: leaveRows } = useQuery(
-    orpc.leave.requests.list.queryOptions({ input: { limit: 200 } }),
+    orpc.leave.requests.list.queryOptions({
+      input: {
+        limit: 200,
+        from: `${CURRENT_YEAR}-01-01`,
+        to: `${CURRENT_YEAR}-12-31`,
+      },
+    }),
   );
 
   // Each leave request is an independent row — split annual leave (two trips

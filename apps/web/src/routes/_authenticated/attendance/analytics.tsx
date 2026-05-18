@@ -221,6 +221,24 @@ function fmtHours(hrs: number): string {
   return `${hrs.toFixed(1)}h`;
 }
 
+/**
+ * Normalise a stored month value to its canonical full name ("April").
+ * The lateness register has historically been keyed with a mix of full names
+ * ("April") and 3-letter abbreviations ("Jan", "Oct"). Without this, an exact
+ * `includes()` match against full-name quarter buckets silently drops the
+ * abbreviated rows — under-counting the lateness charts / KPIs. Mirrors
+ * `canonicalMonth()` in packages/api/src/routers/lateness.ts.
+ */
+function canonicalMonth(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const s = raw.trim().toLowerCase();
+  if (!s) return null;
+  const exact = MONTHS.find((m) => m.toLowerCase() === s);
+  if (exact) return exact;
+  const prefix = s.slice(0, 3);
+  return MONTHS.find((m) => m.toLowerCase().startsWith(prefix)) ?? null;
+}
+
 // ─── KPI tile ─────────────────────────────────────────────────────────────────
 
 type Tone = "blue" | "amber" | "orange" | "red" | "indigo" | "violet" | "sky";
@@ -530,7 +548,11 @@ function AttendanceAnalyticsPage() {
   const lateness = useMemo(() => {
     const all = latenessQuery.data ?? [];
     const quarterMonths = QUARTER_MONTHS[quarter] ?? [];
-    const rows = all.filter((r) => quarterMonths.includes(r.month));
+    // Normalise each record's month to a canonical full name so abbreviated
+    // entries ("Jan", "Oct") still land in the right quarter bucket.
+    const rows = all
+      .map((r) => ({ ...r, canonMonth: canonicalMonth(r.month) }))
+      .filter((r) => r.canonMonth !== null && quarterMonths.includes(r.canonMonth));
 
     let totalDaysLate = 0;
     let totalMinutes = 0;
@@ -555,10 +577,12 @@ function AttendanceAnalyticsPage() {
       d.daysLate += r.daysLate;
       deptAgg.set(dept, d);
 
-      const mm = monthAgg.get(r.month) ?? { daysLate: 0, minutes: 0 };
+      // Key the per-month tally by the CANONICAL name so the quarter trend
+      // chart below (which looks up full month names) finds every record.
+      const mm = monthAgg.get(r.canonMonth!) ?? { daysLate: 0, minutes: 0 };
       mm.daysLate += r.daysLate;
       mm.minutes += mins;
-      monthAgg.set(r.month, mm);
+      monthAgg.set(r.canonMonth!, mm);
     }
 
     const byDept = [...deptAgg.values()].sort((a, b) => b.daysLate - a.daysLate);
