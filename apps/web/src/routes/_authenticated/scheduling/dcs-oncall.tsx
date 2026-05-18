@@ -571,7 +571,7 @@ function DcsOnCallPage() {
                 onClick={() => setMyOnlyMode((v) => !v)}
               >
                 <User className="mr-1.5 size-3.5" />
-                {myOnlyMode ? "My On-Call" : "My On-Call"}
+                {myOnlyMode ? "Show All Weeks" : "My On-Call"}
               </Button>
             )}
             <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>

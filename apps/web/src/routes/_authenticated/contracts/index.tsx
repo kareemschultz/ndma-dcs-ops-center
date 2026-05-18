@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ndma-dcs-staff-portal/ui/components/select";
+import { DataPagination, usePagination } from "@/components/data-pagination";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { PageHeader } from "@/components/layout/page-header";
@@ -505,6 +506,7 @@ function ContractsPage() {
 
   const all = allData ?? [];
   const data = status ? all.filter((c) => c.status === status) : all;
+  const pagination = usePagination(data, 25);
 
   const stats = {
     active: all.filter((c) => c.status === "active").length,
@@ -647,7 +649,7 @@ function ContractsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                data.map((contract) => {
+                pagination.pageItems.map((contract) => {
                   const renewalStatus = (contract.renewalStatus ?? "not_due") as RenewalStatus;
                   return (
                     <TableRow key={contract.id}>
@@ -739,6 +741,15 @@ function ContractsPage() {
             </TableBody>
           </Table>
         </div>
+        {!isLoading && (
+          <DataPagination
+            page={pagination.page}
+            pageCount={pagination.pageCount}
+            total={pagination.total}
+            rangeLabel={pagination.rangeLabel}
+            onPageChange={pagination.setPage}
+          />
+        )}
       </Main>
 
       <Dialog open={showCreate} onOpenChange={(open) => !open && setShowCreate(false)}>

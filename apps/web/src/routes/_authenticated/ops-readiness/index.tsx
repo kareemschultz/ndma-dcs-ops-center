@@ -143,7 +143,7 @@ function OpsReadinessPage() {
                     ? "All 4 roles filled for this week"
                     : "Missing assignments for this week's schedule"
                 }
-                href="/rota"
+                href="/scheduling"
                 icon={CalendarClock}
               />
 

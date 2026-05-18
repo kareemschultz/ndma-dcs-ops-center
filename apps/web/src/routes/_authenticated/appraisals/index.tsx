@@ -194,7 +194,7 @@ function ScoreBar({ score }: { score: number | null | undefined }) {
   const pct = Math.min(score, 100);
   return (
     <div className="space-y-0.5">
-      <span className="tabular-nums font-semibold">{score}%</span>
+      <span className="tabular-nums font-semibold">{pct}%</span>
       <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
         <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
       </div>
@@ -712,8 +712,8 @@ function PipelineCard({
   const name = row.staffProfile?.user?.name ?? "—";
   const dept = row.staffProfile?.department?.code ?? row.staffProfile?.department?.name ?? "—";
   const score = row.totalScore;
-  const max = 65;
-  const pct = score != null ? Math.round((score / max) * 100) : null;
+  const max = APPRAISAL_MAX;
+  const pct = score != null ? Math.min(Math.round((score / max) * 100), 100) : null;
 
   const pctColor =
     pct == null
@@ -849,14 +849,18 @@ function PipelineView({
 }
 
 // ── Score helpers ─────────────────────────────────────────────────────────────
-const APPRAISAL_MAX = 65;
+// totalScore is stored on a 0–100 scale (same scale ScoreBar renders as a %).
+const APPRAISAL_MAX = 100;
 
-/** Resolve an appraisal row's percentage — prefers explicit %, else derives from totalScore/65. */
+/** Resolve an appraisal row's percentage — prefers explicit %, else derives
+ * from totalScore. Always clamped to 0–100 so bad data can't print >100%. */
 function rowPercentage(row: AppraisalListRow): number | null {
   const explicit = (row as { percentage?: number | null; percentageScore?: number | null }).percentage
     ?? (row as { percentageScore?: number | null }).percentageScore;
-  if (typeof explicit === "number") return Math.round(explicit);
-  if (typeof row.totalScore === "number") return Math.round((row.totalScore / APPRAISAL_MAX) * 100);
+  if (typeof explicit === "number") return Math.min(Math.round(explicit), 100);
+  if (typeof row.totalScore === "number") {
+    return Math.min(Math.round((row.totalScore / APPRAISAL_MAX) * 100), 100);
+  }
   return null;
 }
 
@@ -1497,9 +1501,12 @@ function AppraisalsPage() {
   const scoredRows = rows.filter((appraisal) => typeof appraisal.totalScore === "number");
   const averageScore =
     scoredRows.length > 0
-      ? Math.round(
-          scoredRows.reduce((sum, appraisal) => sum + (appraisal.totalScore ?? 0), 0) /
-            scoredRows.length,
+      ? Math.min(
+          Math.round(
+            scoredRows.reduce((sum, appraisal) => sum + (appraisal.totalScore ?? 0), 0) /
+              scoredRows.length,
+          ),
+          100,
         )
       : null;
   const statusChartData = (kpis?.statusBreakdown ?? []).map((item) => ({

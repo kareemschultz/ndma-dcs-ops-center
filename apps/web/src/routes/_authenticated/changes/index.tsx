@@ -444,19 +444,46 @@ function ChangeFormDialog({
     e.preventDefault();
     if (!form.title.trim() || !form.removeByDate) return;
 
+    // The form's category / protocol / ownerType <select> values are constrained
+    // to the router enums, so the casts below are safe.
+    const protocol =
+      form.protocol === "tcp" || form.protocol === "udp" || form.protocol === "both"
+        ? (form.protocol as "tcp" | "udp" | "both")
+        : undefined;
+
     const payload = {
       title: form.title.trim(),
       description: form.description || undefined,
-      justification: undefined as string | undefined,
       removeByDate: form.removeByDate || undefined,
       followUpDate: form.followUpDate || undefined,
-      rollbackPlan: undefined as string | undefined,
+      // Extended categorization + network/exposure details — previously these
+      // were collected by the form but silently dropped before submit.
+      category: form.category as
+        | "public_ip_exposure"
+        | "temporary_service"
+        | "temporary_access"
+        | "temporary_change"
+        | "other",
+      environment: form.environment || undefined,
+      systemName: form.systemName || undefined,
+      publicIp: form.publicIp || undefined,
+      internalIp: form.internalIp || undefined,
+      port: form.port || undefined,
+      protocol,
+      externalExposure: form.externalExposure,
+      ownerType: form.ownerType as
+        | "internal_staff"
+        | "external_contact"
+        | "department"
+        | "system",
+      externalAgencyName: form.externalAgencyName || undefined,
     };
 
     if (isEdit && editChange) {
       updateMut.mutate({
         id: editChange.id,
         ...payload,
+        followUpNotes: form.notes || undefined,
       });
     } else {
       createMut.mutate(payload);
@@ -1327,13 +1354,18 @@ function TempChangesPage() {
         </Tabs>
       </Main>
 
-      {/* Create / Edit Dialog */}
-      <ChangeFormDialog
-        open={formOpen}
-        onClose={handleFormClose}
-        editChange={editChange}
-        onSuccess={handleFormClose}
-      />
+      {/* Create / Edit Dialog — keyed + conditionally mounted so the form
+          state re-initialises from `editChange` every time it opens (the
+          lazy useState initialiser only runs on mount). */}
+      {formOpen && (
+        <ChangeFormDialog
+          key={editChange?.id ?? "new"}
+          open={formOpen}
+          onClose={handleFormClose}
+          editChange={editChange}
+          onSuccess={handleFormClose}
+        />
+      )}
 
       {/* Mark Removed confirm dialog */}
       <MarkRemovedDialog

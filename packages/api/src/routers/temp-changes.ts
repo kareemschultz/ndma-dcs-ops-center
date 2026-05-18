@@ -195,6 +195,18 @@ export const tempChangesRouter = {
         followUpDate: z.string().optional(),
         linkedWorkItemId: z.string().optional(),
         approvedById: z.string().optional(),
+        // Extended categorization + network/exposure details — kept in sync
+        // with `create` so the edit form can persist every field it collects.
+        category: z.enum(["public_ip_exposure", "temporary_service", "temporary_access", "temporary_change", "other"]).optional(),
+        environment: z.string().optional(),
+        systemName: z.string().optional(),
+        publicIp: z.string().optional(),
+        internalIp: z.string().optional(),
+        port: z.string().optional(),
+        protocol: z.enum(["tcp", "udp", "both"]).optional(),
+        externalExposure: z.boolean().optional(),
+        ownerType: z.enum(["internal_staff", "external_contact", "department", "system"]).optional(),
+        externalAgencyName: z.string().optional(),
       }),
     )
     .handler(async ({ input, context }) => {
@@ -204,9 +216,24 @@ export const tempChangesRouter = {
       });
       if (!before) throw new ORPCError("NOT_FOUND");
 
+      // Re-derive the risk level when any exposure-related field changed.
+      const exposureTouched =
+        updates.externalExposure !== undefined ||
+        updates.publicIp !== undefined ||
+        updates.environment !== undefined ||
+        updates.ownerType !== undefined;
+      const riskLevel = exposureTouched
+        ? deriveRiskLevel({
+            externalExposure: updates.externalExposure ?? before.externalExposure ?? undefined,
+            publicIp: updates.publicIp ?? before.publicIp ?? undefined,
+            environment: updates.environment ?? before.environment ?? undefined,
+            ownerType: updates.ownerType ?? before.ownerType ?? undefined,
+          })
+        : undefined;
+
       const [updated] = await db
         .update(temporaryChanges)
-        .set(updates)
+        .set(riskLevel ? { ...updates, riskLevel } : updates)
         .where(eq(temporaryChanges.id, id))
         .returning();
 

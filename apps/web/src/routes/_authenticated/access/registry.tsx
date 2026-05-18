@@ -103,8 +103,8 @@ function AccessRegistryPage() {
       <AccessSubNav activeView="registry" />
       <Main>
         <div className="mb-6 max-w-3xl text-sm text-muted-foreground">
-          Layer 3 of the 3-layer access registry — every (staff × platform) record. Phase 1 supports manual entry only;
-          sync adapters land in Phase 15 stretch (master plan §13.1).
+          A record of every staff member's access on each platform. Add and maintain
+          these records manually below.
         </div>
 
         <div className="mb-4 flex flex-wrap items-end gap-3">

@@ -78,7 +78,7 @@ function GeneralSettingsPage() {
             </CardHeader>
             <CardContent>
               <SettingRow label="In-App Notifications" value="Enabled" />
-              <SettingRow label="Email Notifications" value="Configured in Phase J" />
+              <SettingRow label="Email Notifications" value="Not configured" />
               <SettingRow label="Escalation Alerts" value="See Escalation settings" />
             </CardContent>
           </Card>

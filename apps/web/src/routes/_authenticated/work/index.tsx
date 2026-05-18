@@ -83,6 +83,7 @@ import {
   PriorityBadge,
   TypeBadge,
 } from "@/features/work/components/badges";
+import { DataPagination, usePagination } from "@/components/data-pagination";
 import type {
   WorkStatus,
   WorkType,
@@ -941,6 +942,11 @@ function WorkPage() {
     }),
   );
 
+  // Paginate the flat list/grid views (kanban/calendar/analytics aggregate, so
+  // they keep the full set). 25 rows/page matches the other registers.
+  const rows = data ?? [];
+  const pagination = usePagination(rows, 25);
+
   const chartData = stats
     ? Object.entries(stats.byStatus)
         .filter(([, count]) => count > 0)
@@ -1234,25 +1240,39 @@ function WorkPage() {
             </button>
           </div>
         ) : view === "kanban" ? (
-          <WorkKanbanView items={data ?? []} />
+          <WorkKanbanView items={rows} />
         ) : view === "grid" ? (
-          <WorkGridView items={data ?? []} />
+          <>
+            <WorkGridView items={pagination.pageItems} />
+            <DataPagination
+              page={pagination.page}
+              pageCount={pagination.pageCount}
+              total={pagination.total}
+              rangeLabel={pagination.rangeLabel}
+              onPageChange={pagination.setPage}
+              className="mt-2"
+            />
+          </>
         ) : view === "calendar" ? (
-          <WorkCalendarView items={data ?? []} />
+          <WorkCalendarView items={rows} />
         ) : view === "analytics" ? (
-          <WorkAnalyticsView items={data ?? []} />
+          <WorkAnalyticsView items={rows} />
         ) : (
-          <WorkListView
-            items={data ?? []}
-            onArchive={setArchiveTarget}
-            onDelete={setDeleteTarget}
-          />
-        )}
-
-        {data && data.length > 0 && (
-          <p className="mt-2 text-xs text-muted-foreground text-right">
-            Showing {data.length} item{data.length !== 1 ? "s" : ""}
-          </p>
+          <>
+            <WorkListView
+              items={pagination.pageItems}
+              onArchive={setArchiveTarget}
+              onDelete={setDeleteTarget}
+            />
+            <DataPagination
+              page={pagination.page}
+              pageCount={pagination.pageCount}
+              total={pagination.total}
+              rangeLabel={pagination.rangeLabel}
+              onPageChange={pagination.setPage}
+              className="mt-2"
+            />
+          </>
         )}
       </Main>
 

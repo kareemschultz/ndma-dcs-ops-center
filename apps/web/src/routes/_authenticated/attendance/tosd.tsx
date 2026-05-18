@@ -31,6 +31,7 @@ import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@ndma-dcs-staff-portal/ui/components/table";
+import { DataPagination, usePagination } from "@/components/data-pagination";
 import { DepartmentFilter } from "@/components/layout/department-filter";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
@@ -653,6 +654,9 @@ function TosdPage() {
     return list;
   }, [allRows, selectedStaffId, typeFilter, yearFilter, team]);
 
+  // Paginate the table view (board groups by status, analytics aggregates).
+  const pagination = usePagination(rows, 25);
+
   return (
     <>
       <Header>
@@ -741,7 +745,16 @@ function TosdPage() {
         {isLoading ? (
           <Skeleton className="h-64 w-full" />
         ) : viewMode === "table" ? (
-          <TosdTableView rows={rows} onEdit={setEditRecord} onDelete={setDeleteTarget} />
+          <>
+            <TosdTableView rows={pagination.pageItems} onEdit={setEditRecord} onDelete={setDeleteTarget} />
+            <DataPagination
+              page={pagination.page}
+              pageCount={pagination.pageCount}
+              total={pagination.total}
+              rangeLabel={pagination.rangeLabel}
+              onPageChange={pagination.setPage}
+            />
+          </>
         ) : viewMode === "board" ? (
           <TosdBoardView rows={rows} onEdit={setEditRecord} onDelete={setDeleteTarget} />
         ) : (

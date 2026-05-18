@@ -32,7 +32,7 @@ const PPE_STATUSES = [
   { value: "lost",       label: "Lost",        color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
   { value: "stolen",     label: "Stolen",      color: "bg-red-200 text-red-800 dark:bg-red-900/60 dark:text-red-200" },
   { value: "damaged",    label: "Damaged",     color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
-  { value: "returned",   label: "Returned",    color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  { value: "returned",   label: "Returned",    color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" },
   { value: "replaced",   label: "Replaced",    color: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300" },
 ] as const;
 

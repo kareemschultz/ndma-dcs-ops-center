@@ -56,7 +56,7 @@ const C = {
   red: "#ef4444",
   purple: "#8b5cf6",
   indigo: "#6366f1",
-  teal: "#14b8a6",
+  teal: "#d946ef",   // intentionally fuchsia — no green/teal in this app
   orange: "#f97316",
   rose: "#f43f5e",
   slate: "#64748b",
@@ -372,8 +372,8 @@ function WorkTab({
                   outerRadius={90}
                   paddingAngle={2}
                 >
-                  {typeData.map((entry) => (
-                    <Cell key={entry.name} fill={entry.fill} />
+                  {typeData.map((entry, i) => (
+                    <Cell key={`${entry.name}-${i}`} fill={entry.fill} />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={chartTheme.tooltipContent} />
@@ -671,8 +671,8 @@ function LeaveTab({
                   outerRadius={90}
                   paddingAngle={2}
                 >
-                  {typeData.map((entry) => (
-                    <Cell key={entry.name} fill={entry.fill} />
+                  {typeData.map((entry, i) => (
+                    <Cell key={`${entry.name}-${i}`} fill={entry.fill} />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={chartTheme.tooltipContent} />

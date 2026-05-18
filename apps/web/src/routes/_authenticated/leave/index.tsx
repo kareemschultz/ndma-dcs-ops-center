@@ -34,6 +34,7 @@ import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@ndma-dcs-staff-portal/ui/components/table";
+import { DataPagination, usePagination } from "@/components/data-pagination";
 import { DepartmentFilter } from "@/components/layout/department-filter";
 import { Header } from "@/components/layout/header";
 import { LeaveViolationsBadge } from "@/components/leave-violations-badge";
@@ -527,6 +528,10 @@ function LeavePage() {
     return list;
   }, [data, typeFilter, employeeFilter, yearFilter, viewMode]);
 
+  // Paginate the flat list/detailed views (board groups by status, gantt
+  // aggregates by staff — both keep the full set). 25 rows/page.
+  const pagination = usePagination(rows, 25);
+
   const pendingCount = useMemo(() => rows.filter((r) => r.status === "pending").length, [rows]);
   const daysBooked   = useMemo(
     () => rows.filter((r) => r.status === "approved").reduce((sum, r) => sum + (r.totalDays ?? 0), 0),
@@ -644,7 +649,14 @@ function LeavePage() {
 
           {/* Employee filter */}
           <Select value={employeeFilter || "_all"} onValueChange={(v) => setEmployeeFilter(v && v !== "_all" ? v : "")}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Employees" /></SelectTrigger>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Employees">
+                {(v: unknown) =>
+                  v && v !== "_all"
+                    ? employeeOptions.find((e) => e.id === v)?.name ?? "All Employees"
+                    : "All Employees"}
+              </SelectValue>
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="_all">All Employees</SelectItem>
               {employeeOptions.map((e) => (
@@ -656,7 +668,12 @@ function LeavePage() {
           {/* Status filter — hidden in board view (board already groups by status) */}
           {viewMode !== "board" && (
             <Select value={statusFilter || "_all"} onValueChange={(v) => setStatusFilter(v === "_all" ? "" : v as LeaveStatus)}>
-              <SelectTrigger className="w-[150px]"><SelectValue placeholder="All Statuses" /></SelectTrigger>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="All Statuses">
+                  {(v: unknown) =>
+                    v && v !== "_all" ? STATUS_LABELS[v as LeaveStatus] ?? "All Statuses" : "All Statuses"}
+                </SelectValue>
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="_all">All Statuses</SelectItem>
                 {(["pending","approved","rejected","cancelled"] as LeaveStatus[]).map((s) => (
@@ -693,9 +710,27 @@ function LeavePage() {
         {isLoading ? (
           <Skeleton className="h-64 w-full" />
         ) : viewMode === "list" ? (
-          <LeaveListView rows={rows} {...actions} />
+          <>
+            <LeaveListView rows={pagination.pageItems} {...actions} />
+            <DataPagination
+              page={pagination.page}
+              pageCount={pagination.pageCount}
+              total={pagination.total}
+              rangeLabel={pagination.rangeLabel}
+              onPageChange={pagination.setPage}
+            />
+          </>
         ) : viewMode === "detailed" ? (
-          <LeaveDetailedView rows={rows} {...actions} />
+          <>
+            <LeaveDetailedView rows={pagination.pageItems} {...actions} />
+            <DataPagination
+              page={pagination.page}
+              pageCount={pagination.pageCount}
+              total={pagination.total}
+              rangeLabel={pagination.rangeLabel}
+              onPageChange={pagination.setPage}
+            />
+          </>
         ) : viewMode === "board" ? (
           <LeaveBoardView rows={rows} {...actions} />
         ) : (

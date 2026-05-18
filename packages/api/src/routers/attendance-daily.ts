@@ -171,6 +171,42 @@ export const attendanceDailyRouter = {
       return { id, created: true };
     }),
 
+  // Clear a single staff member's mark for a date — reverts the cell to the
+  // default "—" (not marked) state. Idempotent: a no-op if nothing is marked.
+  // Gated on "update" (not "delete") because clearing is part of the normal
+  // roll-call correction workflow, not a destructive admin action.
+  clear: requireRole("attendance", "update")
+    .input(
+      z.object({
+        staffProfileId: z.string(),
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      }),
+    )
+    .handler(async ({ input, context }) => {
+      const existing = await db.query.dailyAttendance.findFirst({
+        where: and(
+          eq(dailyAttendance.staffProfileId, input.staffProfileId),
+          eq(dailyAttendance.date, input.date),
+        ),
+      });
+      if (!existing) return { cleared: false };
+      await db.delete(dailyAttendance).where(eq(dailyAttendance.id, existing.id));
+      await logAudit({
+        actorId: context.session?.user.id ?? "",
+        actorName: context.session?.user.name ?? "",
+        actorRole: context.userRole ?? undefined,
+        correlationId: context.requestId,
+        action: "daily_attendance.clear",
+        module: "attendance",
+        resourceType: "daily_attendance",
+        resourceId: existing.id,
+        beforeValue: existing as Record<string, unknown>,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+      });
+      return { cleared: true };
+    }),
+
   // Bulk mark — apply a single status to many staff for a date.
   bulkMark: requireRole("attendance", "update")
     .input(

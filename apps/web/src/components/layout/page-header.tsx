@@ -56,7 +56,7 @@ export function PageHeader({
         className,
       )}
     >
-      <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-3">
+      <div className="flex flex-col gap-3 px-6 pt-5 pb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0">
           {eyebrow && (
             <div className="mb-1 text-[11px] font-bold uppercase tracking-wider text-brand-700 dark:text-brand-400">
@@ -73,7 +73,7 @@ export function PageHeader({
           )}
         </div>
         {actions && (
-          <div className="flex shrink-0 items-center gap-2">{actions}</div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
         )}
       </div>
 

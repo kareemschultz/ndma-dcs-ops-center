@@ -731,6 +731,9 @@ function QuarterGrid({
                 </div>
               </TableHead>
             ))}
+            <TableHead colSpan={2} className="text-center border-l min-w-32 bg-muted/40">
+              <span className="font-semibold">Quarter Total</span>
+            </TableHead>
           </TableRow>
           <TableRow>
             <TableHead className="sticky left-0 bg-background" />
@@ -752,10 +755,20 @@ function QuarterGrid({
                 Scheduled
               </TableHead>,
             ])}
+            <TableHead className="text-xs text-muted-foreground border-l min-w-20 bg-muted/40">
+              Time Late
+            </TableHead>
+            <TableHead className="text-xs text-muted-foreground min-w-14 bg-muted/40">
+              Days Late
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row) => (
+          {rows.map((row) => {
+            const derived = (row as { derived?: Record<string, { totalTimeLate: string; daysLate: number }> }).derived ?? {};
+            const quarterTotal = (row as { quarterTotal?: { totalTimeLate: string; daysLate: number } }).quarterTotal
+              ?? { totalTimeLate: "0:00", daysLate: 0 };
+            return (
             <TableRow key={row.staffId}>
               <TableCell className="sticky left-0 bg-background font-medium text-sm">
                 {row.staffName}
@@ -765,61 +778,63 @@ function QuarterGrid({
               </TableCell>
               {months.flatMap((m) => {
                 const rec = row.months[m];
+                const der = derived[m];
                 const hasLate = rec && rec.daysLate > 0;
 
                 return [
                   <TableCell
                     key={`${m}-tl`}
-                    className={`text-sm border-l cursor-pointer hover:bg-muted/40 ${hasLate ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}
-                    onClick={() =>
-                      rec
-                        ? onEdit(m, row.staffId, rec)
-                        : onAdd(m)
-                    }
+                    title={!rec && der ? "Derived from clock-in logs" : undefined}
+                    className={`text-sm border-l cursor-pointer hover:bg-muted/40 ${
+                      hasLate ? "text-red-600 dark:text-red-400"
+                        : !rec && der ? "italic text-amber-600 dark:text-amber-400"
+                        : "text-muted-foreground"
+                    }`}
+                    onClick={() => (rec ? onEdit(m, row.staffId, rec) : onAdd(m))}
                   >
-                    {rec?.totalTimeLate ?? "—"}
+                    {rec?.totalTimeLate ?? der?.totalTimeLate ?? "—"}
                   </TableCell>,
                   <TableCell
                     key={`${m}-dl`}
-                    className={`text-center text-sm cursor-pointer hover:bg-muted/40 ${hasLate ? "font-semibold text-red-600 dark:text-red-400" : "text-muted-foreground"}`}
-                    onClick={() =>
-                      rec
-                        ? onEdit(m, row.staffId, rec)
-                        : onAdd(m)
-                    }
+                    title={!rec && der ? "Derived from clock-in logs" : undefined}
+                    className={`text-center text-sm cursor-pointer hover:bg-muted/40 ${
+                      hasLate ? "font-semibold text-red-600 dark:text-red-400"
+                        : !rec && der ? "italic text-amber-600 dark:text-amber-400"
+                        : "text-muted-foreground"
+                    }`}
+                    onClick={() => (rec ? onEdit(m, row.staffId, rec) : onAdd(m))}
                   >
-                    {rec?.daysLate ?? "—"}
+                    {rec?.daysLate ?? der?.daysLate ?? "—"}
                   </TableCell>,
                   <TableCell
                     key={`${m}-dm`}
                     className="text-center text-sm text-muted-foreground cursor-pointer hover:bg-muted/40"
-                    onClick={() =>
-                      rec
-                        ? onEdit(m, row.staffId, rec)
-                        : onAdd(m)
-                    }
+                    onClick={() => (rec ? onEdit(m, row.staffId, rec) : onAdd(m))}
                   >
                     {rec?.daysMissingFromAttendance ?? "—"}
                   </TableCell>,
                   <TableCell
                     key={`${m}-dos`}
                     className="text-center text-sm text-muted-foreground cursor-pointer hover:bg-muted/40"
-                    onClick={() =>
-                      rec
-                        ? onEdit(m, row.staffId, rec)
-                        : onAdd(m)
-                    }
+                    onClick={() => (rec ? onEdit(m, row.staffId, rec) : onAdd(m))}
                   >
                     {rec?.daysOnSchedule ?? "—"}
                   </TableCell>,
                 ];
               })}
+              <TableCell className="border-l bg-muted/30 text-sm font-semibold tabular-nums">
+                {quarterTotal.totalTimeLate}
+              </TableCell>
+              <TableCell className="bg-muted/30 text-center text-sm font-semibold tabular-nums">
+                {quarterTotal.daysLate}
+              </TableCell>
             </TableRow>
-          ))}
+            );
+          })}
           {rows.length === 0 && (
             <TableRow>
               <TableCell
-                colSpan={2 + months.length * 4}
+                colSpan={2 + months.length * 4 + 2}
                 className="h-24 text-center text-muted-foreground"
               >
                 No lateness records for Q{quarter} {year}. Use + to add a record or import from Excel.
@@ -936,6 +951,9 @@ function LatenessPage() {
         <div className="mb-4">
           <p className="text-sm text-muted-foreground">
             Click any cell to edit. Use + to add a new record. Import from the quarterly Lateness Report Excel.
+            The <span className="italic text-amber-600 dark:text-amber-400">amber italic</span> values are
+            inferred from clock-in logs where no record was keyed in; the <span className="font-semibold">Quarter
+            Total</span> column sums each staff member's late time and days late across the quarter.
           </p>
         </div>
 

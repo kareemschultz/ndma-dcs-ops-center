@@ -8,7 +8,7 @@
 //   • New 4th tab: "Performance Journal" — mistake-matrix grid
 //   • Preserve all UpsertMetricsDialog and mutation logic from original
 
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Award, BarChart2, BookOpen, Plus, RefreshCw, Trophy } from "lucide-react";
@@ -17,8 +17,9 @@ import { toast } from "sonner";
 import { Badge } from "@ndma-dcs-staff-portal/ui/components/badge";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@ndma-dcs-staff-portal/ui/components/dialog";
+import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
 import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -87,10 +88,219 @@ function getInitials(name?: string | null) {
   return name.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
 }
 
+// ── UpsertMetricsDialog ────────────────────────────────────────────────────────
+
+interface MetricsFormState {
+  staffId: string;
+  mt: string;
+  ittIncident: string;
+  ittProblem: string;
+  daysDayShift: string;
+  daysSwingShift: string;
+  daysNightShift: string;
+  noccc: string;
+  nct: string;
+  ma: string;
+}
+
+const defaultMetricsForm = (): MetricsFormState => ({
+  staffId: "",
+  mt: "0",
+  ittIncident: "0",
+  ittProblem: "0",
+  daysDayShift: "0",
+  daysSwingShift: "0",
+  daysNightShift: "0",
+  noccc: "0",
+  nct: "0",
+  ma: "0",
+});
+
+function UpsertMetricsDialog({
+  open,
+  onClose,
+  year,
+  month,
+}: {
+  open: boolean;
+  onClose: () => void;
+  year: number;
+  month: number;
+}) {
+  const queryClient = useQueryClient();
+  const [form, setForm] = useState<MetricsFormState>(defaultMetricsForm);
+
+  const staffQuery = useQuery(orpc.staff.list.queryOptions({ input: { limit: 200, offset: 0 } }));
+  const staffList = staffQuery.data ?? [];
+
+  const upsertMutation = useMutation(
+    orpc.nocPerformance.metrics.upsert.mutationOptions({
+      onSuccess: () => {
+        toast.success("Metrics saved.");
+        queryClient.invalidateQueries({ queryKey: orpc.nocPerformance.metrics.list.key() });
+        setForm(defaultMetricsForm());
+        onClose();
+      },
+      onError: (err: Error) => toast.error(err.message ?? "Failed to save metrics."),
+    }),
+  );
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!form.staffId) {
+      toast.error("Please select a staff member.");
+      return;
+    }
+    upsertMutation.mutate({
+      staffId: form.staffId,
+      year,
+      month,
+      mt: Number(form.mt),
+      ittIncident: Number(form.ittIncident),
+      ittProblem: Number(form.ittProblem),
+      daysDayShift: Number(form.daysDayShift),
+      daysSwingShift: Number(form.daysSwingShift),
+      daysNightShift: Number(form.daysNightShift),
+      noccc: Number(form.noccc),
+      nct: Number(form.nct),
+      ma: Number(form.ma),
+    });
+  }
+
+  const field = (label: string, key: keyof MetricsFormState) => (
+    <div className="space-y-1">
+      <Label>{label}</Label>
+      <Input
+        type="number"
+        min={0}
+        value={form[key]}
+        onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+      />
+    </div>
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Record Monthly Metrics</DialogTitle>
+          <DialogDescription>
+            Enter performance metrics for {MONTHS[(month - 1) % 12]} {year}.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <Label>Staff Member</Label>
+            <Select
+              value={form.staffId}
+              onValueChange={(v) => setForm((f) => ({ ...f, staffId: v ?? "" }))}
+            >
+              <SelectTrigger><SelectValue placeholder="Select staff…" /></SelectTrigger>
+              <SelectContent>
+                {staffList.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.user?.name ?? s.employeeId ?? "Unnamed"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {field("Maintenance Tasks (MT)", "mt")}
+            {field("ITT Incidents", "ittIncident")}
+            {field("ITT Problems", "ittProblem")}
+            {field("Customer Complaints Closed (NOCCC)", "noccc")}
+            {field("NOC Change Tasks (NCT)", "nct")}
+            {field("Monitoring Alerts (MA)", "ma")}
+            {field("Days Day Shift", "daysDayShift")}
+            {field("Days Swing Shift", "daysSwingShift")}
+            {field("Days Night Shift", "daysNightShift")}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={upsertMutation.isPending}>
+              {upsertMutation.isPending ? "Saving…" : "Save Metrics"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Ticket Activity Tab ─────────────────────────────────────────────────────────
+
+function TicketActivityTab({ year, month }: { year: number; month: number }) {
+  const { data, isLoading } = useQuery(
+    orpc.nocPerformance.tickets.list.queryOptions({ input: { year, month } }),
+  );
+  const rows = data ?? [];
+
+  const typeColors: Record<string, string> = {
+    incident: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
+    problem: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
+    work_order: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200",
+  };
+
+  return (
+    <div className="space-y-4">
+      {isLoading ? (
+        <Skeleton className="h-48 w-full" />
+      ) : rows.length === 0 ? (
+        <div className="rounded-lg border border-dashed py-12 text-center text-muted-foreground">
+          No ticket activity recorded for {MONTHS[(month - 1) % 12]} {year}.
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Ticket ID</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Action</TableHead>
+                <TableHead>Actor</TableHead>
+                <TableHead>Duplicate</TableHead>
+                <TableHead>Notes</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row) => (
+                <TableRow key={row.id}>
+                  <TableCell className="font-mono text-sm">{row.ticketId}</TableCell>
+                  <TableCell>
+                    <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${typeColors[row.type] ?? ""}`}>
+                      {row.type.replace("_", " ")}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={row.action === "closed" ? "default" : "secondary"}>
+                      {row.action}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{row.actorName ?? "—"}</TableCell>
+                  <TableCell>
+                    {row.isDuplicate ? (
+                      <Badge variant="destructive">Duplicate</Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
+                    {row.notes ?? "—"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Metrics Tab ────────────────────────────────────────────────────────────────
 
 function MetricsTab({ year, month }: { year: number; month: number }) {
-  const queryClient = useQueryClient();
   const [upsertOpen, setUpsertOpen] = useState(false);
 
   const { data, isLoading } = useQuery(
@@ -178,8 +388,14 @@ function MetricsTab({ year, month }: { year: number; month: number }) {
         </div>
       )}
 
-      {/* UpsertMetricsDialog — preserve from original file */}
-      {/* {upsertOpen && <UpsertMetricsDialog open={upsertOpen} onOpenChange={setUpsertOpen} year={year} month={month} />} */}
+      {upsertOpen && (
+        <UpsertMetricsDialog
+          open={upsertOpen}
+          onClose={() => setUpsertOpen(false)}
+          year={year}
+          month={month}
+        />
+      )}
     </div>
   );
 }
@@ -525,7 +741,9 @@ function NocPerformancePage() {
           {/* Month/year selectors */}
           <div className="flex items-center gap-2">
             <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
-              <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue>{(v: unknown) => MONTHS[Number(v) - 1] ?? String(v ?? "")}</SelectValue>
+              </SelectTrigger>
               <SelectContent>
                 {MONTHS.map((name, i) => <SelectItem key={i + 1} value={String(i + 1)}>{name}</SelectItem>)}
               </SelectContent>
@@ -560,12 +778,7 @@ function NocPerformancePage() {
             ))}
           </TabsList>
           <TabsContent value="metrics"  className="pt-4"><MetricsTab  year={year} month={month} /></TabsContent>
-          <TabsContent value="tickets"  className="pt-4">
-            {/* TicketActivityTab — preserve from original file */}
-            <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">
-              Ticket activity tab — preserve TicketActivityTab component from original file here.
-            </div>
-          </TabsContent>
+          <TabsContent value="tickets"  className="pt-4"><TicketActivityTab year={year} month={month} /></TabsContent>
           <TabsContent value="eom"      className="pt-4"><EomTab      year={year} month={month} /></TabsContent>
           <TabsContent value="journal"       className="pt-4"><JournalTab       year={year} month={month} /></TabsContent>
           <TabsContent value="commendations" className="pt-4"><CommendationsTab year={year} month={month} /></TabsContent>

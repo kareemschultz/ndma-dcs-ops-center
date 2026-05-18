@@ -159,9 +159,10 @@ interface StaffRowProps {
   currentStatus: AttendanceDailyStatus | null;
   pending: boolean;
   onMark: (staffId: string, status: AttendanceDailyStatus) => void;
+  onClear: (staffId: string) => void;
 }
 
-function StaffRow({ staffId, name, currentStatus, pending, onMark }: StaffRowProps) {
+function StaffRow({ staffId, name, currentStatus, pending, onMark, onClear }: StaffRowProps) {
   return (
     <div className="flex items-center gap-2 py-2 border-b last:border-0">
       {/* Name */}
@@ -174,6 +175,19 @@ function StaffRow({ staffId, name, currentStatus, pending, onMark }: StaffRowPro
 
       {/* Quick-mark buttons */}
       <div className="flex flex-wrap gap-1 min-w-0">
+        {/* Dash / "Not marked" — clears the cell back to the default state */}
+        <button
+          disabled={pending}
+          title="Not marked (clear)"
+          onClick={() => onClear(staffId)}
+          className={`inline-flex h-6 min-w-[24px] items-center justify-center rounded-full px-1.5 text-xs font-semibold transition-all ${
+            currentStatus === null
+              ? "ring-2 ring-slate-400 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              : "bg-muted/50 text-muted-foreground hover:bg-muted"
+          } disabled:opacity-50`}
+        >
+          —
+        </button>
         {STATUS_OPTIONS.map((opt) => (
           <button
             key={opt.value}
@@ -205,9 +219,10 @@ interface DeptGroupProps {
   logsByStaff: Map<string, AttendanceDailyStatus>;
   pendingSet: Set<string>;
   onMark: (staffId: string, status: AttendanceDailyStatus) => void;
+  onClear: (staffId: string) => void;
 }
 
-function DeptGroup({ deptName, staff, logsByStaff, pendingSet, onMark }: DeptGroupProps) {
+function DeptGroup({ deptName, staff, logsByStaff, pendingSet, onMark, onClear }: DeptGroupProps) {
   const presentCount = staff.filter((s) => {
     const st = logsByStaff.get(s.id);
     return st ? PRESENT_STATUSES.has(st) : false;
@@ -234,6 +249,7 @@ function DeptGroup({ deptName, staff, logsByStaff, pendingSet, onMark }: DeptGro
             currentStatus={logsByStaff.get(s.id) ?? null}
             pending={pendingSet.has(s.id)}
             onMark={onMark}
+            onClear={onClear}
           />
         ))}
       </CardContent>
@@ -316,6 +332,15 @@ function RollCallPage() {
     }),
   );
 
+  const clearMut = useMutation(
+    orpc.attendanceDaily.clear.mutationOptions({
+      onSuccess: async () => {
+        await qc.invalidateQueries({ queryKey: orpc.attendanceDaily.list.key() });
+      },
+      onError: (e: Error) => toast.error(e.message),
+    }),
+  );
+
   const setDayRespectLeaveMut = useMutation(
     orpc.attendanceDaily.setDayRespectLeave.mutationOptions({
       onSuccess: async (data) => {
@@ -360,6 +385,20 @@ function RollCallPage() {
     setPendingSet((prev) => new Set([...prev, staffId]));
     try {
       await upsertMut.mutateAsync({ staffProfileId: staffId, date, status });
+    } finally {
+      setPendingSet((prev) => {
+        const next = new Set(prev);
+        next.delete(staffId);
+        return next;
+      });
+    }
+  }
+
+  // Clear a staff member's mark — reverts the cell to the default "—" state.
+  async function clearOne(staffId: string) {
+    setPendingSet((prev) => new Set([...prev, staffId]));
+    try {
+      await clearMut.mutateAsync({ staffProfileId: staffId, date });
     } finally {
       setPendingSet((prev) => {
         const next = new Set(prev);
@@ -498,6 +537,10 @@ function RollCallPage() {
               {opt.label}
             </span>
           ))}
+          <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 bg-muted/50 text-muted-foreground">
+            <span className="font-bold">—</span>
+            Not Marked
+          </span>
         </div>
 
         {/* Loading */}
@@ -517,6 +560,7 @@ function RollCallPage() {
                 logsByStaff={logsByStaff}
                 pendingSet={pendingSet}
                 onMark={markOne}
+                onClear={clearOne}
               />
             ))}
             {deptGroups.length === 0 && (

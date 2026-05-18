@@ -1,8 +1,8 @@
 import { ORPCError } from "@orpc/server";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, between, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
-import { db, latenessRecords } from "@ndma-dcs-staff-portal/db";
+import { attendanceLogs, db, latenessRecords } from "@ndma-dcs-staff-portal/db";
 
 import { protectedProcedure, requireRole } from "../index";
 import { logAudit } from "../lib/audit";
@@ -19,6 +19,27 @@ const QUARTER_MONTHS: Record<number, string[]> = {
   3: ["July", "August", "September"],
   4: ["October", "November", "December"],
 };
+
+// Clock-log-derived lateness — see quarterlyGrid. The standard DCS workday
+// starts at 08:00. A clock-in after that (but before midday) counts as a late
+// day; clock-ins past midday are treated as shift work and ignored so NOC
+// swing/night shifts don't register false lateness.
+const EXPECTED_START_MIN = 8 * 60;    // 08:00
+const LATE_WINDOW_END_MIN = 12 * 60;  // ignore afternoon / night clock-ins
+
+/** Parse an "H:MM" / "HH:MM[:SS]" string to minutes-since-midnight. */
+function hmToMinutes(t: string | null | undefined): number | null {
+  if (!t) return null;
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(t).trim());
+  if (!m) return null;
+  return parseInt(m[1]!, 10) * 60 + parseInt(m[2]!, 10);
+}
+
+/** Format minutes as an "H:MM" string. */
+function minutesToHm(mins: number): string {
+  const safe = Math.max(0, Math.round(mins));
+  return `${Math.floor(safe / 60)}:${String(safe % 60).padStart(2, "0")}`;
+}
 
 export const latenessRouter = {
   // List lateness records — optionally filtered by year / quarter / staff
@@ -86,32 +107,44 @@ export const latenessRouter = {
         orderBy: [asc(latenessRecords.staffId), asc(latenessRecords.month)],
       });
 
-      // Group by staff
-      const staffMap = new Map<string, {
+      type MonthRec = {
+        id: number;
+        totalTimeLate: string;
+        daysLate: number;
+        daysMissingFromAttendance: number | null;
+        daysOnSchedule: number | null;
+        notes: string | null;
+      };
+      type DerivedRec = { daysLate: number; totalMinutesLate: number; totalTimeLate: string };
+      type StaffRow = {
         staffId: string;
         staffName: string;
         department: string | null;
-        months: Record<string, {
-          id: number;
-          totalTimeLate: string;
-          daysLate: number;
-          daysMissingFromAttendance: number | null;
-          daysOnSchedule: number | null;
-          notes: string | null;
-        }>;
-      }>();
+        months: Record<string, MonthRec>;
+        /** Lateness inferred from clock-in logs, per month — fills gaps where
+         *  no manual record exists. */
+        derived: Record<string, DerivedRec>;
+        /** Quarter total — manual record where present, else derived. */
+        quarterTotal: { daysLate: number; totalTimeLate: string };
+      };
+
+      const staffMap = new Map<string, StaffRow>();
+      function ensureRow(staffId: string, name: string, department: string | null): StaffRow {
+        let row = staffMap.get(staffId);
+        if (!row) {
+          row = { staffId, staffName: name, department, months: {}, derived: {}, quarterTotal: { daysLate: 0, totalTimeLate: "0:00" } };
+          staffMap.set(staffId, row);
+        }
+        return row;
+      }
 
       for (const rec of records) {
-        if (!staffMap.has(rec.staffId)) {
-          staffMap.set(rec.staffId, {
-            staffId: rec.staffId,
-            staffName: rec.staffProfile?.user?.name ?? rec.staffProfile?.employeeId ?? "Unknown",
-            department: rec.staffProfile?.departmentId ?? null,
-            months: {},
-          });
-        }
-        const entry = staffMap.get(rec.staffId)!;
-        entry.months[rec.month] = {
+        const row = ensureRow(
+          rec.staffId,
+          rec.staffProfile?.user?.name ?? rec.staffProfile?.employeeId ?? "Unknown",
+          rec.staffProfile?.departmentId ?? null,
+        );
+        row.months[rec.month] = {
           id: rec.id,
           totalTimeLate: rec.totalTimeLate,
           daysLate: rec.daysLate,
@@ -119,6 +152,74 @@ export const latenessRouter = {
           daysOnSchedule: rec.daysOnSchedule ?? null,
           notes: rec.notes ?? null,
         };
+      }
+
+      // ── Correlate clock-in logs → derived lateness ──────────────────────────
+      // Pull every clock-log for the quarter and infer late days from the
+      // clock-in time, so months with no manually-keyed record still show a
+      // number and the quarter total is always complete.
+      // Quarter → month range: Q1 Jan–Mar, Q2 Apr–Jun, Q3 Jul–Sep, Q4 Oct–Dec.
+      const startMonth = (input.quarter - 1) * 3 + 1;   // 1, 4, 7, 10
+      const endMonth = startMonth + 2;                   // 3, 6, 9, 12
+      const lastDay = new Date(input.year, endMonth, 0).getDate(); // 31/30/28…
+      const qStart = `${input.year}-${String(startMonth).padStart(2, "0")}-01`;
+      const qEnd = `${input.year}-${String(endMonth).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+      const logs = await db.query.attendanceLogs.findMany({
+        where: between(attendanceLogs.date, qStart, qEnd),
+        with: { staffProfile: { with: { user: true } } },
+      });
+
+      // staffId → month → running { daysLate, totalMinutesLate }
+      const derivedAgg = new Map<string, Map<string, { daysLate: number; minutes: number }>>();
+      for (const log of logs) {
+        const clockInMin = hmToMinutes(log.clockIn);
+        if (clockInMin == null) continue;
+        if (clockInMin <= EXPECTED_START_MIN || clockInMin > LATE_WINDOW_END_MIN) continue;
+        const monthName = MONTHS[parseInt(log.date.slice(5, 7), 10) - 1];
+        if (!monthName || !months.includes(monthName)) continue;
+        const lateMins = clockInMin - EXPECTED_START_MIN;
+        let perStaff = derivedAgg.get(log.staffId);
+        if (!perStaff) { perStaff = new Map(); derivedAgg.set(log.staffId, perStaff); }
+        const cell = perStaff.get(monthName) ?? { daysLate: 0, minutes: 0 };
+        cell.daysLate += 1;
+        cell.minutes += lateMins;
+        perStaff.set(monthName, cell);
+
+        // Make sure staff who only have clock-logs (no manual record) still appear.
+        ensureRow(
+          log.staffId,
+          log.staffProfile?.user?.name ?? log.staffProfile?.employeeId ?? "Unknown",
+          log.staffProfile?.departmentId ?? null,
+        );
+      }
+
+      for (const [staffId, perMonth] of derivedAgg) {
+        const row = staffMap.get(staffId);
+        if (!row) continue;
+        for (const [monthName, cell] of perMonth) {
+          row.derived[monthName] = {
+            daysLate: cell.daysLate,
+            totalMinutesLate: cell.minutes,
+            totalTimeLate: minutesToHm(cell.minutes),
+          };
+        }
+      }
+
+      // ── Quarter total — manual record per month if present, else derived ────
+      for (const row of staffMap.values()) {
+        let totalDays = 0;
+        let totalMinutes = 0;
+        for (const m of months) {
+          const manual = row.months[m];
+          if (manual) {
+            totalDays += manual.daysLate;
+            totalMinutes += hmToMinutes(manual.totalTimeLate) ?? 0;
+          } else if (row.derived[m]) {
+            totalDays += row.derived[m]!.daysLate;
+            totalMinutes += row.derived[m]!.totalMinutesLate;
+          }
+        }
+        row.quarterTotal = { daysLate: totalDays, totalTimeLate: minutesToHm(totalMinutes) };
       }
 
       return {

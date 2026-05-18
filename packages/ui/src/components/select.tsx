@@ -16,13 +16,36 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   )
 }
 
-function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
+/** Sentinel values used app-wide for "no filter" Select options. They must
+ * never surface in the trigger — show the placeholder instead. */
+const SELECT_PLACEHOLDER_SENTINELS = new Set(["", "_all", "all", "none"])
+
+function SelectValue({
+  className,
+  children,
+  placeholder,
+  ...props
+}: SelectPrimitive.Value.Props) {
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
       className={cn("flex flex-1 text-left", className)}
+      placeholder={placeholder}
       {...props}
-    />
+    >
+      {/* When a call site supplies its own children/render-fn, defer to it.
+          Otherwise fall back to rendering the raw value — but swap the
+          "all/none" filter sentinels for the placeholder so values like
+          "_all" never leak into the UI. */}
+      {children ??
+        ((value: unknown) => {
+          const v = Array.isArray(value) ? value[0] : value
+          if (v == null || (typeof v === "string" && SELECT_PLACEHOLDER_SENTINELS.has(v))) {
+            return placeholder ?? null
+          }
+          return v as React.ReactNode
+        })}
+    </SelectPrimitive.Value>
   )
 }
 
