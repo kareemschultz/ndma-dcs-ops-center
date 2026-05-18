@@ -98,7 +98,7 @@ export function OnboardingTour() {
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
 
-  // Auto-open on first authenticated load.
+  // Auto-open once on the first authenticated load (localStorage-gated).
   useEffect(() => {
     if (!hasSeen()) {
       setStepIndex(0);
@@ -106,7 +106,7 @@ export function OnboardingTour() {
     }
   }, []);
 
-  // Re-open when "Replay tour" is invoked.
+  // Re-open when "Take the tour" / "Replay tour" is invoked.
   useEffect(() => {
     const handleReplay = () => {
       setStepIndex(0);

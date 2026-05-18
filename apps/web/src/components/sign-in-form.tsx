@@ -146,7 +146,7 @@ export default function SignInForm() {
                 name={field.name}
                 type="text"
                 autoComplete="username"
-                placeholder="kareem.schultz or you@ndma.gov"
+                placeholder="first.lastname or local-account@ndma.gov"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}

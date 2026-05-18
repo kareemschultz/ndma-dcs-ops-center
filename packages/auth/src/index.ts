@@ -9,7 +9,7 @@ import { admin, createAccessControl } from "better-auth/plugins";
 const statement = {
   staff: ["create", "read", "update", "delete", "import", "export"] as const,
   work: ["create", "read", "update", "delete", "assign"] as const,
-  leave: ["create", "read", "update", "approve", "reject", "cancel"] as const,
+  leave: ["create", "read", "update", "delete", "approve", "reject", "cancel"] as const,
   rota: ["create", "read", "update", "delete", "swap"] as const,
   roster: ["create", "read", "update", "delete", "publish", "swap", "assign"] as const,
   compliance: ["create", "read", "update", "delete", "assign"] as const,
@@ -106,7 +106,7 @@ export const staffRole = ac.newRole({
 export const managerRole = ac.newRole({
   staff: ["read", "update"],
   work: ["create", "read", "update", "assign"],
-  leave: ["create", "read", "approve", "reject", "cancel"],
+  leave: ["create", "read", "delete", "approve", "reject", "cancel"],
   rota: ["create", "read", "update", "swap"],
   roster: ["create", "read", "update", "publish", "swap", "assign"],
   compliance: ["read", "assign"],
@@ -157,7 +157,7 @@ export const teamLeadRole = ac.newRole({
 export const personalAssistantRole = ac.newRole({
   staff: ["read", "update"],
   work: ["read", "update"],
-  leave: ["read", "create", "update", "cancel"],
+  leave: ["read", "create", "update", "delete", "cancel"],
   rota: ["read"],
   roster: ["read"],
   compliance: ["read"],
@@ -187,7 +187,7 @@ export const personalAssistantRole = ac.newRole({
 export const hrAdminOpsRole = ac.newRole({
   staff: ["create", "read", "update", "delete", "import", "export"],
   work: ["create", "read", "update", "delete", "assign"],
-  leave: ["create", "read", "update", "approve", "reject", "cancel"],
+  leave: ["create", "read", "update", "delete", "approve", "reject", "cancel"],
   rota: ["create", "read", "update", "delete", "swap"],
   roster: ["create", "read", "update", "delete", "publish", "swap", "assign"],
   compliance: ["create", "read", "update", "delete", "assign"],
@@ -217,7 +217,7 @@ export const hrAdminOpsRole = ac.newRole({
 export const adminRole = ac.newRole({
   staff: ["create", "read", "update", "delete", "import", "export"],
   work: ["create", "read", "update", "delete", "assign"],
-  leave: ["create", "read", "update", "approve", "reject", "cancel"],
+  leave: ["create", "read", "update", "delete", "approve", "reject", "cancel"],
   rota: ["create", "read", "update", "delete", "swap"],
   roster: ["create", "read", "update", "delete", "publish", "swap", "assign"],
   compliance: ["create", "read", "update", "delete", "assign"],
