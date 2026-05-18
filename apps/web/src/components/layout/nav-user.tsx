@@ -6,6 +6,7 @@ import {
   BadgeCheck,
   Bell,
   ChevronsUpDown,
+  Compass,
   LogOut,
   Settings,
 } from "lucide-react";
@@ -27,6 +28,7 @@ import {
   useSidebar,
 } from "@ndma-dcs-staff-portal/ui/components/sidebar";
 import { SignOutDialog } from "@/components/sign-out-dialog";
+import { resetOnboardingTour } from "@/components/onboarding-tour";
 
 type NavUserProps = {
   user: {
@@ -109,6 +111,10 @@ export function NavUser({ user }: NavUserProps) {
                 <DropdownMenuItem render={<Link to="/settings/general" />}>
                   <Settings />
                   Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => resetOnboardingTour()}>
+                  <Compass />
+                  Take the tour
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />

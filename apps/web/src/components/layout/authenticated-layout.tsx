@@ -10,6 +10,7 @@ import {
 } from "@ndma-dcs-staff-portal/ui/components/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { SkipToMain } from "@/components/skip-to-main";
+import { OnboardingTour } from "@/components/onboarding-tour";
 
 type AuthenticatedLayoutProps = {
   children?: React.ReactNode;
@@ -22,6 +23,7 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
       <LayoutProvider>
         <SidebarProvider defaultOpen={defaultOpen}>
           <SkipToMain />
+          <OnboardingTour />
           <AppSidebar />
           <SidebarInset
             className={cn(
