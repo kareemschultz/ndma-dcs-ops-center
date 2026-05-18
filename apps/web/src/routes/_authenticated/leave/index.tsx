@@ -133,23 +133,48 @@ function staffName(r: LeaveRow): string {
 
 // ── Leave balance bar ──────────────────────────────────────────────────────────
 
-function LeaveBalanceBar({ label, used, allowance }: { label: string; used: number; allowance: number }) {
+// Shows leave taken vs remaining for one leave type. `remaining` =
+// allowance − used, where allowance = entitlement + carried-over + adjustment.
+// The remaining figure is given top billing — that is what staff most want
+// to see ("how much leave is left").
+function LeaveBalanceBar({
+  label, used, allowance, note,
+}: { label: string; used: number; allowance: number; note?: string }) {
   const pct = allowance > 0 ? Math.min((used / allowance) * 100, 100) : 0;
   const over = used > allowance;
+  const remaining = allowance - used;
   const barCls = over ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-primary";
-  const textCls = over ? "text-red-600 dark:text-red-400" : pct >= 80 ? "text-amber-600 dark:text-amber-400" : "";
+  const remCls = over
+    ? "text-red-600 dark:text-red-400"
+    : pct >= 80
+      ? "text-amber-600 dark:text-amber-400"
+      : "text-primary";
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-sm">
-        <span className="font-medium">{label}</span>
-        <span className={`tabular-nums font-semibold ${textCls}`}>{used} / {allowance} days</span>
+    <div className="space-y-1.5 rounded-lg border bg-card p-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium">{label}</span>
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {used} of {allowance} days taken
+        </span>
+      </div>
+      <div className="flex items-baseline gap-1.5">
+        <span className={`text-2xl font-bold tabular-nums ${remCls}`}>
+          {over ? 0 : remaining}
+        </span>
+        <span className="text-xs text-muted-foreground">days remaining</span>
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
         <div className={`h-full rounded-full transition-all ${barCls}`} style={{ width: `${pct}%` }} />
       </div>
       <div className="text-xs text-muted-foreground">
-        {over ? <span className="text-red-600 dark:text-red-400">{used - allowance} days over</span>
-              : <span>{allowance - used} days remaining</span>}
+        {over ? (
+          <span className="text-red-600 dark:text-red-400">
+            {used - allowance} days over allowance
+          </span>
+        ) : (
+          <span>{used} taken · {remaining} remaining</span>
+        )}
+        {note && <span className="ml-1 opacity-70">· {note}</span>}
       </div>
     </div>
   );
@@ -504,13 +529,19 @@ function LeavePage() {
     [leaveTypes],
   );
 
+  // Build one balance bar per visible leave type. The server enriches each
+  // balance row with `allowance` (entitlement + carried-over + adjustment,
+  // with a role-based 28/45-day default for Annual Leave) and `remaining`.
   const balanceRows = useMemo(() => {
     if (!leaveBalances || !visibleTypes.length) return [];
     return visibleTypes.map((lt) => {
       const bal = leaveBalances.find((b) => b.leaveTypeId === lt.id);
-      const used      = bal ? (bal.used ?? 0) : 0;
-      const allowance = bal ? ((bal.entitlement ?? lt.defaultAnnualAllowance ?? 0) + (bal.carriedOver ?? 0) + (bal.adjustment ?? 0)) : (lt.defaultAnnualAllowance ?? 0);
-      return { label: getLeaveTypeDisplayName(lt.name), used, allowance };
+      const used      = bal?.used ?? 0;
+      const allowance = bal?.allowance ?? (lt.defaultAnnualAllowance ?? 0);
+      const note      = bal?.isSynthetic
+        ? `default for ${bal.roleTier === "manager" ? "managers" : "staff"}`
+        : undefined;
+      return { label: getLeaveTypeDisplayName(lt.name), used, allowance, note };
     });
   }, [leaveBalances, visibleTypes]);
 
@@ -653,7 +684,13 @@ function LeavePage() {
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {balanceRows.map((b) => (
-                <LeaveBalanceBar key={b.label} label={b.label} used={b.used} allowance={b.allowance} />
+                <LeaveBalanceBar
+                  key={b.label}
+                  label={b.label}
+                  used={b.used}
+                  allowance={b.allowance}
+                  note={b.note}
+                />
               ))}
             </CardContent>
           </Card>

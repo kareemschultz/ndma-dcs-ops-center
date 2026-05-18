@@ -43,6 +43,38 @@ function leaveTypeSortIndex(name: string): number {
   return idx === -1 ? LEAVE_TYPE_SORT_ORDER.length : idx;
 }
 
+// ── Annual leave entitlement by role ──────────────────────────────────────
+//
+// NDMA policy: regular staff get 28 calendar days of annual leave per year
+// (this figure INCLUDES Sundays and public holidays); managers / senior roles
+// get 45. These are CALENDAR days, not working days. This is used as a
+// fallback when a staff member has no explicit `leave_balances.entitlement`
+// row for a leave type — so "remaining" can always be shown.
+const ANNUAL_LEAVE_DAYS_MANAGER = 45;
+const ANNUAL_LEAVE_DAYS_STAFF = 28;
+
+// Better Auth roles that receive the manager-tier annual entitlement.
+const MANAGER_TIER_ROLES = new Set([
+  "manager",
+  "teamLead",
+  "hrAdminOps",
+  "admin",
+]);
+
+/** Annual-leave calendar-day entitlement for a Better Auth user role. */
+export function annualLeaveEntitlementForRole(
+  role: string | null | undefined,
+): number {
+  return role && MANAGER_TIER_ROLES.has(role)
+    ? ANNUAL_LEAVE_DAYS_MANAGER
+    : ANNUAL_LEAVE_DAYS_STAFF;
+}
+
+/** True when a leave type is the Annual Leave category. */
+function isAnnualLeaveType(name: string | null | undefined): boolean {
+  return Boolean(name && name.toLowerCase().includes("annual"));
+}
+
 export const leaveRouter = {
   // ── Leave Types ───────────────────────────────────────────────────────────
   types: {
@@ -140,10 +172,85 @@ export const leaveRouter = {
           }
         }
 
-        return db.query.leaveBalances.findMany({
+        // Resolve the staff member's Better Auth role so the annual-leave
+        // entitlement can fall back to a role-based default (28 staff / 45
+        // managers) when no explicit `leave_balances` row exists.
+        const profile = await db.query.staffProfiles.findFirst({
+          where: eq(staffProfiles.id, input.staffProfileId),
+          with: { user: true },
+        });
+        const userRole = profile?.user?.role ?? null;
+        const annualDefault = annualLeaveEntitlementForRole(userRole);
+
+        const rows = await db.query.leaveBalances.findMany({
           where: eq(leaveBalances.staffProfileId, input.staffProfileId),
           with: { leaveType: true },
         });
+
+        const roleTier = MANAGER_TIER_ROLES.has(userRole ?? "")
+          ? ("manager" as const)
+          : ("staff" as const);
+
+        // Enrich every row with an effective entitlement + remaining figure.
+        // For Annual Leave, `effectiveEntitlement` is the explicit
+        // `entitlement` if one is set (> 0), otherwise the role-based default.
+        const enriched = rows.map((b) => {
+          const isAnnual = isAnnualLeaveType(b.leaveType?.name);
+          const effectiveEntitlement =
+            isAnnual && b.entitlement <= 0 ? annualDefault : b.entitlement;
+          const allowance =
+            effectiveEntitlement + b.carriedOver + b.adjustment;
+          const remaining = allowance - b.used;
+          return {
+            ...b,
+            effectiveEntitlement,
+            allowance,
+            remaining,
+            annualEntitlementDefault: annualDefault,
+            roleTier,
+            isSynthetic: false,
+          };
+        });
+
+        // If the staff member has NO Annual Leave balance row at all, surface
+        // a synthetic one so taken-vs-remaining is always visible. It carries
+        // the role-based default entitlement (28 / 45 calendar days) and zero
+        // used until an explicit balance is recorded. `isSynthetic` lets the
+        // UI flag it as a default rather than a stored figure.
+        const hasAnnual = enriched.some((b) =>
+          isAnnualLeaveType(b.leaveType?.name),
+        );
+        if (!hasAnnual) {
+          const annualType = await db.query.leaveTypes.findFirst({
+            where: sql`lower(${leaveTypes.name}) LIKE '%annual%'`,
+          });
+          if (annualType) {
+            const now = new Date();
+            const year = now.getFullYear();
+            enriched.unshift({
+              id: `synthetic-annual-${input.staffProfileId}`,
+              staffProfileId: input.staffProfileId,
+              leaveTypeId: annualType.id,
+              contractYearStart: `${year}-01-01`,
+              contractYearEnd: `${year}-12-31`,
+              entitlement: 0,
+              used: 0,
+              carriedOver: 0,
+              adjustment: 0,
+              createdAt: now,
+              updatedAt: now,
+              leaveType: annualType,
+              effectiveEntitlement: annualDefault,
+              allowance: annualDefault,
+              remaining: annualDefault,
+              annualEntitlementDefault: annualDefault,
+              roleTier,
+              isSynthetic: true,
+            });
+          }
+        }
+
+        return enriched;
       }),
 
     adjust: requireRole("leave", "update")

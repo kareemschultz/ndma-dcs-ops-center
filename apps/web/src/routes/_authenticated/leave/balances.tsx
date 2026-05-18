@@ -247,8 +247,9 @@ function BalancesPage() {
 
   const rows = useMemo(() => {
     return (balances ?? []).map((b) => {
-      const available =
-        b.entitlement + b.carriedOver + b.adjustment - b.used;
+      // The server enriches each balance with `effectiveEntitlement` (the
+      // explicit entitlement, or a role-based 28/45-day default for Annual
+      // Leave when none is recorded) and `remaining` = allowance − used.
       return {
         id: b.id,
         leaveTypeId: b.leaveTypeId,
@@ -256,11 +257,12 @@ function BalancesPage() {
         leaveTypeCode: b.leaveType?.code ?? "",
         contractYearStart: b.contractYearStart,
         contractYearEnd: b.contractYearEnd,
-        entitlement: b.entitlement,
+        entitlement: b.effectiveEntitlement ?? b.entitlement,
         carriedOver: b.carriedOver,
         adjustment: b.adjustment,
         used: b.used,
-        available,
+        remaining: b.remaining ?? (b.entitlement + b.carriedOver + b.adjustment - b.used),
+        isSynthetic: b.isSynthetic ?? false,
       };
     });
   }, [balances]);
@@ -327,8 +329,8 @@ function BalancesPage() {
                 <TableHead className="text-right">Entitlement</TableHead>
                 <TableHead className="text-right">Carried Over</TableHead>
                 <TableHead className="text-right">Adjustment</TableHead>
-                <TableHead className="text-right">Used</TableHead>
-                <TableHead className="text-right">Available</TableHead>
+                <TableHead className="text-right">Taken</TableHead>
+                <TableHead className="text-right">Remaining</TableHead>
                 <TableHead className="w-16 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -382,6 +384,14 @@ function BalancesPage() {
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm">
                       {r.entitlement}
+                      {r.isSynthetic && (
+                        <span
+                          className="ml-1 text-[10px] uppercase text-muted-foreground"
+                          title="Role-based default — no explicit balance recorded yet."
+                        >
+                          (default)
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm">
                       {r.carriedOver}
@@ -395,12 +405,12 @@ function BalancesPage() {
                     <TableCell className="text-right">
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 font-mono text-sm font-medium ${
-                          r.available > 0
+                          r.remaining > 0
                             ? "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200"
                             : "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200"
                         }`}
                       >
-                        {r.available}
+                        {r.remaining}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
@@ -408,8 +418,23 @@ function BalancesPage() {
                         size="icon"
                         variant="ghost"
                         className="size-7"
-                        onClick={() => setEditBalance(r as BalanceRow)}
-                        title="Adjust balance"
+                        onClick={() =>
+                          setEditBalance({
+                            id: r.isSynthetic ? "" : r.id,
+                            leaveTypeId: r.leaveTypeId,
+                            leaveTypeName: r.leaveTypeName,
+                            contractYearStart: r.contractYearStart,
+                            contractYearEnd: r.contractYearEnd,
+                            entitlement: r.entitlement,
+                            carriedOver: r.carriedOver,
+                            adjustment: r.adjustment,
+                          })
+                        }
+                        title={
+                          r.isSynthetic
+                            ? "Record an explicit balance (currently a role-based default)"
+                            : "Adjust balance"
+                        }
                       >
                         <Pencil className="size-3.5" />
                       </Button>
