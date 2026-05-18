@@ -433,6 +433,9 @@ function StaffPage() {
       : null;
 
   const filtered = data?.filter((s) => {
+    // "Show former staff" is an exclusive view — when on, show ONLY former
+    // staff; when off, the query already excludes them so this is a no-op.
+    if (showFormer && !isFormerStatus(s.status)) return false;
     if (status && s.status !== status) return false;
     if (deptFilterIds && !(s.departmentId && deptFilterIds.has(s.departmentId)))
       return false;
