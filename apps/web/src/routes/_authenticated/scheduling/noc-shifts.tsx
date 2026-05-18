@@ -77,9 +77,12 @@ import { getHoliday } from "@/utils/holidays";
 
 type ViewMode = "grid" | "week" | "list";
 
+// Week is the default — 7 day-columns + a staff column fit a normal screen
+// with no horizontal scroll. Month grid stays available as an opt-in view
+// (it may still scroll sideways — acceptable for the explicit "month" lens).
 const VIEW_OPTIONS: { mode: ViewMode; label: string; Icon: typeof List }[] = [
-  { mode: "grid", label: "Month grid", Icon: LayoutGrid },
   { mode: "week", label: "Week",       Icon: CalendarRange },
+  { mode: "grid", label: "Month grid", Icon: LayoutGrid },
   { mode: "list", label: "List",       Icon: List },
 ];
 
@@ -372,7 +375,8 @@ function NocShiftsPage() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [staffFilter, setStaffFilter] = useState("");
   const [myShiftsMode, setMyShiftsMode] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  // Week is the default view — it fits the viewport with no horizontal scroll.
+  const [viewMode, setViewMode] = useState<ViewMode>("week");
   // Week view — index (0-based) of the displayed week within the current month.
   const [weekIndex, setWeekIndex] = useState(0);
 
@@ -856,8 +860,10 @@ function NocShiftsPage() {
             <h1 className="text-xl font-bold tracking-tight">NOC Shift Grid</h1>
             <p className="text-sm text-muted-foreground">
               {viewMode === "list"
-                ? "Every scheduled shift this month, paginated. Switch to the grid or week view to edit."
-                : "Click any cell to pick a shift type. Hover a cell for the quick-clear button."}
+                ? "Every scheduled shift this month, paginated. Switch to the week or month view to edit."
+                : viewMode === "week"
+                ? "One week at a time — fits the screen with no side-scrolling. Use Previous / Next to move between weeks. Click any cell to pick a shift type."
+                : "Full month grid (scrolls sideways). Click any cell to pick a shift type. Hover a cell for the quick-clear button."}
             </p>
           </div>
 
@@ -988,23 +994,43 @@ function NocShiftsPage() {
           </div>
         </div>
 
-        {/* Legend */}
-        <div className="flex flex-wrap items-center gap-2 px-6 pb-3">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Legend
-          </span>
-          {SHIFT_TYPES.map((t) => {
-            const c = SHIFT_CHIP[t];
-            return (
-              <span
-                key={t}
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${c.className}`}
-              >
-                <span className="font-mono font-bold">{c.short}</span>
-                {c.legendLabel}
+        {/* Legend — prominent, always visible. Every code is spelled out in
+            plain words next to its coloured chip so "D / N / S" is never
+            cryptic. Each chip also carries a title tooltip with the full word. */}
+        <div className="px-6 pb-3">
+          <div className="rounded-lg border bg-card px-4 py-3">
+            <div className="mb-2 flex items-center gap-1.5">
+              <span className="text-xs font-semibold uppercase tracking-wide">
+                Shift Code Legend
               </span>
-            );
-          })}
+              <span className="text-[11px] text-muted-foreground">
+                — what each letter means
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {SHIFT_TYPES.map((t) => {
+                const c = SHIFT_CHIP[t];
+                return (
+                  <span
+                    key={t}
+                    title={`${c.short} — ${c.legendLabel}`}
+                    className="inline-flex items-center gap-1.5 text-[12px]"
+                  >
+                    <span
+                      className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md font-mono text-[11px] font-bold ${c.className}`}
+                    >
+                      {c.short}
+                    </span>
+                    <span className="font-medium">
+                      <span className="font-mono font-bold">{c.short}</span>
+                      <span className="mx-1 text-muted-foreground">—</span>
+                      {c.legendLabel}
+                    </span>
+                  </span>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Staff filter */}
@@ -1020,35 +1046,41 @@ function NocShiftsPage() {
           </div>
         </div>
 
-        {/* Week navigation (week view only) */}
+        {/* Week navigation (week view only) — the explicit Previous / Next
+            control that replaces side-scrolling for moving between weeks. */}
         {viewMode === "week" && weeks.length > 0 && (
-          <div className="flex items-center gap-2 px-6 pb-3">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1"
-              disabled={safeWeekIndex <= 0}
-              onClick={() => setWeekIndex((i) => Math.max(0, i - 1))}
-            >
-              <ChevronLeft className="h-3.5 w-3.5" /> Previous
-            </Button>
-            <span className="text-sm font-medium tabular-nums">
-              Week {safeWeekIndex + 1} of {weeks.length}
-              {weekDays.length > 0 && (
-                <span className="ml-1.5 text-muted-foreground">
-                  · {MONTHS[month - 1]} {weekDays[0]?.day}–{weekDays[weekDays.length - 1]?.day}
-                </span>
-              )}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1"
-              disabled={safeWeekIndex >= weeks.length - 1}
-              onClick={() => setWeekIndex((i) => Math.min(weeks.length - 1, i + 1))}
-            >
-              Next <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
+          <div className="px-6 pb-3">
+            <div className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1"
+                disabled={safeWeekIndex <= 0}
+                onClick={() => setWeekIndex((i) => Math.max(0, i - 1))}
+              >
+                <ChevronLeft className="h-3.5 w-3.5" /> Previous week
+              </Button>
+              <span className="text-sm font-semibold tabular-nums">
+                Week {safeWeekIndex + 1} of {weeks.length}
+                {weekDays.length > 0 && (
+                  <span className="ml-1.5 font-normal text-muted-foreground">
+                    · {MONTHS[month - 1]} {weekDays[0]?.day}–{weekDays[weekDays.length - 1]?.day}, {year}
+                  </span>
+                )}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1"
+                disabled={safeWeekIndex >= weeks.length - 1}
+                onClick={() => setWeekIndex((i) => Math.min(weeks.length - 1, i + 1))}
+              >
+                Next week <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+              <span className="ml-auto text-xs text-muted-foreground">
+                No side-scrolling needed — use these arrows to change week.
+              </span>
+            </div>
           </div>
         )}
 
@@ -1182,9 +1214,10 @@ function NocShiftsPage() {
                   {/* Summary header */}
                   <th
                     scope="col"
+                    title="Day / Night / Swing shift counts"
                     className="border-l px-3 py-3 text-center text-xs font-semibold whitespace-nowrap"
                   >
-                    D / N / S
+                    Day / Night / Swing
                   </th>
                 </tr>
               </thead>
