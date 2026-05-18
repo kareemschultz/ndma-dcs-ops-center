@@ -2,6 +2,8 @@ import { createContext } from "@ndma-dcs-staff-portal/api/context";
 import { appRouter } from "@ndma-dcs-staff-portal/api/routers/index";
 import { startSyncScheduler } from "@ndma-dcs-staff-portal/api/lib/sync/scheduler";
 import { auth } from "@ndma-dcs-staff-portal/auth";
+import { handleLdapLogin } from "@ndma-dcs-staff-portal/auth/ldap-login";
+import { isLdapEnabled } from "@ndma-dcs-staff-portal/auth/ldap";
 import { runMigrations } from "@ndma-dcs-staff-portal/db";
 import { env } from "@ndma-dcs-staff-portal/env/server";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
@@ -86,6 +88,48 @@ app.on(["POST", "GET", "OPTIONS"], "/api/auth/*", async (c) => {
   }
 
   return response;
+});
+
+// ── Active Directory / LDAP login ──────────────────────────────────────────
+// Public endpoint the login page calls to know whether to show the AD button.
+app.get("/api/ldap/status", (c) => {
+  return c.json({ enabled: isLdapEnabled() });
+});
+
+// AD login: verify username/password against Active Directory, upsert a
+// Better Auth user, and return the standard session cookie. Local
+// email+password login (Better Auth /api/auth/*) is unaffected.
+app.post("/api/ldap/login", async (c) => {
+  let username = "";
+  let password = "";
+  try {
+    const body = (await c.req.json()) as { username?: string; password?: string };
+    username = (body.username ?? "").trim();
+    password = body.password ?? "";
+  } catch {
+    return c.json({ success: false, error: "Invalid request body." }, 400);
+  }
+
+  const outcome = await handleLdapLogin(c.req.raw, username, password);
+
+  const headers = new Headers({ "Content-Type": "application/json" });
+  for (const cookie of outcome.setCookies) {
+    headers.append("Set-Cookie", cookie);
+  }
+  // Mirror the CORS handling used for /api/auth/* so the browser keeps the cookie.
+  const origin = c.req.header("origin") ?? "";
+  const isAllowed =
+    _allowedOrigins === null || (origin !== "" && _allowedOrigins.includes(origin));
+  if (isAllowed && origin) {
+    headers.set("Access-Control-Allow-Origin", origin);
+    headers.set("Access-Control-Allow-Credentials", "true");
+    headers.set("Vary", "Origin");
+  }
+
+  return new Response(JSON.stringify(outcome.body), {
+    status: outcome.status,
+    headers,
+  });
 });
 
 export const apiHandler = new OpenAPIHandler(appRouter, {

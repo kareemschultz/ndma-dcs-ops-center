@@ -15,6 +15,7 @@
     "@ndma-dcs-staff-portal/env": "workspace:*",
     "better-auth": "^1.6.2",
     "dotenv": "catalog:",
+    "ldapts": "^8.1.7",
     "zod": "catalog:"
   },
   "devDependencies": {
