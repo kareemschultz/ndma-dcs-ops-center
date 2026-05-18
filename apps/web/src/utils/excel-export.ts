@@ -3,6 +3,7 @@
  * Uses SheetJS (xlsx) for all spreadsheet generation.
  */
 import * as XLSX from "xlsx";
+import { effectiveLeaveLabel } from "@/lib/leave-status";
 
 // ─── Generic helpers ────────────────────────────────────────────────────────────
 
@@ -396,7 +397,9 @@ export function exportLeaveExcel(rows: LeaveRow[], filename = "Leave_Requests.xl
       fmtDate(r.startDate),
       fmtDate(r.endDate),
       r.totalDays ?? null,
-      r.status?.replace(/_/g, " ") ?? "",
+      // Display the *effective* status — an approved leave whose end date has
+      // passed exports as "Completed" (matches the on-screen register).
+      effectiveLeaveLabel(r.status, r.endDate ?? null),
       r.reason ?? "",
       fmtDate(r.createdAt),
       fmtDate(r.approvedAt),

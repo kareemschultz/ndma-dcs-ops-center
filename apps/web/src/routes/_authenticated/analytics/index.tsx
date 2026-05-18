@@ -38,6 +38,10 @@ import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
 import { chartTheme } from "@/lib/chart-theme";
+import {
+  EFFECTIVE_LEAVE_STATUS_LABELS,
+  effectiveLeaveStatus, type EffectiveLeaveStatus,
+} from "@/lib/leave-status";
 
 export const Route = createFileRoute("/_authenticated/analytics/")({
   component: AnalyticsPage,
@@ -595,12 +599,37 @@ function LeaveTab({
     fill: LEAVE_TYPE_COLORS[i % LEAVE_TYPE_COLORS.length],
   }));
 
-  const approvedCount =
-    data.byStatus.find((s) => s.status === "approved")?.count ?? 0;
-  const pendingCount =
-    data.byStatus.find((s) => s.status === "pending")?.count ?? 0;
-  const rejectedCount =
-    data.byStatus.find((s) => s.status === "rejected")?.count ?? 0;
+  // The server's byStatus aggregate only knows the DB statuses (no end date),
+  // so it cannot tell "approved" from "completed". Fetch the leave requests
+  // and derive the *effective* status (approved-but-past = completed) here.
+  const { data: leaveRows } = useQuery(
+    orpc.leave.requests.list.queryOptions({ input: { limit: 200 } }),
+  );
+
+  // Each leave request is an independent row — split annual leave (two trips
+  // = two requests) is counted correctly because we tally every row.
+  const effectiveCounts: Record<EffectiveLeaveStatus, number> = {
+    pending: 0, approved: 0, completed: 0, rejected: 0, cancelled: 0,
+  };
+  for (const r of (leaveRows ?? []) as { status?: string | null; endDate?: string | null }[]) {
+    effectiveCounts[effectiveLeaveStatus(r.status, r.endDate)] += 1;
+  }
+  const hasRowData = (leaveRows?.length ?? 0) > 0;
+
+  // Fall back to the server aggregate if the request list hasn't loaded yet.
+  const approvedCount = hasRowData
+    ? effectiveCounts.approved
+    : data.byStatus.find((s) => s.status === "approved")?.count ?? 0;
+  const completedCount = effectiveCounts.completed;
+  const pendingCount = hasRowData
+    ? effectiveCounts.pending
+    : data.byStatus.find((s) => s.status === "pending")?.count ?? 0;
+  const rejectedCount = hasRowData
+    ? effectiveCounts.rejected
+    : data.byStatus.find((s) => s.status === "rejected")?.count ?? 0;
+  const cancelledCount = hasRowData
+    ? effectiveCounts.cancelled
+    : data.byStatus.find((s) => s.status === "cancelled")?.count ?? 0;
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -687,7 +716,8 @@ function LeaveTab({
         </CardContent>
       </Card>
 
-      {/* Status stat cards — full width row */}
+      {/* Status stat cards — full width row. Uses the effective status:
+          an approved leave whose end date has passed shows as "Completed". */}
       <Card className="lg:col-span-2">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Leave Request Status Summary</CardTitle>
@@ -695,33 +725,30 @@ function LeaveTab({
         <CardContent>
           <div className="flex flex-wrap gap-4">
             <StatCard
-              label="Approved"
-              value={approvedCount}
-              colorClass="bg-blue-500/10 text-blue-700 dark:text-blue-300"
-            />
-            <StatCard
-              label="Pending"
+              label={EFFECTIVE_LEAVE_STATUS_LABELS.pending}
               value={pendingCount}
               colorClass="bg-amber-500/10 text-amber-700 dark:text-amber-300"
             />
             <StatCard
-              label="Rejected"
+              label={EFFECTIVE_LEAVE_STATUS_LABELS.approved}
+              value={approvedCount}
+              colorClass="bg-blue-500/10 text-blue-700 dark:text-blue-300"
+            />
+            <StatCard
+              label={EFFECTIVE_LEAVE_STATUS_LABELS.completed}
+              value={completedCount}
+              colorClass="bg-slate-500/10 text-slate-700 dark:text-slate-300"
+            />
+            <StatCard
+              label={EFFECTIVE_LEAVE_STATUS_LABELS.rejected}
               value={rejectedCount}
               colorClass="bg-red-500/10 text-red-700 dark:text-red-300"
             />
-            {data.byStatus
-              .filter(
-                (s) =>
-                  !["approved", "pending", "rejected"].includes(s.status)
-              )
-              .map((s) => (
-                <StatCard
-                  key={s.status}
-                  label={labelCase(s.status)}
-                  value={s.count}
-                  colorClass="bg-muted text-foreground"
-                />
-              ))}
+            <StatCard
+              label={EFFECTIVE_LEAVE_STATUS_LABELS.cancelled}
+              value={cancelledCount}
+              colorClass="bg-muted text-foreground"
+            />
           </div>
         </CardContent>
       </Card>

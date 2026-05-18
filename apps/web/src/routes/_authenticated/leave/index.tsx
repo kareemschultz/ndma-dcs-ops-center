@@ -44,7 +44,11 @@ import { PageHeader } from "@/components/layout/page-header";
 import { StatusLegend } from "@/components/status-legend";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { FormerTag, isFormerStatus } from "@/components/former-tag";
-import { TONES } from "@/lib/status-colors";
+import {
+  EFFECTIVE_LEAVE_STATUS_LABELS, EFFECTIVE_LEAVE_STATUS_ORDER,
+  EFFECTIVE_LEAVE_STATUS_TONE, effectiveLeaveStatus,
+  type EffectiveLeaveStatus,
+} from "@/lib/leave-status";
 import { useTeamFilter } from "@/lib/team-filter";
 import {
   getLeaveTypeDisplayName, isVisibleLeaveType, sortLeaveTypesByCanonicalOrder,
@@ -55,38 +59,30 @@ export const Route = createFileRoute("/_authenticated/leave/")({
   component: LeavePage,
 });
 
-type LeaveStatus = "pending" | "approved" | "rejected" | "cancelled";
+// The DB-backed leave statuses (what `status` actually holds). "completed" is
+// NOT one of these — it is derived (see @/lib/leave-status).
+type LeaveDbStatus = "pending" | "approved" | "rejected" | "cancelled";
 type ViewMode = "list" | "detailed" | "board" | "gantt";
 
-// Colours come from the central status-color system (@/lib/status-colors) so
-// a hue means the same thing across the whole app. pending=amber, approved=
-// blue, rejected=red, cancelled=neutral/muted.
-const STATUS_COLORS: Record<LeaveStatus, string> = {
-  pending:   TONES.amber.badge,
-  approved:  TONES.blue.badge,
-  rejected:  TONES.red.badge,
-  cancelled: TONES.neutral.badge,
-};
-const STATUS_LABELS: Record<LeaveStatus, string> = {
-  pending: "Pending", approved: "Approved", rejected: "Rejected", cancelled: "Cancelled",
-};
-const STATUS_BAR: Record<LeaveStatus, string> = {
-  pending:   TONES.amber.bar,
-  approved:  TONES.blue.bar,
-  rejected:  TONES.red.bar,
-  cancelled: TONES.neutral.bar,
-};
-const STATUS_BORDER: Record<LeaveStatus, string> = {
-  pending:   TONES.amber.border,
-  approved:  TONES.blue.border,
-  rejected:  TONES.red.border,
-  cancelled: TONES.neutral.border,
-};
-const LEAVE_STATUS_LEGEND = (
-  Object.keys(STATUS_LABELS) as LeaveStatus[]
-).map((s) => ({ label: STATUS_LABELS[s], tone: TONES[
-  s === "pending" ? "amber" : s === "approved" ? "blue" : s === "rejected" ? "red" : "neutral"
-] }));
+// Display uses the *effective* status: an approved leave whose endDate is in
+// the past reads "Completed". Colours/labels come from @/lib/leave-status,
+// which builds on the central status-color system so a hue means the same
+// thing across the app: pending=amber, approved=blue, completed=slate,
+// rejected=red, cancelled=neutral/muted.
+const STATUS_LABELS = EFFECTIVE_LEAVE_STATUS_LABELS;
+const STATUS_COLORS: Record<EffectiveLeaveStatus, string> = Object.fromEntries(
+  EFFECTIVE_LEAVE_STATUS_ORDER.map((s) => [s, EFFECTIVE_LEAVE_STATUS_TONE[s].badge]),
+) as Record<EffectiveLeaveStatus, string>;
+const STATUS_BAR: Record<EffectiveLeaveStatus, string> = Object.fromEntries(
+  EFFECTIVE_LEAVE_STATUS_ORDER.map((s) => [s, EFFECTIVE_LEAVE_STATUS_TONE[s].bar]),
+) as Record<EffectiveLeaveStatus, string>;
+const STATUS_BORDER: Record<EffectiveLeaveStatus, string> = Object.fromEntries(
+  EFFECTIVE_LEAVE_STATUS_ORDER.map((s) => [s, EFFECTIVE_LEAVE_STATUS_TONE[s].border]),
+) as Record<EffectiveLeaveStatus, string>;
+const LEAVE_STATUS_LEGEND = EFFECTIVE_LEAVE_STATUS_ORDER.map((s) => ({
+  label: STATUS_LABELS[s],
+  tone: EFFECTIVE_LEAVE_STATUS_TONE[s],
+}));
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -116,9 +112,11 @@ function isFormer(r: LeaveRow): boolean {
   return isFormerStatus(r.staffProfile?.status);
 }
 
-function LeaveStatusBadge({ status }: { status: string }) {
-  const cls   = STATUS_COLORS[status as LeaveStatus] ?? "bg-muted text-muted-foreground";
-  const label = STATUS_LABELS[status as LeaveStatus] ?? status;
+// Renders the *effective* status — an approved-but-past leave shows "Completed".
+function LeaveStatusBadge({ row }: { row: LeaveRow }) {
+  const eff   = effectiveLeaveStatus(row.status, row.endDate);
+  const cls   = STATUS_COLORS[eff] ?? "bg-muted text-muted-foreground";
+  const label = STATUS_LABELS[eff] ?? row.status;
   return <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${cls}`}>{label}</span>;
 }
 
@@ -211,7 +209,7 @@ function LeaveListView({ rows, ...actions }: ViewProps) {
                 {format(parseISO(r.startDate), "d MMM")} – {format(parseISO(r.endDate), "d MMM yyyy")}
               </TableCell>
               <TableCell><span className="tabular-nums font-medium">{r.totalDays}</span></TableCell>
-              <TableCell><LeaveStatusBadge status={r.status} /></TableCell>
+              <TableCell><LeaveStatusBadge row={r} /></TableCell>
               <TableCell><LeaveViolationsBadge violations={r.violations ?? undefined} /></TableCell>
               <TableCell className="text-sm">{r.approvedBy?.name ?? "—"}</TableCell>
               <TableCell><RowActions row={r} {...actions} /></TableCell>
@@ -241,7 +239,7 @@ function LeaveDetailedView({ rows, ...actions }: ViewProps) {
                   {getLeaveTypeDisplayName(r.leaveType?.name ?? "")}
                 </div>
               </div>
-              <LeaveStatusBadge status={r.status} />
+              <LeaveStatusBadge row={r} />
             </div>
             <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm">
               <span className="font-mono text-xs">
@@ -271,11 +269,16 @@ function LeaveDetailedView({ rows, ...actions }: ViewProps) {
 // ── Board view — kanban grouped by status ──────────────────────────────────────
 
 function LeaveBoardView({ rows, ...actions }: ViewProps) {
-  const columns: LeaveStatus[] = ["pending", "approved", "rejected", "cancelled"];
+  // Board groups by *effective* status — "Completed" is its own column.
+  const columns: EffectiveLeaveStatus[] = [
+    "pending", "approved", "completed", "rejected", "cancelled",
+  ];
   return (
     <div className="flex gap-4 overflow-x-auto pb-2">
       {columns.map((col) => {
-        const items = rows.filter((r) => r.status === col);
+        const items = rows.filter(
+          (r) => effectiveLeaveStatus(r.status, r.endDate) === col,
+        );
         return (
           <div key={col} className="flex w-72 shrink-0 flex-col gap-2">
             <div className="flex items-center justify-between px-1">
@@ -380,13 +383,14 @@ function LeaveGanttView({ rows, year }: { rows: LeaveRow[]; year: number }) {
                 const endOff = Math.min(totalDays - 1, differenceInCalendarDays(e, yearStart));
                 const left = (startOff / totalDays) * 100;
                 const width = Math.max(((endOff - startOff + 1) / totalDays) * 100, 0.8);
-                const cls = STATUS_BAR[r.status as LeaveStatus] ?? "bg-primary";
+                const eff = effectiveLeaveStatus(r.status, r.endDate);
+                const cls = STATUS_BAR[eff] ?? "bg-primary";
                 return (
                   <div
                     key={r.id}
                     className={`absolute top-1/2 h-5 -translate-y-1/2 rounded ${cls} flex items-center overflow-hidden px-1.5`}
                     style={{ left: `${left}%`, width: `${width}%` }}
-                    title={`${getLeaveTypeDisplayName(r.leaveType?.name ?? "")} · ${format(s, "d MMM")} – ${format(e, "d MMM yyyy")} · ${r.totalDays} days · ${STATUS_LABELS[r.status as LeaveStatus] ?? r.status}`}
+                    title={`${getLeaveTypeDisplayName(r.leaveType?.name ?? "")} · ${format(s, "d MMM")} – ${format(e, "d MMM yyyy")} · ${r.totalDays} days · ${STATUS_LABELS[eff] ?? r.status}`}
                   >
                     <span className="truncate text-[10px] font-medium text-white">{r.totalDays}d</span>
                   </div>
@@ -426,7 +430,9 @@ const VIEW_OPTIONS: { mode: ViewMode; label: string; Icon: typeof List }[] = [
 
 function LeavePage() {
   const [viewMode,       setViewMode]       = useState<ViewMode>("list");
-  const [statusFilter,   setStatusFilter]   = useState<LeaveStatus | "">("");
+  // statusFilter holds the *effective* status — "completed" is filtered
+  // client-side since the DB has no such status.
+  const [statusFilter,   setStatusFilter]   = useState<EffectiveLeaveStatus | "">("");
   const [typeFilter,     setTypeFilter]     = useState<string>("");
   const [employeeFilter, setEmployeeFilter] = useState<string>("");
   const [yearFilter,     setYearFilter]     = useState<number>(new Date().getFullYear());
@@ -436,10 +442,18 @@ function LeavePage() {
 
   const { data: currentStaff } = useQuery(orpc.staff.me.queryOptions());
 
+  // "completed" is a derived status — the server only knows the DB statuses,
+  // so when the filter is "completed" we fetch all "approved" rows and narrow
+  // down client-side. Any other filter value is a real DB status.
+  const serverStatus: LeaveDbStatus | undefined =
+    statusFilter === "completed" ? "approved"
+    : statusFilter === "" ? undefined
+    : statusFilter;
+
   const { data, isLoading } = useQuery(
     orpc.leave.requests.list.queryOptions({
       input: {
-        status: statusFilter || undefined,
+        status: serverStatus,
         limit: 200, offset: 0,
         team: team === "All" ? undefined : team,
       },
@@ -514,11 +528,20 @@ function LeavePage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [data]);
 
-  // Apply type + employee + year filters client-side. Gantt does its own year handling.
+  // Apply type + employee + year + effective-status filters client-side.
+  // Gantt does its own year handling. The effective-status filter splits the
+  // server's "approved" rows into "approved" (ongoing/upcoming) and
+  // "completed" (already ended) — board view groups by status itself, so it
+  // skips the status filter.
   const rows = useMemo(() => {
     let list = ((data ?? []) as LeaveRow[]);
     if (typeFilter) list = list.filter((r) => r.leaveTypeId === typeFilter);
     if (employeeFilter) list = list.filter((r) => r.staffProfileId === employeeFilter);
+    if (statusFilter && viewMode !== "board") {
+      list = list.filter(
+        (r) => effectiveLeaveStatus(r.status, r.endDate) === statusFilter,
+      );
+    }
     if (viewMode !== "gantt") {
       list = list.filter((r) => {
         const s = parseISO(r.startDate), e = parseISO(r.endDate);
@@ -526,13 +549,20 @@ function LeavePage() {
       });
     }
     return list;
-  }, [data, typeFilter, employeeFilter, yearFilter, viewMode]);
+  }, [data, typeFilter, employeeFilter, statusFilter, yearFilter, viewMode]);
 
   // Paginate the flat list/detailed views (board groups by status, gantt
   // aggregates by staff — both keep the full set). 25 rows/page.
   const pagination = usePagination(rows, 25);
 
   const pendingCount = useMemo(() => rows.filter((r) => r.status === "pending").length, [rows]);
+  // Completed = approved leave whose end date has passed.
+  const completedCount = useMemo(
+    () => rows.filter((r) => effectiveLeaveStatus(r.status, r.endDate) === "completed").length,
+    [rows],
+  );
+  // Days booked sums EVERY approved request (split annual leave counts each
+  // half independently) — both still-approved and completed leave count.
   const daysBooked   = useMemo(
     () => rows.filter((r) => r.status === "approved").reduce((sum, r) => sum + (r.totalDays ?? 0), 0),
     [rows],
@@ -584,7 +614,7 @@ function LeavePage() {
         />
 
         {/* Stats strip */}
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Card><CardContent className="p-4">
             <div className="text-2xl font-bold tabular-nums">{rows.length}</div>
             <div className="text-xs text-muted-foreground">
@@ -594,6 +624,10 @@ function LeavePage() {
           <Card><CardContent className="p-4">
             <div className="text-2xl font-bold tabular-nums text-amber-600 dark:text-amber-400">{pendingCount}</div>
             <div className="text-xs text-muted-foreground">Pending approval</div>
+          </CardContent></Card>
+          <Card><CardContent className="p-4">
+            <div className="text-2xl font-bold tabular-nums text-slate-600 dark:text-slate-300">{completedCount}</div>
+            <div className="text-xs text-muted-foreground">Completed leave</div>
           </CardContent></Card>
           <Card><CardContent className="p-4">
             <div className="text-2xl font-bold tabular-nums">{daysBooked}</div>
@@ -667,16 +701,16 @@ function LeavePage() {
 
           {/* Status filter — hidden in board view (board already groups by status) */}
           {viewMode !== "board" && (
-            <Select value={statusFilter || "_all"} onValueChange={(v) => setStatusFilter(v === "_all" ? "" : v as LeaveStatus)}>
+            <Select value={statusFilter || "_all"} onValueChange={(v) => setStatusFilter(v === "_all" ? "" : v as EffectiveLeaveStatus)}>
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="All Statuses">
                   {(v: unknown) =>
-                    v && v !== "_all" ? STATUS_LABELS[v as LeaveStatus] ?? "All Statuses" : "All Statuses"}
+                    v && v !== "_all" ? STATUS_LABELS[v as EffectiveLeaveStatus] ?? "All Statuses" : "All Statuses"}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="_all">All Statuses</SelectItem>
-                {(["pending","approved","rejected","cancelled"] as LeaveStatus[]).map((s) => (
+                {EFFECTIVE_LEAVE_STATUS_ORDER.map((s) => (
                   <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
                 ))}
               </SelectContent>
