@@ -6,6 +6,8 @@ import { z } from "zod";
 import { differenceInCalendarDays, parseISO } from "date-fns";
 import { ArrowLeft, CalendarOff } from "lucide-react";
 import { toast } from "sonner";
+import { useEffect } from "react";
+import { authClient } from "@/lib/auth-client";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
@@ -39,9 +41,21 @@ type FormData = z.infer<typeof schema>;
 function NewLeavePage() {
   const navigate = useNavigate();
 
-  const { data: staff } = useQuery(
-    orpc.staff.list.queryOptions({ input: { limit: 100, offset: 0 } }),
-  );
+  // Rank-and-file `staff` can only submit leave for themselves (the server
+  // enforces this too). For them the staff-member picker is replaced with a
+  // locked field showing their own name. Management roles keep the picker.
+  const { data: session } = authClient.useSession();
+  const role = (session?.user as Record<string, unknown> | undefined)?.role as
+    | string
+    | undefined;
+  const isStaff = role === "staff";
+
+  const { data: me } = useQuery(orpc.staff.me.queryOptions());
+
+  const { data: staff } = useQuery({
+    ...orpc.staff.list.queryOptions({ input: { limit: 100, offset: 0 } }),
+    enabled: !isStaff,
+  });
   const { data: leaveTypes } = useQuery(orpc.leave.types.list.queryOptions());
   const visibleLeaveTypes = leaveTypes
     ?.filter((leaveType) => isVisibleLeaveType(leaveType.name))
@@ -52,8 +66,15 @@ function NewLeavePage() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  // A staff user's request is always for themselves — pre-fill the hidden
+  // staffProfileId as soon as their own profile loads.
+  useEffect(() => {
+    if (isStaff && me?.id) setValue("staffProfileId", me.id);
+  }, [isStaff, me?.id, setValue]);
 
   const startDate = watch("startDate");
   const endDate = watch("endDate");
@@ -113,17 +134,30 @@ function NewLeavePage() {
             <label className="mb-1.5 block text-sm font-medium">
               Staff Member <span className="text-destructive">*</span>
             </label>
-            <select
-              {...register("staffProfileId")}
-              className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Select staff member</option>
-              {staff?.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.user?.name}
-                </option>
-              ))}
-            </select>
+            {isStaff ? (
+              // Staff submit only for themselves — locked field + hidden input.
+              <>
+                <input type="hidden" {...register("staffProfileId")} />
+                <div className="w-full rounded-xl border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+                  {me?.user?.name ?? "Loading your profile…"}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Leave requests are submitted for your own account.
+                </p>
+              </>
+            ) : (
+              <select
+                {...register("staffProfileId")}
+                className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Select staff member</option>
+                {staff?.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.user?.name}
+                  </option>
+                ))}
+              </select>
+            )}
             {errors.staffProfileId && (
               <p className="mt-1 text-xs text-destructive">{errors.staffProfileId.message}</p>
             )}

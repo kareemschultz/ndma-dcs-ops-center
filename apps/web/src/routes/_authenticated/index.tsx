@@ -22,6 +22,7 @@ import { ThemeSwitch } from "@/components/theme-switch";
 import { NotificationBell } from "@/components/notification-bell";
 import { orpc } from "@/utils/orpc";
 import { authClient } from "@/lib/auth-client";
+import { StaffDashboard } from "./-staff-dashboard";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: DashboardPage,
@@ -228,11 +229,42 @@ function PanelCard({
 }
 
 // ── Dashboard page ─────────────────────────────────────────────────────────
+//
+// Role-aware shell: rank-and-file `staff` get the focused self-service
+// dashboard (StaffDashboard); everyone else gets the operations console
+// (OpsDashboard). Branching at the component boundary — not inside one
+// render — means a `staff` user never mounts the org-wide incident / change /
+// all-leave queries that would 403 for them.
 
 function DashboardPage() {
-  const navigate = useNavigate();
   const { data: session } = authClient.useSession();
-  const userName = session?.user?.name;
+  const role = (session?.user as Record<string, unknown> | undefined)?.role as
+    | string
+    | undefined;
+
+  if (role === "staff") {
+    return (
+      <>
+        <Header fixed>
+          <div className="ms-auto flex items-center gap-2">
+            <NotificationBell />
+            <ThemeSwitch />
+          </div>
+        </Header>
+        <Main className="p-0 max-w-none @7xl/content:max-w-none">
+          <StaffDashboard userName={session?.user?.name} />
+        </Main>
+      </>
+    );
+  }
+
+  return <OpsDashboard userName={session?.user?.name} />;
+}
+
+// ── Operations dashboard (admin / manager / teamLead / hrAdminOps / PA) ──────
+
+function OpsDashboard({ userName }: { userName?: string | null }) {
+  const navigate = useNavigate();
 
   const currentYear  = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;

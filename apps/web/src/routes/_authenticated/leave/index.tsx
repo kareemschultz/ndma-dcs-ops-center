@@ -22,6 +22,7 @@ import {
 import { exportLeaveExcel } from "@/utils/excel-export";
 import { toast } from "sonner";
 
+import { authClient } from "@/lib/auth-client";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@ndma-dcs-staff-portal/ui/components/card";
 import {
@@ -182,18 +183,26 @@ function LeaveBalanceBar({
 
 // ── Row action buttons (shared by list / detailed / board) ─────────────────────
 
+// Row actions are role-aware. Management roles can approve / reject / delete
+// any request. A `staff` user only ever sees their own requests (the server
+// scopes the list), so they get no approve/reject controls — only the option
+// to withdraw a request that is still pending. Hiding the controls keeps a
+// staff user from clicking buttons that would only return FORBIDDEN.
 function RowActions({
-  row, onApprove, onReject, onDelete, busy,
+  row, onApprove, onReject, onDelete, busy, canManage,
 }: {
   row: LeaveRow;
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
   onDelete: (row: LeaveRow) => void;
   busy: boolean;
+  canManage: boolean;
 }) {
+  const canWithdraw = canManage || row.status === "pending";
+  if (!canManage && !canWithdraw) return <span className="text-xs text-muted-foreground">—</span>;
   return (
     <div className="flex gap-1">
-      {row.status === "pending" && (
+      {canManage && row.status === "pending" && (
         <>
           <Button size="icon" variant="ghost" className="size-7 text-blue-600 hover:text-blue-700"
             onClick={() => onApprove(row.id)} disabled={busy} title="Approve">
@@ -205,10 +214,13 @@ function RowActions({
           </Button>
         </>
       )}
-      <Button size="icon" variant="ghost" className="size-7 text-destructive hover:text-destructive/80"
-        onClick={() => onDelete(row)} title="Delete leave request">
-        <Trash2 className="size-4" />
-      </Button>
+      {canWithdraw && (
+        <Button size="icon" variant="ghost" className="size-7 text-destructive hover:text-destructive/80"
+          onClick={() => onDelete(row)}
+          title={canManage ? "Delete leave request" : "Withdraw this request"}>
+          <Trash2 className="size-4" />
+        </Button>
+      )}
     </div>
   );
 }
@@ -451,6 +463,7 @@ type ViewProps = {
   onReject: (id: string) => void;
   onDelete: (row: LeaveRow) => void;
   busy: boolean;
+  canManage: boolean;
 };
 
 const VIEW_OPTIONS: { mode: ViewMode; label: string; title: string; Icon: typeof List }[] = [
@@ -473,6 +486,17 @@ function LeavePage() {
   const { team } = useTeamFilter();
 
   const { data: currentStaff } = useQuery(orpc.staff.me.queryOptions());
+
+  // Rank-and-file `staff` get a self-service view of THEIR OWN leave (the
+  // server already scopes the list). They cannot approve / reject others,
+  // export the whole register, or filter by employee — so those controls are
+  // hidden. Management roles keep the full toolset.
+  const { data: session } = authClient.useSession();
+  const role = (session?.user as Record<string, unknown> | undefined)?.role as
+    | string
+    | undefined;
+  const isStaff = role === "staff";
+  const canManage = !isStaff;
 
   // "completed" is a derived status — the server only knows the DB statuses,
   // so when the filter is "completed" we fetch all "approved" rows and narrow
@@ -517,6 +541,18 @@ function LeavePage() {
     orpc.leave.requests.delete.mutationOptions({
       onSuccess: () => {
         toast.success("Leave request deleted");
+        queryClient.invalidateQueries({ queryKey: orpc.leave.requests.list.key() });
+        setDeleteTarget(null);
+      },
+      onError: (e: Error) => toast.error(e.message),
+    }),
+  );
+  // Staff withdraw their own request via `cancel` (they have leave:cancel,
+  // not leave:delete) — this also returns the days to their balance.
+  const cancelMutation = useMutation(
+    orpc.leave.requests.cancel.mutationOptions({
+      onSuccess: () => {
+        toast.success("Leave request withdrawn");
         queryClient.invalidateQueries({ queryKey: orpc.leave.requests.list.key() });
         setDeleteTarget(null);
       },
@@ -611,6 +647,7 @@ function LeavePage() {
     onReject:  (id) => rejectMutation.mutate({ id, rejectionReason: "" }),
     onDelete:  (r)  => setDeleteTarget({ id: r.id, name: staffName(r) }),
     busy: approveMutation.isPending || rejectMutation.isPending,
+    canManage,
   };
 
   return (
@@ -621,7 +658,7 @@ function LeavePage() {
           <span className="text-sm font-medium">Leave Management</span>
         </div>
         <div className="ms-auto flex items-center gap-2">
-          <DepartmentFilter />
+          {canManage && <DepartmentFilter />}
           <ThemeSwitch />
         </div>
       </Header>
@@ -631,20 +668,26 @@ function LeavePage() {
       <Main className="space-y-6">
         <PageHeader
           eyebrow="People"
-          title="Leave"
-          description="Submit and manage team leave requests."
+          title={isStaff ? "My Leave" : "Leave"}
+          description={
+            isStaff
+              ? "Your leave requests and balances. Submit a new request below."
+              : "Submit and manage team leave requests."
+          }
           actions={
             <>
-              <Button
-                variant="outline"
-                size="sm"
-                title="Download the current filtered list as an Excel file."
-                onClick={() => exportLeaveExcel(rows, `Leave_Requests_${new Date().toISOString().slice(0, 10)}.xlsx`)}
-                disabled={!rows.length}
-              >
-                <FileDown className="mr-1 size-4" />
-                Export Excel
-              </Button>
+              {canManage && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  title="Download the current filtered list as an Excel file."
+                  onClick={() => exportLeaveExcel(rows, `Leave_Requests_${new Date().toISOString().slice(0, 10)}.xlsx`)}
+                  disabled={!rows.length}
+                >
+                  <FileDown className="mr-1 size-4" />
+                  Export Excel
+                </Button>
+              )}
               <Button size="sm" onClick={() => navigate({ to: "/leave/new" })}>
                 <Plus className="mr-1 size-4" />Request Leave
               </Button>
@@ -662,7 +705,9 @@ function LeavePage() {
           </CardContent></Card>
           <Card><CardContent className="p-4">
             <div className="text-2xl font-bold tabular-nums text-amber-600 dark:text-amber-400">{pendingCount}</div>
-            <div className="text-xs text-muted-foreground">Pending approval</div>
+            <div className="text-xs text-muted-foreground">
+              {isStaff ? "Awaiting approval" : "Pending approval"}
+            </div>
           </CardContent></Card>
           <Card><CardContent className="p-4">
             <div className="text-2xl font-bold tabular-nums text-slate-600 dark:text-slate-300">{completedCount}</div>
@@ -727,23 +772,26 @@ function LeavePage() {
             </SelectContent>
           </Select>
 
-          {/* Employee filter */}
-          <Select value={employeeFilter || "_all"} onValueChange={(v) => setEmployeeFilter(v && v !== "_all" ? v : "")}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Employees">
-                {(v: unknown) =>
-                  v && v !== "_all"
-                    ? employeeOptions.find((e) => e.id === v)?.name ?? "All Employees"
-                    : "All Employees"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="_all">All Employees</SelectItem>
-              {employeeOptions.map((e) => (
-                <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Employee filter — only useful to management (staff see only
+              their own requests, so there is nothing to filter by). */}
+          {canManage && (
+            <Select value={employeeFilter || "_all"} onValueChange={(v) => setEmployeeFilter(v && v !== "_all" ? v : "")}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="All Employees">
+                  {(v: unknown) =>
+                    v && v !== "_all"
+                      ? employeeOptions.find((e) => e.id === v)?.name ?? "All Employees"
+                      : "All Employees"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all">All Employees</SelectItem>
+                {employeeOptions.map((e) => (
+                  <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           {/* Status filter — hidden in board view (board already groups by status) */}
           {viewMode !== "board" && (
@@ -821,22 +869,38 @@ function LeavePage() {
         <Dialog open={Boolean(deleteTarget)} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>
           <DialogContent className="sm:max-w-sm">
             <DialogHeader>
-              <DialogTitle>Delete Leave Request</DialogTitle>
+              <DialogTitle>{isStaff ? "Withdraw Leave Request" : "Delete Leave Request"}</DialogTitle>
               <DialogDescription>
-                Are you sure you want to permanently delete the leave request for{" "}
-                <span className="font-medium">{deleteTarget?.name}</span>? This cannot be undone.
+                {isStaff ? (
+                  <>Are you sure you want to withdraw this leave request? This cannot be undone.</>
+                ) : (
+                  <>
+                    Are you sure you want to permanently delete the leave request for{" "}
+                    <span className="font-medium">{deleteTarget?.name}</span>? This cannot be undone.
+                  </>
+                )}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleteMutation.isPending}>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleteMutation.isPending || cancelMutation.isPending}
+              >
                 Cancel
               </Button>
               <Button
                 variant="destructive"
-                disabled={deleteMutation.isPending}
-                onClick={() => { if (deleteTarget) deleteMutation.mutate({ id: deleteTarget.id }); }}
+                disabled={deleteMutation.isPending || cancelMutation.isPending}
+                onClick={() => {
+                  if (!deleteTarget) return;
+                  if (isStaff) cancelMutation.mutate({ id: deleteTarget.id });
+                  else deleteMutation.mutate({ id: deleteTarget.id });
+                }}
               >
-                {deleteMutation.isPending ? "Deleting…" : "Delete"}
+                {isStaff
+                  ? (cancelMutation.isPending ? "Withdrawing…" : "Withdraw")
+                  : (deleteMutation.isPending ? "Deleting…" : "Delete")}
               </Button>
             </DialogFooter>
           </DialogContent>

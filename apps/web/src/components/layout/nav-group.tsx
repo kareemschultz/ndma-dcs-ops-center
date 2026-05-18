@@ -136,6 +136,11 @@ export function NavGroup({ title, items }: NavGroupProps) {
     })
     .filter((item): item is NavItem => item !== null);
 
+  // A whole group can resolve to zero visible items for a low-privilege role
+  // (e.g. "Reports & Admin" for a `staff` user). Render nothing rather than a
+  // dangling group label with no entries under it.
+  if (visibleItems.length === 0) return null;
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{title}</SidebarGroupLabel>
