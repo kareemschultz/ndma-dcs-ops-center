@@ -11,7 +11,9 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { BarChart3, ClipboardList, Columns3, List, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  BarChart3, ClipboardList, Columns3, List, Pencil, Plus, Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -32,11 +34,16 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@ndma-dcs-staff-portal/ui/components/table";
 import { DataPagination, usePagination } from "@/components/data-pagination";
+import { InfoPopover } from "@/components/info-popover";
 import { DepartmentFilter } from "@/components/layout/department-filter";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
+import { PageHeader } from "@/components/layout/page-header";
+import { StatusLegend } from "@/components/status-legend";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { AttendanceSubNav } from "@/components/layout/attendance-sub-nav";
+import { FormerTag, isFormerStatus } from "@/components/former-tag";
+import { type LegendItem, TONES } from "@/lib/status-colors";
 import { useTeamFilter } from "@/lib/team-filter";
 import { orpc } from "@/utils/orpc";
 
@@ -63,24 +70,18 @@ const TOSD_TYPE_LABELS: Record<TosdType, string> = {
   callout_legacy: "Callout (Legacy)",
 };
 
-const TOSD_TYPE_COLORS: Record<TosdType, string> = {
-  reported_sick: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
-  medical: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200",
-  absent: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
-  time_off: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200",
-  work_from_home: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200",
-  lateness: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200",
-  callout_legacy: "bg-muted text-muted-foreground",
-};
-// Chart hex per type — categorical (no green, per CLAUDE.md design rules).
-const TOSD_TYPE_HEX: Record<TosdType, string> = {
-  reported_sick: "#ef4444",
-  medical: "#a855f7",
-  absent: "#f59e0b",
-  time_off: "#3b82f6",
-  work_from_home: "#2563eb",
-  lateness: "#f97316",
-  callout_legacy: "#94a3b8",
+// One distinct tone per TOSD type, drawn from the central status-color system
+// (@/lib/status-colors) so a hue means the same thing across the whole app:
+// red = sick/absent, purple = medical, blue = time off, sky = WFH,
+// orange = lateness, slate = archived/legacy. No green — per CLAUDE.md.
+const TOSD_TYPE_TONE: Record<TosdType, keyof typeof TONES> = {
+  reported_sick: "red",
+  medical: "purple",
+  absent: "amber",
+  time_off: "blue",
+  work_from_home: "sky",
+  lateness: "orange",
+  callout_legacy: "slate",
 };
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -94,6 +95,7 @@ type TosdRow = {
   days?: string | null;
   hours?: string | null;
   staffProfile?: {
+    employeeId?: string | null;
     user?: { name?: string | null } | null;
     department?: { name?: string | null } | null;
     status?: string | null;
@@ -102,14 +104,7 @@ type TosdRow = {
 
 // Historical records belong to people who have left NDMA — flag them gently.
 function isFormerStaff(r: TosdRow): boolean {
-  return r.staffProfile?.status === "inactive" || r.staffProfile?.status === "terminated";
-}
-function FormerTag() {
-  return (
-    <span className="ml-1.5 inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground align-middle">
-      Former
-    </span>
-  );
+  return isFormerStatus(r.staffProfile?.status);
 }
 
 type StaffListItem = {
@@ -118,8 +113,12 @@ type StaffListItem = {
   user?: { name?: string | null } | null;
 };
 
+// Never display the sp-… slug — fall back to employeeId, then a placeholder.
 function tosdStaffName(r: TosdRow): string {
-  return r.staffProfile?.user?.name ?? "—";
+  return r.staffProfile?.user?.name ?? r.staffProfile?.employeeId ?? "Unnamed";
+}
+function tosdTypeLabel(type: string): string {
+  return TOSD_TYPE_LABELS[type as TosdType] ?? type;
 }
 function num(v?: string | null): number {
   const n = v ? Number.parseFloat(v) : 0;
@@ -188,7 +187,9 @@ function AddTosdDialog({
               <SelectTrigger>
                 <SelectValue>
                   {form.staffId
-                    ? (staffList.find((s) => s.id === form.staffId)?.user?.name ?? "Unnamed")
+                    ? (staffList.find((s) => s.id === form.staffId)?.user?.name
+                        ?? staffList.find((s) => s.id === form.staffId)?.employeeId
+                        ?? "Unnamed")
                     : "Select staff…"}
                 </SelectValue>
               </SelectTrigger>
@@ -224,12 +225,18 @@ function AddTosdDialog({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Days</Label>
+              <Label className="flex items-center gap-1">
+                Days
+                <InfoPopover>Whole or half days lost — used for sick / time-off totals.</InfoPopover>
+              </Label>
               <Input type="number" step="0.5" min="0" value={form.days}
                 onChange={(e) => setForm((f) => ({ ...f, days: e.target.value }))} placeholder="0" />
             </div>
             <div className="space-y-1.5">
-              <Label>Hours</Label>
+              <Label className="flex items-center gap-1">
+                Hours
+                <InfoPopover>Partial-day hours — used where a record is shorter than a full day.</InfoPopover>
+              </Label>
               <Input type="number" step="0.5" min="0" value={form.hours}
                 onChange={(e) => setForm((f) => ({ ...f, hours: e.target.value }))} placeholder="0" />
             </div>
@@ -273,7 +280,9 @@ function EditTosdDialog({ record, onClose }: { record: TosdRow; onClose: () => v
       <DialogHeader>
         <DialogTitle>Edit TOSD Record</DialogTitle>
         <DialogDescription>
-          Update the record for <span className="font-medium">{tosdStaffName(record)}</span>.
+          Update the {tosdTypeLabel(record.type).toLowerCase()} record for{" "}
+          <span className="font-medium">{tosdStaffName(record)}</span>
+          {record.date ? ` on ${format(parseISO(record.date), "d MMM yyyy")}` : ""}.
         </DialogDescription>
       </DialogHeader>
       <div className="space-y-4 py-2">
@@ -325,11 +334,10 @@ function EditTosdDialog({ record, onClose }: { record: TosdRow; onClose: () => v
 }
 
 function TypeBadge({ type }: { type: string }) {
+  const tone = TONES[TOSD_TYPE_TONE[type as TosdType] ?? "neutral"];
   return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-      TOSD_TYPE_COLORS[type as TosdType] ?? "bg-muted text-muted-foreground"
-    }`}>
-      {TOSD_TYPE_LABELS[type as TosdType] ?? type}
+    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${tone.badge}`}>
+      {tosdTypeLabel(type)}
     </span>
   );
 }
@@ -344,11 +352,12 @@ function TosdTableView({
   onDelete: (r: TosdRow) => void;
 }) {
   return (
-    <div className="rounded-md border">
+    <div className="overflow-hidden rounded-xl border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Staff</TableHead>
+            <TableHead>Staff Member</TableHead>
+            <TableHead>Department</TableHead>
             <TableHead>Date</TableHead>
             <TableHead>Type</TableHead>
             <TableHead>Reason</TableHead>
@@ -360,26 +369,27 @@ function TosdTableView({
         <TableBody>
           {rows.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
+              <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
                 No TOSD records found for the selected filters.
               </TableCell>
             </TableRow>
           ) : rows.map((r) => (
             <TableRow key={r.id}>
-              <TableCell>
-                <span className="font-medium">{tosdStaffName(r)}</span>
-                {isFormerStaff(r) && <FormerTag />}
-                {r.staffProfile?.department?.name && (
-                  <p className="text-xs text-muted-foreground">{r.staffProfile.department.name}</p>
-                )}
+              <TableCell className="font-medium">
+                {tosdStaffName(r)}{isFormerStaff(r) && <FormerTag />}
               </TableCell>
-              <TableCell className="text-sm">
+              <TableCell className="text-sm text-muted-foreground">
+                {r.staffProfile?.department?.name ?? "—"}
+              </TableCell>
+              <TableCell className="font-mono text-xs">
                 {r.date ? format(parseISO(r.date), "d MMM yyyy") : "—"}
               </TableCell>
               <TableCell><TypeBadge type={r.type} /></TableCell>
-              <TableCell className="text-sm text-muted-foreground">{r.reasonText ?? "—"}</TableCell>
-              <TableCell className="text-right font-mono text-sm">{r.days ?? "—"}</TableCell>
-              <TableCell className="text-right font-mono text-sm">{r.hours ?? "—"}</TableCell>
+              <TableCell className="max-w-[16rem] truncate text-sm text-muted-foreground" title={r.reasonText ?? undefined}>
+                {r.reasonText ?? "—"}
+              </TableCell>
+              <TableCell className="text-right tabular-nums text-sm">{num(r.days) || "—"}</TableCell>
+              <TableCell className="text-right tabular-nums text-sm">{num(r.hours) || "—"}</TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-1">
                   <Button size="icon" variant="ghost" className="size-7"
@@ -413,7 +423,7 @@ function TosdBoardView({
     <div className="flex gap-4 overflow-x-auto pb-2">
       {TOSD_TYPES.map((t) => {
         const items = rows.filter((r) => r.type === t);
-        if (items.length === 0) return null;
+        const tone = TONES[TOSD_TYPE_TONE[t]];
         return (
           <div key={t} className="flex w-72 shrink-0 flex-col gap-2">
             <div className="flex items-center justify-between px-1">
@@ -423,9 +433,13 @@ function TosdBoardView({
               </span>
             </div>
             <div className="space-y-2">
-              {items.map((r) => (
-                <Card key={r.id}>
-                  <CardContent className="space-y-1 p-3">
+              {items.length === 0 ? (
+                <div className="rounded-lg border border-dashed py-8 text-center text-xs text-muted-foreground">
+                  None
+                </div>
+              ) : items.map((r) => (
+                <Card key={r.id} className={`border-l-4 ${tone.border}`}>
+                  <CardContent className="space-y-1.5 p-3">
                     <div className="flex items-start justify-between gap-2">
                       <span className="text-sm font-medium leading-tight">
                         {tosdStaffName(r)}{isFormerStaff(r) && <FormerTag />}
@@ -441,9 +455,16 @@ function TosdBoardView({
                         </Button>
                       </div>
                     </div>
-                    <div className="font-mono text-xs text-muted-foreground">
-                      {r.date ? format(parseISO(r.date), "d MMM yyyy") : "—"}
-                      {r.days ? ` · ${r.days}d` : ``}{r.hours ? ` · ${r.hours}h` : ``}
+                    {r.staffProfile?.department?.name && (
+                      <div className="text-xs text-muted-foreground">{r.staffProfile.department.name}</div>
+                    )}
+                    <div className="flex items-center justify-between font-mono text-xs text-muted-foreground">
+                      <span>{r.date ? format(parseISO(r.date), "d MMM yyyy") : "—"}</span>
+                      <span className="tabular-nums">
+                        {num(r.days) ? `${num(r.days)}d` : ""}
+                        {num(r.days) && num(r.hours) ? " · " : ""}
+                        {num(r.hours) ? `${num(r.hours)}h` : ""}
+                      </span>
                     </div>
                     {r.reasonText && <div className="text-xs text-muted-foreground">{r.reasonText}</div>}
                   </CardContent>
@@ -459,21 +480,12 @@ function TosdBoardView({
 
 // ─── Analytics view — charts ───────────────────────────────────────────────────
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
-  return (
-    <Card><CardContent className="p-4">
-      <div className="text-2xl font-bold tabular-nums">{value}</div>
-      <div className="text-xs text-muted-foreground">{label}</div>
-    </CardContent></Card>
-  );
-}
-
 function TosdAnalyticsView({ rows, year }: { rows: TosdRow[]; year: number | "all" }) {
   const byType = useMemo(() => {
     return TOSD_TYPES.map((t) => ({
       name: TOSD_TYPE_LABELS[t],
       value: rows.filter((r) => r.type === t).length,
-      hex: TOSD_TYPE_HEX[t],
+      hex: TONES[TOSD_TYPE_TONE[t]].hex,
     })).filter((d) => d.value > 0);
   }, [rows]);
 
@@ -517,6 +529,7 @@ function TosdAnalyticsView({ rows, year }: { rows: TosdRow[]; year: number | "al
     [rows],
   );
   const wfhCount = useMemo(() => rows.filter((r) => r.type === "work_from_home").length, [rows]);
+  const latenessCount = useMemo(() => rows.filter((r) => r.type === "lateness").length, [rows]);
 
   if (rows.length === 0) {
     return (
@@ -529,11 +542,14 @@ function TosdAnalyticsView({ rows, year }: { rows: TosdRow[]; year: number | "al
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total records" value={rows.length} />
-        <StatCard label="Sick / medical days" value={sickDays} />
-        <StatCard label="Time-off hours (incl. days×8)" value={timeOffHours} />
-        <StatCard label="Work-from-home entries" value={wfhCount} />
+        <StatCard label="Sick / medical days" value={sickDays} hint="Sum of Days on Reported Sick + Medical records." />
+        <StatCard label="Time-off hours" value={timeOffHours} hint="Hours on Time Off records, plus Days × 8." />
+        <StatCard
+          label={wfhCount >= latenessCount ? "Work-from-home entries" : "Lateness entries"}
+          value={wfhCount >= latenessCount ? wfhCount : latenessCount}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -567,7 +583,7 @@ function TosdAnalyticsView({ rows, year }: { rows: TosdRow[]; year: number | "al
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                 <Tooltip />
-                <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="value" fill={TONES.blue.hex} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -583,7 +599,7 @@ function TosdAnalyticsView({ rows, year }: { rows: TosdRow[]; year: number | "al
               <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
               <YAxis type="category" dataKey="name" width={130} tick={{ fontSize: 11 }} />
               <Tooltip />
-              <Bar dataKey="value" fill="#2563eb" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="value" fill={TONES.indigo.hex} radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -592,11 +608,29 @@ function TosdAnalyticsView({ rows, year }: { rows: TosdRow[]; year: number | "al
   );
 }
 
-const VIEW_OPTIONS: { mode: ViewMode; label: string; Icon: typeof List }[] = [
-  { mode: "table",     label: "Table",     Icon: List },
-  { mode: "board",     label: "Board",     Icon: Columns3 },
-  { mode: "analytics", label: "Analytics", Icon: BarChart3 },
+function StatCard({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
+  return (
+    <Card><CardContent className="p-4">
+      <div className="text-2xl font-bold tabular-nums">{value}</div>
+      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        {label}
+        {hint && <InfoPopover>{hint}</InfoPopover>}
+      </div>
+    </CardContent></Card>
+  );
+}
+
+const VIEW_OPTIONS: { mode: ViewMode; label: string; title: string; Icon: typeof List }[] = [
+  { mode: "table",     label: "Table",     title: "Flat register",      Icon: List },
+  { mode: "board",     label: "Board",     title: "Grouped by type",    Icon: Columns3 },
+  { mode: "analytics", label: "Analytics", title: "Charts & breakdown", Icon: BarChart3 },
 ];
+
+// Legend — one swatch per TOSD type, colours matching the badges.
+const TOSD_LEGEND: LegendItem[] = TOSD_TYPES.map((t) => ({
+  label: TOSD_TYPE_LABELS[t],
+  tone: TONES[TOSD_TYPE_TONE[t]],
+}));
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 
@@ -654,33 +688,74 @@ function TosdPage() {
     return list;
   }, [allRows, selectedStaffId, typeFilter, yearFilter, team]);
 
-  // Paginate the table view (board groups by status, analytics aggregates).
+  // Headline stats for the strip.
+  const totalRecords = rows.length;
+  const sickRecords  = useMemo(
+    () => rows.filter((r) => r.type === "reported_sick" || r.type === "medical").length,
+    [rows],
+  );
+  const timeOffRecords = useMemo(() => rows.filter((r) => r.type === "time_off").length, [rows]);
+  const latenessRecords = useMemo(() => rows.filter((r) => r.type === "lateness").length, [rows]);
+
+  // Paginate the table view (board groups by type, analytics aggregates).
   const pagination = usePagination(rows, 25);
+
+  const periodLabel = `${team !== "All" ? `${team} · ` : ""}${yearFilter === "all" ? "All years" : yearFilter}`;
 
   return (
     <>
-      <Header>
+      <Header fixed>
         <div className="flex items-center gap-2">
-          <ClipboardList className="h-5 w-5" />
-          <h1 className="text-lg font-semibold">Time Off & Sick Days</h1>
+          <ClipboardList className="size-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Time Off & Sick Days</span>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ms-auto flex items-center gap-2">
           <DepartmentFilter />
-          <Button onClick={() => setAddOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />Add Record
-          </Button>
           <ThemeSwitch />
         </div>
       </Header>
 
       <AttendanceSubNav activeView="tosd" />
-      <Main className="space-y-4">
-        {/* Toolbar */}
+
+      <Main className="space-y-6">
+        <PageHeader
+          eyebrow="Attendance"
+          title="Time Off & Sick Days"
+          description="Register of sick days, medical leave, time off, work-from-home and lateness — including legacy callout records preserved from earlier systems."
+          actions={
+            <Button size="sm" onClick={() => setAddOpen(true)}>
+              <Plus className="mr-1 size-4" />Add Record
+            </Button>
+          }
+        />
+
+        {/* Stats strip */}
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Card><CardContent className="p-4">
+            <div className="text-2xl font-bold tabular-nums">{totalRecords}</div>
+            <div className="text-xs text-muted-foreground">Total records · {periodLabel}</div>
+          </CardContent></Card>
+          <Card><CardContent className="p-4">
+            <div className="text-2xl font-bold tabular-nums text-red-600 dark:text-red-400">{sickRecords}</div>
+            <div className="text-xs text-muted-foreground">Sick / medical records</div>
+          </CardContent></Card>
+          <Card><CardContent className="p-4">
+            <div className="text-2xl font-bold tabular-nums text-blue-600 dark:text-blue-400">{timeOffRecords}</div>
+            <div className="text-xs text-muted-foreground">Time-off records</div>
+          </CardContent></Card>
+          <Card><CardContent className="p-4">
+            <div className="text-2xl font-bold tabular-nums text-orange-600 dark:text-orange-400">{latenessRecords}</div>
+            <div className="text-xs text-muted-foreground">Lateness records</div>
+          </CardContent></Card>
+        </div>
+
+        {/* Toolbar — view toggle + filters */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="inline-flex rounded-lg border p-0.5">
-            {VIEW_OPTIONS.map(({ mode, label, Icon }) => (
+            {VIEW_OPTIONS.map(({ mode, label, title, Icon }) => (
               <button
                 key={mode}
+                title={title}
                 onClick={() => setViewMode(mode)}
                 className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
                   viewMode === mode
@@ -717,7 +792,7 @@ function TosdPage() {
 
           {/* Type filter pills — hidden in board view (board groups by type) */}
           {viewMode !== "board" && (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5" title="Filter records by TOSD category">
               <button
                 onClick={() => setTypeFilter("")}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
@@ -740,6 +815,9 @@ function TosdPage() {
             </div>
           )}
         </div>
+
+        {/* Type legend — keeps badge colours unambiguous */}
+        <StatusLegend items={TOSD_LEGEND} label="Type" />
 
         {/* Active view */}
         {isLoading ? (
@@ -775,7 +853,7 @@ function TosdPage() {
             <DialogDescription>
               Permanently delete the{" "}
               <span className="font-medium">
-                {deleteTarget ? (TOSD_TYPE_LABELS[deleteTarget.type as TosdType] ?? deleteTarget.type) : ""}
+                {deleteTarget ? tosdTypeLabel(deleteTarget.type) : ""}
               </span>{" "}
               record for{" "}
               <span className="font-medium">{deleteTarget ? tosdStaffName(deleteTarget) : "this staff member"}</span>?
