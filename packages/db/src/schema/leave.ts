@@ -34,6 +34,9 @@ export const leaveTypes = pgTable("leave_types", {
   code: text("code").notNull().unique(), // e.g. "AL", "SL", "ML", "STL"
   defaultAnnualAllowance: integer("default_annual_allowance").notNull().default(20),
   requiresApproval: boolean("requires_approval").default(true).notNull(),
+  // NDMA policy: leave is use-it-or-lose-it within the 1-year contract and does
+  // NOT carry over by default. Set true per leave type to opt into carry-over.
+  allowsCarryOver: boolean("allows_carry_over").default(false).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Shield, Check, X } from "lucide-react";
+import { Shield, Check, X, Info } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -63,6 +63,13 @@ function RolesSettingsPage() {
           <p className="text-sm text-muted-foreground mt-1">
             Expanded RBAC model. Roles are assigned at user creation via the Better Auth Admin plugin.
           </p>
+          <div className="mt-3 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+            <Info className="mt-0.5 size-4 shrink-0" />
+            <span>
+              Roles and their permissions are defined in system configuration.
+              Contact a system administrator to change them.
+            </span>
+          </div>
         </div>
 
         {/* Role cards */}

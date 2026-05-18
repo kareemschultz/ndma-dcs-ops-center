@@ -118,10 +118,22 @@ export const leaveRouter = {
           code: z.string().min(1).max(10),
           defaultAnnualAllowance: z.number().default(20),
           requiresApproval: z.boolean().default(true),
+          allowsCarryOver: z.boolean().default(false),
         }),
       )
       .handler(async ({ input, context }) => {
-        const [type] = await db.insert(leaveTypes).values(input).returning();
+        const code = input.code.toUpperCase();
+        const existing = await db.query.leaveTypes.findFirst({
+          where: eq(leaveTypes.code, code),
+        });
+        if (existing)
+          throw new ORPCError("CONFLICT", {
+            message: `Leave type code '${code}' already exists.`,
+          });
+        const [type] = await db
+          .insert(leaveTypes)
+          .values({ ...input, code })
+          .returning();
         if (!type) throw new ORPCError("INTERNAL_SERVER_ERROR");
         await logAudit({
           actorId: context.session.user.id,
@@ -146,11 +158,16 @@ export const leaveRouter = {
           name: z.string().optional(),
           defaultAnnualAllowance: z.number().optional(),
           requiresApproval: z.boolean().optional(),
+          allowsCarryOver: z.boolean().optional(),
           isActive: z.boolean().optional(),
         }),
       )
       .handler(async ({ input, context }) => {
         const { id, ...updates } = input;
+        const before = await db.query.leaveTypes.findFirst({
+          where: eq(leaveTypes.id, id),
+        });
+        if (!before) throw new ORPCError("NOT_FOUND");
         const [updated] = await db
           .update(leaveTypes)
           .set(updates)
@@ -163,12 +180,49 @@ export const leaveRouter = {
           module: "leave",
           resourceType: "leave_type",
           resourceId: id,
+          beforeValue: before as Record<string, unknown>,
           afterValue: updated as Record<string, unknown>,
           ipAddress: context.ipAddress,
           userAgent: context.userAgent,
           actorRole: context.userRole ?? undefined,
           correlationId: context.requestId,
         });
+        return updated;
+      }),
+
+    // Soft-delete: leave types are referenced by balances/requests, so we
+    // archive (isActive=false) rather than hard-deleting. Gated on
+    // `leave:update` — the `leave` RBAC resource has no `delete` action and
+    // archiving is functionally an update.
+    delete: requireRole("leave", "update")
+      .input(z.object({ id: z.string().min(1) }))
+      .handler(async ({ input, context }) => {
+        const before = await db.query.leaveTypes.findFirst({
+          where: eq(leaveTypes.id, input.id),
+        });
+        if (!before) throw new ORPCError("NOT_FOUND");
+
+        const [updated] = await db
+          .update(leaveTypes)
+          .set({ isActive: false })
+          .where(eq(leaveTypes.id, input.id))
+          .returning();
+
+        await logAudit({
+          actorId: context.session.user.id,
+          actorName: context.session.user.name,
+          action: "leave_type.delete",
+          module: "leave",
+          resourceType: "leave_type",
+          resourceId: input.id,
+          beforeValue: { isActive: true },
+          afterValue: { isActive: false },
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+          actorRole: context.userRole ?? undefined,
+          correlationId: context.requestId,
+        });
+
         return updated;
       }),
   },
@@ -218,12 +272,20 @@ export const leaveRouter = {
           const isAnnual = isAnnualLeaveType(b.leaveType?.name);
           const effectiveEntitlement =
             isAnnual && b.entitlement <= 0 ? annualDefault : b.entitlement;
+          // NDMA use-it-or-lose-it: carried-over days only count toward the
+          // allowance when the leave type explicitly allows carry-over.
+          // When it doesn't, treat carried-over as 0 for the math — the stored
+          // `carriedOver` value is preserved, just not applied.
+          const allowsCarryOver = b.leaveType?.allowsCarryOver ?? false;
+          const effectiveCarriedOver = allowsCarryOver ? b.carriedOver : 0;
           const allowance =
-            effectiveEntitlement + b.carriedOver + b.adjustment;
+            effectiveEntitlement + effectiveCarriedOver + b.adjustment;
           const remaining = allowance - b.used;
           return {
             ...b,
             effectiveEntitlement,
+            effectiveCarriedOver,
+            allowsCarryOver,
             allowance,
             remaining,
             annualEntitlementDefault: annualDefault,
@@ -261,6 +323,8 @@ export const leaveRouter = {
               updatedAt: now,
               leaveType: annualType,
               effectiveEntitlement: annualDefault,
+              effectiveCarriedOver: 0,
+              allowsCarryOver: annualType.allowsCarryOver ?? false,
               allowance: annualDefault,
               remaining: annualDefault,
               annualEntitlementDefault: annualDefault,
