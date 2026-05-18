@@ -122,6 +122,22 @@ function expandMonth(abbrev: unknown): string {
 }
 
 /**
+ * Format a stored "H:MM" lateness string as an unambiguous "1h 30m" label so
+ * it can never be misread as minutes:seconds. "0:00" → "0m", "2:00" → "2h".
+ */
+function formatTimeLate(hm: string | null | undefined): string {
+  if (hm == null || hm === "") return "—";
+  const m = /^(\d+):(\d{1,2})/.exec(String(hm).trim());
+  if (!m) return String(hm);
+  const h = parseInt(m[1]!, 10);
+  const min = parseInt(m[2]!, 10);
+  if (h === 0 && min === 0) return "0m";
+  if (h === 0) return `${min}m`;
+  if (min === 0) return `${h}h`;
+  return `${h}h ${min}m`;
+}
+
+/**
  * Convert an Excel time value to "H:MM" string.
  * Excel stores times as fractions of a day (e.g. 2h28m → 0.10278).
  * XLSX.js with raw:true returns these as numbers; string 'nil'/'Nil' → "0:00".
@@ -428,7 +444,9 @@ function UpsertDialog({
                 value={form.totalTimeLate}
                 onChange={(e) => setForm((c) => ({ ...c, totalTimeLate: e.target.value }))}
               />
-              <p className="text-xs text-muted-foreground">Format: H:MM</p>
+              <p className="text-xs text-muted-foreground">
+                Hours:Minutes — e.g. <span className="font-mono">1:30</span> = 1h 30m
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="lat-dl">Days Late</Label>
@@ -646,7 +664,7 @@ function ImportPreviewDialog({
                     )}
                   </td>
                   <td className="px-3 py-1.5">{row.month}</td>
-                  <td className="px-3 py-1.5 text-right font-mono">{row.totalTimeLate}</td>
+                  <td className="px-3 py-1.5 text-right font-mono">{formatTimeLate(row.totalTimeLate)}</td>
                   <td className="px-3 py-1.5 text-right">{row.daysLate}</td>
                   <td className="px-3 py-1.5 text-right text-muted-foreground">
                     {row.daysMissingFromAttendance ?? "—"}
@@ -792,7 +810,7 @@ function QuarterGrid({
                     }`}
                     onClick={() => (rec ? onEdit(m, row.staffId, rec) : onAdd(m))}
                   >
-                    {rec?.totalTimeLate ?? der?.totalTimeLate ?? "—"}
+                    {rec ? formatTimeLate(rec.totalTimeLate) : der ? formatTimeLate(der.totalTimeLate) : "—"}
                   </TableCell>,
                   <TableCell
                     key={`${m}-dl`}
@@ -823,10 +841,10 @@ function QuarterGrid({
                 ];
               })}
               <TableCell className="border-l bg-muted/30 text-sm font-semibold tabular-nums">
-                {quarterTotal.totalTimeLate}
+                {formatTimeLate(quarterTotal.totalTimeLate)}
               </TableCell>
               <TableCell className="bg-muted/30 text-center text-sm font-semibold tabular-nums">
-                {quarterTotal.daysLate}
+                {quarterTotal.daysLate === 0 ? "—" : `${quarterTotal.daysLate} ${quarterTotal.daysLate === 1 ? "day" : "days"}`}
               </TableCell>
             </TableRow>
             );
