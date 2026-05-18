@@ -48,8 +48,12 @@ import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
+import { requireResource } from "@/lib/route-guard";
 
 export const Route = createFileRoute("/_authenticated/import/")({
+  // Import pipeline writes staff/training/attendance records — staff `import`
+  // action is hrAdminOps/admin only.
+  beforeLoad: ({ context }) => requireResource(context, "settings"),
   component: ImportPage,
 });
 

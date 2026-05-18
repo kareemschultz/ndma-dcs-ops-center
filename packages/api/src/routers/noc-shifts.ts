@@ -55,9 +55,22 @@ export const nocShiftsRouter = {
         await assertNocAccess(context, input.staffProfileId);
         conditions.push(eq(nocShifts.staffId, input.staffProfileId));
       } else if (input.team) {
+        // A `team` filter must not let a rank-and-file user enumerate another
+        // department's roster. Non-management callers only ever see their own
+        // shift rows; management/privileged see the whole team.
         const teamStaffIds = await getTeamStaffIds(input.team);
         if (teamStaffIds.length === 0) return [];
-        conditions.push(inArray(nocShifts.staffId, teamStaffIds));
+        const isManagement =
+          isPrivileged ||
+          ["manager", "teamLead", "personalAssistant"].includes(role);
+        if (isManagement) {
+          conditions.push(inArray(nocShifts.staffId, teamStaffIds));
+        } else {
+          const caller = await getCallerStaffProfile(context);
+          const allowed = teamStaffIds.filter((id) => id === caller?.id);
+          if (allowed.length === 0) return [];
+          conditions.push(inArray(nocShifts.staffId, allowed));
+        }
       } else if (!isPrivileged) {
         const managed = new Set(await getManagedStaffIds(context));
         const caller = await getCallerStaffProfile(context);

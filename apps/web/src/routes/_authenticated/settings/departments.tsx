@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Building2, Plus, Pencil, PowerOff } from "lucide-react";
+import { requireResource } from "@/lib/route-guard";
 import { toast } from "sonner";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
@@ -31,6 +32,7 @@ import { authClient } from "@/lib/auth-client";
 import { orpc } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_authenticated/settings/departments")({
+  beforeLoad: ({ context }) => requireResource(context, "settings"),
   component: DepartmentsSettingsPage,
 });
 

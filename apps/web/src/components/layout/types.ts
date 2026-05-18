@@ -19,6 +19,11 @@ type BaseNavItem = {
   icon?: React.ElementType;
   /** RBAC resource required to see this item. Matches resources in packages/auth/src/index.ts. */
   requiredResource?: string;
+  /**
+   * Department this item belongs to. Rank-and-file users (staff/viewer) only
+   * see items matching their own department; management roles see all.
+   */
+  requiredTeam?: "NOC" | "DCS";
 };
 
 type NavLink = BaseNavItem & {

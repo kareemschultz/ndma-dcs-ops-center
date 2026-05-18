@@ -70,7 +70,16 @@ export const readOnlyRole = ac.newRole({
   advance: ["read"],
 });
 
-// Staff — own profile, self-service leave, submit PRs, view rota
+// Staff — SELF-SERVICE PORTAL ONLY. Own profile, own leave/attendance/timesheet,
+// own appraisals/training, notifications, submit PRs/feedback, view roster.
+// Deliberately has NO: audit, settings, report, access, performance_journal —
+// those are management/admin surfaces.
+//
+// `staff: ["read"]` is kept ONLY so self-service creation forms (request leave,
+// raise a change/incident/procurement, log work) can populate people-pickers.
+// The staff.list / staff.get procedures DEPARTMENT-SCOPE rank-and-file callers
+// to their own department — a staff user can never enumerate org-wide PII.
+// The org-wide Directory page itself is route-guarded off for this role.
 export const staffRole = ac.newRole({
   staff: ["read"],
   work: ["create", "read", "update"],
@@ -82,9 +91,7 @@ export const staffRole = ac.newRole({
   appraisal: ["read"],
   procurement: ["create", "read"],
   notification: ["read", "update"],
-  access: ["read"],
   career_path: ["read"],
-  performance_journal: ["read"],
   feedback: ["create", "read", "submit"],
   callout: ["create", "read"],
   shift: ["read"],

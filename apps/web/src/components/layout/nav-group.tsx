@@ -3,7 +3,9 @@
 // Uses TanStack Router Link + useLocation instead of Next.js
 import { type ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
+import { orpc } from "@/utils/orpc";
 import { ChevronRight } from "lucide-react";
 import {
   Collapsible,
@@ -45,14 +47,17 @@ import {
 // EVERY role must have an entry: canAccess() fails CLOSED, so an unlisted
 // role (or a still-loading session) hides resource-gated nav items rather
 // than leaking admin-only pages.
+// Mirrors ROLE_RESOURCES in src/lib/route-guard.ts — keep the two in sync.
 const ROLE_RESOURCES: Record<string, string[] | ["*"]> = {
   admin:             ["*"],
   hrAdminOps:        ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "report", "audit", "settings", "procurement", "notification", "access"],
   manager:           ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "report", "audit", "procurement", "notification", "access"],
   teamLead:          ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "procurement", "notification", "access"],
-  personalAssistant: ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "procurement", "notification", "access"],
-  staff:             ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "procurement", "notification", "access"],
-  readOnly:          ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "report", "audit", "procurement", "notification", "access"],
+  personalAssistant: ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "report", "audit", "settings", "procurement", "notification", "access"],
+  // staff = self-service portal only: NO settings/audit/access/report/import.
+  staff:             ["work", "leave", "rota", "compliance", "contract", "appraisal", "procurement", "notification"],
+  // readOnly = view broadly but no admin surfaces.
+  readOnly:          ["staff", "work", "leave", "rota", "compliance", "contract", "appraisal", "report", "procurement", "notification"],
 };
 
 function canAccess(role: string | null | undefined, resource?: string): boolean {
@@ -63,20 +68,61 @@ function canAccess(role: string | null | undefined, resource?: string): boolean 
   return (allowed as string[]).includes(resource);
 }
 
+// Management roles operate across DCS and NOC; rank-and-file are dept-scoped.
+const CROSS_DEPARTMENT_ROLES = new Set([
+  "admin",
+  "hrAdminOps",
+  "manager",
+  "teamLead",
+  "personalAssistant",
+]);
+
+// A department-tagged item is visible if: the role works cross-department, OR
+// the caller's department matches. While the department is still loading we
+// HIDE the item (fail closed) so NOC pages never flash for a DCS user.
+function canAccessTeam(
+  role: string | null | undefined,
+  callerTeam: "NOC" | "DCS" | null,
+  requiredTeam?: "NOC" | "DCS",
+): boolean {
+  if (!requiredTeam) return true;
+  if (role && CROSS_DEPARTMENT_ROLES.has(role)) return true;
+  return callerTeam === requiredTeam;
+}
+
 export function NavGroup({ title, items }: NavGroupProps) {
   const { state, isMobile } = useSidebar();
   const href = useLocation({ select: (location) => location.href });
   const { data: session } = authClient.useSession();
   const role = (session?.user as Record<string, unknown>)?.role as string | null;
 
+  // Caller's top-level department (NOC vs DCS) — drives requiredTeam filtering.
+  // Skipped for cross-department roles, which see everything regardless.
+  const isCrossDept = role ? CROSS_DEPARTMENT_ROLES.has(role) : false;
+  const { data: callerProfile } = useQuery({
+    ...orpc.staff.me.queryOptions(),
+    enabled: !!role && !isCrossDept,
+  });
+  const deptCode = (callerProfile as
+    | { department?: { code?: string | null } | null }
+    | null
+    | undefined)?.department?.code;
+  const callerTeam: "NOC" | "DCS" | null =
+    deptCode === "NOC" ? "NOC" : callerProfile?.department ? "DCS" : null;
+
   const visibleItems = items
     .map((item) => {
       if (!item.items) {
-        return canAccess(role, item.requiredResource) ? item : null;
+        const visible =
+          canAccess(role, item.requiredResource) &&
+          canAccessTeam(role, callerTeam, item.requiredTeam);
+        return visible ? item : null;
       }
 
-      const visibleSubItems = item.items.filter((subItem) =>
-        canAccess(role, subItem.requiredResource),
+      const visibleSubItems = item.items.filter(
+        (subItem) =>
+          canAccess(role, subItem.requiredResource) &&
+          canAccessTeam(role, callerTeam, subItem.requiredTeam),
       );
 
       if (visibleSubItems.length === 0) {

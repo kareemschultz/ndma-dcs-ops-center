@@ -18,6 +18,7 @@ import { useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth-client";
+import { RequireDepartment } from "@/components/require-department";
 import { format, parseISO } from "date-fns";
 import {
   ArrowLeftRight,
@@ -87,8 +88,16 @@ const VIEW_OPTIONS: { mode: ViewMode; label: string; Icon: typeof List }[] = [
 ];
 
 export const Route = createFileRoute("/_authenticated/scheduling/noc-shifts")({
-  component: NocShiftsPage,
+  component: NocShiftsRoute,
 });
+
+function NocShiftsRoute() {
+  return (
+    <RequireDepartment team="NOC">
+      <NocShiftsPage />
+    </RequireDepartment>
+  );
+}
 
 // ── Shift type definitions ─────────────────────────────────────────────────────
 

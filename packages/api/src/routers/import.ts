@@ -36,7 +36,7 @@ import {
 } from "@ndma-dcs-staff-portal/db";
 import { and, eq, sql } from "drizzle-orm";
 
-import { protectedProcedure, requireRole } from "../index";
+import { requireRole } from "../index";
 import { logAudit } from "../lib/audit";
 
 // ── Row schemas ───────────────────────────────────────────────────────────
@@ -1627,7 +1627,7 @@ export const importRouter = {
     }),
 
   /** List past import runs, most recent first. */
-  getHistory: protectedProcedure
+  getHistory: requireRole("staff", "import")
     .input(
       z.object({
       limit: z.number().default(20),

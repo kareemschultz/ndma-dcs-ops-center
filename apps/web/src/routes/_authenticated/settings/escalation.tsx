@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { requireResource } from "@/lib/route-guard";
 import { toast } from "sonner";
 import {
   AlertTriangle,
@@ -35,6 +36,7 @@ import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc, queryClient } from "@/utils/orpc";
 
 export const Route = createFileRoute("/_authenticated/settings/escalation")({
+  beforeLoad: ({ context }) => requireResource(context, "settings"),
   component: EscalationSettingsPage,
 });
 

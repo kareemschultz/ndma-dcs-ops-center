@@ -7,8 +7,10 @@ import { Tabs, TabsList, TabsTrigger } from "@ndma-dcs-staff-portal/ui/component
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { requireResource } from "@/lib/route-guard";
 
 export const Route = createFileRoute("/_authenticated/settings/")({
+  beforeLoad: ({ context }) => requireResource(context, "settings"),
   component: SettingsTabsPage,
 });
 

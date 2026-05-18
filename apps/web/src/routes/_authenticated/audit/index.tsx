@@ -17,8 +17,10 @@ import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
+import { requireResource } from "@/lib/route-guard";
 
 export const Route = createFileRoute("/_authenticated/audit/")({
+  beforeLoad: ({ context }) => requireResource(context, "audit"),
   component: AuditPage,
 });
 

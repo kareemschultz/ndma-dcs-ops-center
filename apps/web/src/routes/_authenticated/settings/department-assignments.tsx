@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { requireResource } from "@/lib/route-guard";
 import { Shield, Plus, Pencil, PowerOff } from "lucide-react";
 import { toast } from "sonner";
 
@@ -34,6 +35,7 @@ import {
 export const Route = createFileRoute(
   "/_authenticated/settings/department-assignments",
 )({
+  beforeLoad: ({ context }) => requireResource(context, "settings"),
   component: DepartmentAssignmentsPage,
 });
 

@@ -34,12 +34,21 @@ import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { orpc } from "@/utils/orpc";
+import { RequireDepartment } from "@/components/require-department";
 
 // NOTE: Preserve UpsertMetricsDialog from original file — only display components change here.
 
 export const Route = createFileRoute("/_authenticated/noc-performance/")({
-  component: NocPerformancePage,
+  component: NocPerformanceRoute,
 });
+
+function NocPerformanceRoute() {
+  return (
+    <RequireDepartment team="NOC">
+      <NocPerformancePage />
+    </RequireDepartment>
+  );
+}
 
 const CURRENT_YEAR = new Date().getFullYear();
 const MONTHS = [

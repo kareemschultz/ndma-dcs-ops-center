@@ -12,6 +12,17 @@ import {
   getCallerStaffProfile,
 } from "../lib/scope";
 
+// Roles allowed to browse the org-wide staff directory. Rank-and-file
+// (staff / readOnly) are scoped to their own department only — they must not
+// be able to enumerate every employee's profile + PII across departments.
+const ORG_WIDE_STAFF_ROLES = new Set([
+  "admin",
+  "hrAdminOps",
+  "manager",
+  "teamLead",
+  "personalAssistant",
+]);
+
 export const staffRouter = {
   list: requireRole("staff", "read")
     .input(
@@ -32,8 +43,17 @@ export const staffRouter = {
         offset: z.number().min(0).default(0),
       }),
     )
-    .handler(async ({ input }) => {
+    .handler(async ({ input, context }) => {
       const conditions = [];
+
+      // Department scoping: rank-and-file (staff / readOnly) only see their
+      // own department's directory. Management roles see org-wide.
+      if (!ORG_WIDE_STAFF_ROLES.has(context.userRole ?? "")) {
+        const caller = await getCallerStaffProfile(context);
+        if (!caller) return [];
+        conditions.push(eq(staffProfiles.departmentId, caller.departmentId));
+      }
+
       if (input.status) {
         conditions.push(eq(staffProfiles.status, input.status));
       } else if (!input.includeFormer) {
@@ -65,12 +85,20 @@ export const staffRouter = {
 
   get: requireRole("staff", "read")
     .input(z.object({ id: z.string() }))
-    .handler(async ({ input }) => {
+    .handler(async ({ input, context }) => {
       const profile = await db.query.staffProfiles.findFirst({
         where: eq(staffProfiles.id, input.id),
         with: { user: true, department: true },
       });
       if (!profile) throw new ORPCError("NOT_FOUND");
+
+      // Rank-and-file may only view colleagues in their own department.
+      if (!ORG_WIDE_STAFF_ROLES.has(context.userRole ?? "")) {
+        const caller = await getCallerStaffProfile(context);
+        if (!caller || caller.departmentId !== profile.departmentId) {
+          throw new ORPCError("FORBIDDEN");
+        }
+      }
       return profile;
     }),
 

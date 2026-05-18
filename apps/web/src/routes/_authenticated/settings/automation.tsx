@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { requireResource } from "@/lib/route-guard";
 import { toast } from "sonner";
 import {
   Zap,
@@ -40,6 +41,7 @@ import { orpc, queryClient } from "@/utils/orpc";
 export const Route = createFileRoute(
   "/_authenticated/settings/automation",
 )({
+  beforeLoad: ({ context }) => requireResource(context, "settings"),
   component: AutomationSettingsPage,
 });
 

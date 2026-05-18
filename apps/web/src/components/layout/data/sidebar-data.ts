@@ -75,7 +75,9 @@ export const sidebarData: Omit<SidebarData, "user"> = {
     {
       title: "People",
       items: [
-        { title: "Directory", url: "/staff", icon: Users },
+        // Org-wide staff directory — gated to management roles. A `staff` user
+        // sees their own record via the profile menu, not the full register.
+        { title: "Directory", url: "/staff", icon: Users, requiredResource: "staff" },
         { title: "Leave", url: "/leave", icon: TreePalm },
         { title: "Career Progression", url: "/career-progression", icon: TrendingUp },
         {
@@ -97,8 +99,17 @@ export const sidebarData: Omit<SidebarData, "user"> = {
       title: "Performance & Training",
       items: [
         { title: "Appraisals", url: "/appraisals", icon: ClipboardCheck },
-        { title: "Cycles", url: "/cycles", icon: Repeat },
-        { title: "NOC Performance", url: "/noc-performance", icon: Activity },
+        // Appraisal cycle administration — management only.
+        { title: "Cycles", url: "/cycles", icon: Repeat, requiredResource: "report" },
+        // NOC-only module — hidden from non-NOC users by department, see
+        // requiredTeam below (NavGroup checks the caller's department).
+        {
+          title: "NOC Performance",
+          url: "/noc-performance",
+          icon: Activity,
+          requiredResource: "report",
+          requiredTeam: "NOC",
+        },
         { title: "Training", url: "/training", icon: GraduationCap },
       ],
     },
@@ -131,11 +142,12 @@ export const sidebarData: Omit<SidebarData, "user"> = {
     },
     {
       // Reports & Analytics + Admin merged — Admin was a single-item group.
+      // Every item here is management/admin — all gated.
       title: "Reports & Admin",
       items: [
-        { title: "Analytics", url: "/analytics", icon: BarChart3 },
+        { title: "Analytics", url: "/analytics", icon: BarChart3, requiredResource: "report" },
         { title: "Reports", url: "/reports", icon: FileBarChart, requiredResource: "report" },
-        { title: "Audit Log", url: "/audit", icon: ScrollText },
+        { title: "Audit Log", url: "/audit", icon: ScrollText, requiredResource: "audit" },
         { title: "Settings", url: "/settings", icon: Settings, requiredResource: "settings" },
       ],
     },
