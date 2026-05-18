@@ -139,6 +139,7 @@ function LogDialog({ mode, existing, onClose }: LogDialogProps) {
     clockOut: toTimeInput(existing?.clockOut),
     workHours: existing?.workHours ?? "",
   });
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   // Auto-calculate work hours when both times are set
   function computeWorkHours(ci: string, co: string): string {
@@ -224,6 +225,7 @@ function LogDialog({ mode, existing, onClose }: LogDialogProps) {
   }
 
   return (
+    <>
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -336,11 +338,7 @@ function LogDialog({ mode, existing, onClose }: LogDialogProps) {
               size="sm"
               className="text-destructive hover:bg-destructive/10 mr-auto"
               disabled={isPending}
-              onClick={() => {
-                if (confirm("Delete this attendance log entry?")) {
-                  deleteMut.mutate({ id: existing.id });
-                }
-              }}
+              onClick={() => setConfirmDeleteOpen(true)}
             >
               <Trash2 className="size-3.5 mr-1" />
               Delete
@@ -357,6 +355,42 @@ function LogDialog({ mode, existing, onClose }: LogDialogProps) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <Dialog
+      open={confirmDeleteOpen}
+      onOpenChange={(o) => { if (!o) setConfirmDeleteOpen(false); }}
+    >
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Delete Clock Log</DialogTitle>
+          <DialogDescription>
+            Permanently delete this attendance log entry
+            {existing?.date ? ` for ${existing.date}` : ""}? This cannot be
+            undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setConfirmDeleteOpen(false)}
+            disabled={isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={isPending}
+            onClick={() => {
+              if (existing) deleteMut.mutate({ id: existing.id });
+              setConfirmDeleteOpen(false);
+            }}
+          >
+            {deleteMut.isPending ? "Deleting…" : "Delete"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 

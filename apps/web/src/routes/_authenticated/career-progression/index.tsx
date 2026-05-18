@@ -283,7 +283,7 @@ function CareerProgressionPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Progression Plans</CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="overflow-x-auto p-0">
             <Table>
               <TableHeader>
                 <TableRow>

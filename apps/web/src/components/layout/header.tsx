@@ -43,7 +43,7 @@ export function Header({
       )}
       {...props}
     >
-      <div className="relative flex h-full items-center gap-3 px-6">
+      <div className="relative flex h-full min-w-0 items-center gap-3 overflow-x-auto px-6">
         <SidebarTrigger variant="outline" className="max-md:scale-125" />
         <Separator orientation="vertical" className="h-6" />
         <DepartmentFilter />

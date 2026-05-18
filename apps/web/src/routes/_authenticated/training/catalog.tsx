@@ -193,7 +193,7 @@ export default function CertCatalogPage() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">{area}</CardTitle>
                 </CardHeader>
-                <CardContent className="p-0">
+                <CardContent className="overflow-x-auto p-0">
                   <Table>
                     <TableHeader>
                       <TableRow>

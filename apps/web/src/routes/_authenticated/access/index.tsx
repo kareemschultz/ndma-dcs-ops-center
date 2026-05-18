@@ -1239,7 +1239,7 @@ function PlatformAccountsPage() {
               </select>
             </div>
 
-            <div className="rounded-xl border">
+            <div className="overflow-x-auto rounded-xl border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -1362,7 +1362,7 @@ function PlatformAccountsPage() {
                 <p className="font-medium">No VPN accounts recorded</p>
               </div>
             ) : (
-              <div className="rounded-xl border">
+              <div className="overflow-x-auto rounded-xl border">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1424,7 +1424,7 @@ function PlatformAccountsPage() {
                 <p className="text-sm mt-1">Define AD groups, VPN groups, or platform roles.</p>
               </div>
             ) : (
-              <div className="rounded-xl border">
+              <div className="overflow-x-auto rounded-xl border">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1494,7 +1494,7 @@ function PlatformAccountsPage() {
                 <p className="text-sm mt-1">External contacts are non-NDMA identities with platform access.</p>
               </div>
             ) : (
-              <div className="rounded-xl border">
+              <div className="overflow-x-auto rounded-xl border">
                 <Table>
                   <TableHeader>
                     <TableRow>

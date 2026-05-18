@@ -16,6 +16,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -54,6 +55,7 @@ function DepartmentsSettingsPage() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Dept | null>(null);
+  const [deactivateTarget, setDeactivateTarget] = useState<Dept | null>(null);
 
   const createMutation = useMutation(
     orpc.departments.create.mutationOptions({
@@ -82,6 +84,7 @@ function DepartmentsSettingsPage() {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: orpc.departments.list.key() });
         toast.success("Department deactivated");
+        setDeactivateTarget(null);
       },
       onError: (e: Error) => toast.error(e.message),
     }),
@@ -117,7 +120,7 @@ function DepartmentsSettingsPage() {
           )}
         </div>
 
-        <div className="rounded-xl border max-w-3xl">
+        <div className="overflow-x-auto rounded-xl border max-w-3xl">
           <Table>
             <TableHeader>
               <TableRow>
@@ -184,11 +187,7 @@ function DepartmentsSettingsPage() {
                                 size="icon"
                                 className="size-7 text-destructive hover:text-destructive"
                                 disabled={deactivateMutation.isPending}
-                                onClick={() => {
-                                  if (confirm(`Deactivate "${dept.name}"? Staff assigned to it will remain but new assignments will be blocked.`)) {
-                                    deactivateMutation.mutate({ id: dept.id });
-                                  }
-                                }}
+                                onClick={() => setDeactivateTarget(dept)}
                               >
                                 <PowerOff className="size-3.5" />
                               </Button>
@@ -225,6 +224,43 @@ function DepartmentsSettingsPage() {
           isLoading={updateMutation.isPending}
         />
       )}
+
+      <Dialog
+        open={deactivateTarget !== null}
+        onOpenChange={(o) => { if (!o) setDeactivateTarget(null); }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Deactivate Department</DialogTitle>
+            <DialogDescription>
+              Deactivate{" "}
+              <span className="font-medium text-foreground">
+                {deactivateTarget?.name}
+              </span>
+              ? Staff currently assigned to it will remain, but new assignments
+              will be blocked.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeactivateTarget(null)}
+              disabled={deactivateMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deactivateMutation.isPending}
+              onClick={() => {
+                if (deactivateTarget) deactivateMutation.mutate({ id: deactivateTarget.id });
+              }}
+            >
+              {deactivateMutation.isPending ? "Deactivating…" : "Deactivate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

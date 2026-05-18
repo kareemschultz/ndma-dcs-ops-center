@@ -14,6 +14,7 @@ import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -87,6 +88,7 @@ function DepartmentAssignmentsPage() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<AssignmentRow | null>(null);
+  const [deactivateTarget, setDeactivateTarget] = useState<AssignmentRow | null>(null);
 
   const createMutation = useMutation(
     orpc.departmentAssignments.create.mutationOptions({
@@ -115,6 +117,7 @@ function DepartmentAssignmentsPage() {
       onSuccess: async () => {
         await qc.invalidateQueries({ queryKey: orpc.departmentAssignments.list.key() });
         toast.success("Assignment deactivated");
+        setDeactivateTarget(null);
       },
       onError: (error: Error) => toast.error(error.message),
     }),
@@ -174,7 +177,7 @@ function DepartmentAssignmentsPage() {
           )}
         </div>
 
-        <div className="rounded-xl border">
+        <div className="overflow-x-auto rounded-xl border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -247,11 +250,7 @@ function DepartmentAssignmentsPage() {
                                 size="icon"
                                 variant="ghost"
                                 className="size-7 text-destructive hover:text-destructive"
-                                onClick={() => {
-                                  if (confirm(`Deactivate this assignment?`)) {
-                                    deactivateMutation.mutate({ id: assignment.id });
-                                  }
-                                }}
+                                onClick={() => setDeactivateTarget(assignment)}
                               >
                                 <PowerOff className="size-3.5" />
                               </Button>
@@ -290,6 +289,49 @@ function DepartmentAssignmentsPage() {
           isLoading={updateMutation.isPending}
         />
       )}
+
+      <Dialog
+        open={deactivateTarget !== null}
+        onOpenChange={(o) => { if (!o) setDeactivateTarget(null); }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Deactivate Assignment</DialogTitle>
+            <DialogDescription>
+              Deactivate the{" "}
+              <span className="font-medium text-foreground">
+                {deactivateTarget?.role.replace("_", " ")}
+              </span>{" "}
+              assignment for{" "}
+              <span className="font-medium text-foreground">
+                {deactivateTarget?.staffProfile?.user?.name
+                  ?? deactivateTarget?.staffProfile?.employeeId
+                  ?? "this staff member"}
+              </span>
+              ? The record is preserved but the assignment will no longer be
+              active.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeactivateTarget(null)}
+              disabled={deactivateMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deactivateMutation.isPending}
+              onClick={() => {
+                if (deactivateTarget) deactivateMutation.mutate({ id: deactivateTarget.id });
+              }}
+            >
+              {deactivateMutation.isPending ? "Deactivating…" : "Deactivate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

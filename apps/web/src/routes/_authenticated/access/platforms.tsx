@@ -79,6 +79,7 @@ function PlatformsPage() {
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<PlatformFormState>(EMPTY_FORM);
+  const [disableTarget, setDisableTarget] = useState<{ id: string; name: string } | null>(null);
 
   const { data: platforms, isLoading } = useQuery(orpc.platforms.list.queryOptions());
 
@@ -111,6 +112,7 @@ function PlatformsPage() {
       onSuccess: () => {
         toast.success("Platform disabled");
         qc.invalidateQueries({ queryKey: orpc.platforms.list.key() });
+        setDisableTarget(null);
       },
       onError: (e) => toast.error(`Disable failed: ${e.message}`),
     }),
@@ -174,7 +176,7 @@ function PlatformsPage() {
           The platforms reference table is Layer 1 of the 3-layer access registry. Each row represents a system NDMA staff have accounts on (Zabbix, Grafana, Fortigate, Uportal, biometric door systems, etc.). See master plan §5.2.
         </div>
 
-        <div className="rounded-md border">
+        <div className="overflow-x-auto rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -231,11 +233,7 @@ function PlatformsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => {
-                            if (window.confirm(`Disable platform "${p.name}"?`)) {
-                              disableMutation.mutate({ id: p.id });
-                            }
-                          }}
+                          onClick={() => setDisableTarget({ id: p.id, name: p.name })}
                         >
                           <Ban className="h-4 w-4" />
                         </Button>
@@ -336,6 +334,43 @@ function PlatformsPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={disableTarget !== null}
+        onOpenChange={(o) => { if (!o) setDisableTarget(null); }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Disable Platform</DialogTitle>
+            <DialogDescription>
+              Disable the platform{" "}
+              <span className="font-medium text-foreground">
+                {disableTarget?.name}
+              </span>
+              ? It will be hidden from the registry. Existing access records are
+              preserved.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDisableTarget(null)}
+              disabled={disableMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={disableMutation.isPending}
+              onClick={() => {
+                if (disableTarget) disableMutation.mutate({ id: disableTarget.id });
+              }}
+            >
+              {disableMutation.isPending ? "Disabling…" : "Disable"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

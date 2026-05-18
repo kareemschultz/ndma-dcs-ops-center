@@ -12,6 +12,14 @@ import { toast } from "sonner";
 
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@ndma-dcs-staff-portal/ui/components/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@ndma-dcs-staff-portal/ui/components/dialog";
 import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
 import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
@@ -121,6 +129,7 @@ function HolidaysPage() {
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [newDate, setNewDate] = useState("");
   const [newName, setNewName] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
 
   const { data: holidays, isLoading } = useQuery(
     orpc.attendanceTime.holidays.list.queryOptions({ input: { year } }),
@@ -167,6 +176,7 @@ function HolidaysPage() {
         await queryClient.invalidateQueries({
           queryKey: orpc.attendanceTime.holidays.list.key(),
         });
+        setDeleteTarget(null);
       },
       onError: (e: Error) => toast.error(e.message ?? "Failed to remove holiday"),
     }),
@@ -197,9 +207,8 @@ function HolidaysPage() {
     createMutation.mutate({ date, name });
   }
 
-  function removeOne(id: number) {
-    if (!confirm("Remove this holiday?")) return;
-    deleteMutation.mutate({ id });
+  function removeOne(id: number, title: string) {
+    setDeleteTarget({ id, title });
   }
 
   return (
@@ -394,7 +403,7 @@ function HolidaysPage() {
                         <TableCell>
                           <button
                             type="button"
-                            onClick={() => removeOne(h.id)}
+                            onClick={() => removeOne(h.id, h.title)}
                             disabled={deleteMutation.isPending}
                             className="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
                             title="Remove"
@@ -411,6 +420,42 @@ function HolidaysPage() {
           </div>
         </div>
       </Main>
+
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remove Public Holiday</DialogTitle>
+            <DialogDescription>
+              Remove{" "}
+              <span className="font-medium text-foreground">
+                {deleteTarget?.title}
+              </span>{" "}
+              from the {year} public holidays? This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                if (deleteTarget) deleteMutation.mutate({ id: deleteTarget.id });
+              }}
+            >
+              {deleteMutation.isPending ? "Removing…" : "Remove"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

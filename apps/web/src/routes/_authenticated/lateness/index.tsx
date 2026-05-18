@@ -349,6 +349,7 @@ function UpsertDialog({
     daysOnSchedule: existingRecord?.daysOnSchedule ?? 0,
     notes: existingRecord?.notes ?? "",
   });
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const upsertMut = useMutation(
     orpc.lateness.upsert.mutationOptions({
@@ -392,6 +393,7 @@ function UpsertDialog({
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
@@ -514,11 +516,7 @@ function UpsertDialog({
               size="sm"
               className="text-destructive hover:bg-destructive/10 mr-auto"
               disabled={deleteMut.isPending}
-              onClick={() => {
-                if (confirm("Delete this lateness record?")) {
-                  deleteMut.mutate({ id: existingRecord.id! });
-                }
-              }}
+              onClick={() => setConfirmDeleteOpen(true)}
             >
               <Trash2 className="size-3.5 mr-1" />
               Delete
@@ -542,6 +540,43 @@ function UpsertDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <Dialog
+      open={confirmDeleteOpen}
+      onOpenChange={(o) => { if (!o) setConfirmDeleteOpen(false); }}
+    >
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Delete Lateness Record</DialogTitle>
+          <DialogDescription>
+            Permanently delete the {month} {year} lateness record for this
+            staff member? This cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setConfirmDeleteOpen(false)}
+            disabled={deleteMut.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={deleteMut.isPending}
+            onClick={() => {
+              if (existingRecord?.id != null) {
+                deleteMut.mutate({ id: existingRecord.id });
+              }
+              setConfirmDeleteOpen(false);
+            }}
+          >
+            {deleteMut.isPending ? "Deleting…" : "Delete"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 

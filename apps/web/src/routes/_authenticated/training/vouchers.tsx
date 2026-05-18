@@ -215,7 +215,7 @@ export default function ExamVouchersPage() {
           </div>
         </div>
 
-        <div className="mb-4 flex items-center gap-3">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
           <span className="text-muted-foreground text-sm font-medium">Filter by status:</span>
           {(["all", "unused", "assigned", "booked", "complete_pass", "expired"] as const).map(
             (s) => (
@@ -235,7 +235,7 @@ export default function ExamVouchersPage() {
           <CardHeader>
             <CardTitle>Voucher Registry</CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="overflow-x-auto p-0">
             {isLoading ? (
               <div className="space-y-2 p-4">
                 {[...Array(5)].map((_, i) => (

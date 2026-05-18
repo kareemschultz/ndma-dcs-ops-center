@@ -320,7 +320,7 @@ export default function TrainingEventsPage() {
           <CardHeader>
             <CardTitle>All Training Events</CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="overflow-x-auto p-0">
             {isLoading ? (
               <div className="space-y-2 p-4">
                 {[...Array(5)].map((_, i) => (
@@ -637,7 +637,7 @@ export default function TrainingEventsPage() {
           </DialogHeader>
 
           {/* Existing participants */}
-          <div className="rounded-lg border">
+          <div className="overflow-x-auto rounded-lg border">
             {!participantsEvent ? (
               <div className="space-y-2 p-4">
                 {[...Array(3)].map((_, i) => (

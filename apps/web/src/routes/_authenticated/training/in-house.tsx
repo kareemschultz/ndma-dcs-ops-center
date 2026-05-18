@@ -194,7 +194,7 @@ export default function InHouseTrainingLogPage() {
           <CardHeader>
             <CardTitle>Training Sessions</CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="overflow-x-auto p-0">
             {isLoading ? (
               <div className="space-y-2 p-4">
                 {[...Array(5)].map((_, i) => (

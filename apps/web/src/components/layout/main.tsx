@@ -14,6 +14,10 @@ export function Main({ fixed, className, fluid, ...props }: MainProps) {
       className={cn(
         // Warm-grey wash per design handoff §4 — lifts white cards visually
         "bg-ink-50/60 px-6 py-6 dark:bg-ink-950",
+        // min-w-0 lets this flex child shrink inside SidebarInset so wide
+        // tables scroll within their own overflow-x-auto wrappers instead of
+        // pushing the whole page wider on mobile.
+        "min-w-0",
         // If layout is fixed, make the main container flex and grow
         fixed && "flex grow flex-col overflow-hidden",
         // If layout is not fluid, set the max-width

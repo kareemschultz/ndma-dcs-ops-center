@@ -240,7 +240,7 @@ export default function ExamBookingsPage() {
                   </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="overflow-x-auto p-0">
                 {awaitingBooking.length === 0 ? (
                   <p className="text-muted-foreground py-6 text-center text-sm">
                     No exams awaiting a booking date.
@@ -273,7 +273,7 @@ export default function ExamBookingsPage() {
                   </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="overflow-x-auto p-0">
                 {booked.length === 0 ? (
                   <p className="text-muted-foreground py-6 text-center text-sm">
                     No exams currently booked.
@@ -306,7 +306,7 @@ export default function ExamBookingsPage() {
                   </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="overflow-x-auto p-0">
                 {completed.length === 0 ? (
                   <p className="text-muted-foreground py-6 text-center text-sm">
                     No completed exams recorded yet.

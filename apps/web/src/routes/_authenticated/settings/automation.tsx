@@ -24,6 +24,14 @@ import {
   CardTitle,
 } from "@ndma-dcs-staff-portal/ui/components/card";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@ndma-dcs-staff-portal/ui/components/dialog";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -455,6 +463,7 @@ function RuleCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const toggle = useMutation({
     ...orpc.automation.toggle.mutationOptions(),
@@ -470,6 +479,7 @@ function RuleCard({
       queryClient.invalidateQueries({ queryKey: orpc.automation.list.key() });
       queryClient.invalidateQueries({ queryKey: orpc.automation.stats.key() });
       toast.success("Rule deleted");
+      setConfirmDeleteOpen(false);
     },
   });
 
@@ -487,8 +497,7 @@ function RuleCard({
   };
 
   const handleDelete = () => {
-    if (!confirm(`Delete rule "${rule.name}"?`)) return;
-    remove.mutate({ id: rule.id });
+    setConfirmDeleteOpen(true);
   };
 
   const handleSave = (data: RuleFormData) => {
@@ -532,6 +541,7 @@ function RuleCard({
   };
 
   return (
+    <>
     <Card className={rule.enabled ? "" : "opacity-60"}>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-3">
@@ -640,6 +650,39 @@ function RuleCard({
         </CardContent>
       )}
     </Card>
+
+    <Dialog
+      open={confirmDeleteOpen}
+      onOpenChange={(o) => { if (!o) setConfirmDeleteOpen(false); }}
+    >
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Delete Automation Rule</DialogTitle>
+          <DialogDescription>
+            Permanently delete the rule{" "}
+            <span className="font-medium text-foreground">{rule.name}</span>?
+            It will stop firing immediately. This cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setConfirmDeleteOpen(false)}
+            disabled={remove.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={remove.isPending}
+            onClick={() => remove.mutate({ id: rule.id })}
+          >
+            {remove.isPending ? "Deleting…" : "Delete"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 

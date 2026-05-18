@@ -22,6 +22,14 @@ import { toast } from "sonner";
 
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
 import { Card, CardContent } from "@ndma-dcs-staff-portal/ui/components/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@ndma-dcs-staff-portal/ui/components/dialog";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
 import {
   Table,
@@ -77,6 +85,7 @@ function AdvancesPage() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<"all" | AdvanceStatus>("all");
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   const { data: advances, isLoading } = useQuery(
     orpc.advances.list.queryOptions({ input: { limit: 200, offset: 0 } }),
@@ -89,6 +98,7 @@ function AdvancesPage() {
         toast.success("Advance deleted");
         await queryClient.invalidateQueries({ queryKey: orpc.advances.list.key() });
         await queryClient.invalidateQueries({ queryKey: orpc.advances.stats.key() });
+        setDeleteTargetId(null);
       },
       onError: (e: Error) => toast.error(e.message ?? "Failed to delete advance"),
     }),
@@ -105,8 +115,7 @@ function AdvancesPage() {
   };
 
   function handleDelete(id: string) {
-    if (!confirm("Delete this advance request? This cannot be undone.")) return;
-    deleteMutation.mutate({ id });
+    setDeleteTargetId(id);
   }
 
   return (
@@ -331,6 +340,38 @@ function AdvancesPage() {
           </Table>
         </div>
       </Main>
+
+      <Dialog
+        open={deleteTargetId !== null}
+        onOpenChange={(o) => { if (!o) setDeleteTargetId(null); }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Advance Request</DialogTitle>
+            <DialogDescription>
+              Permanently delete this advance request? This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTargetId(null)}
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                if (deleteTargetId) deleteMutation.mutate({ id: deleteTargetId });
+              }}
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

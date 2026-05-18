@@ -21,6 +21,14 @@ import {
   CardTitle,
 } from "@ndma-dcs-staff-portal/ui/components/card";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@ndma-dcs-staff-portal/ui/components/dialog";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -155,6 +163,7 @@ function AddStepForm({
 function PolicyCard({ policy }: { policy: PolicyWithSteps }) {
   const [addingStep, setAddingStep] = useState(false);
   const [expanded, setExpanded] = useState(true);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const deletePolicyMutation = useMutation(
     orpc.escalation.policies.delete.mutationOptions({
@@ -163,6 +172,7 @@ function PolicyCard({ policy }: { policy: PolicyWithSteps }) {
           queryKey: orpc.escalation.policies.list.key(),
         });
         toast.success("Policy deleted");
+        setConfirmDeleteOpen(false);
       },
       onError: (err) => toast.error(err.message),
     })
@@ -183,6 +193,7 @@ function PolicyCard({ policy }: { policy: PolicyWithSteps }) {
   const nextOrder = (policy.steps?.length ?? 0) + 1;
 
   return (
+    <>
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
@@ -239,15 +250,7 @@ function PolicyCard({ policy }: { policy: PolicyWithSteps }) {
               variant="ghost"
               className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40"
               disabled={deletePolicyMutation.isPending}
-              onClick={() => {
-                if (
-                  confirm(
-                    `Delete policy "${policy.name}"? This will also delete all its steps.`
-                  )
-                ) {
-                  deletePolicyMutation.mutate({ id: policy.id });
-                }
-              }}
+              onClick={() => setConfirmDeleteOpen(true)}
               title="Delete policy"
             >
               <Trash2 className="size-4" />
@@ -328,6 +331,40 @@ function PolicyCard({ policy }: { policy: PolicyWithSteps }) {
         </CardContent>
       )}
     </Card>
+
+    <Dialog
+      open={confirmDeleteOpen}
+      onOpenChange={(o) => { if (!o) setConfirmDeleteOpen(false); }}
+    >
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Delete Escalation Policy</DialogTitle>
+          <DialogDescription>
+            Permanently delete the policy{" "}
+            <span className="font-medium text-foreground">{policy.name}</span>?
+            This will also delete all of its escalation steps. This cannot be
+            undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setConfirmDeleteOpen(false)}
+            disabled={deletePolicyMutation.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={deletePolicyMutation.isPending}
+            onClick={() => deletePolicyMutation.mutate({ id: policy.id })}
+          >
+            {deletePolicyMutation.isPending ? "Deleting…" : "Delete"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 

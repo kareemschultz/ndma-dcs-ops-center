@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@ndma-dcs-staff-portal/ui/components/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@ndma-dcs-staff-portal/ui/components/dialog";
 import { Input } from "@ndma-dcs-staff-portal/ui/components/input";
 import { Label } from "@ndma-dcs-staff-portal/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@ndma-dcs-staff-portal/ui/components/select";
@@ -170,6 +170,7 @@ function TimesheetDocumentsPage() {
   const [month, setMonth] = useState<string>("all");
   const [office, setOffice] = useState<string>("all");
   const [createOpen, setCreateOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; filename: string } | null>(null);
 
   const qc = useQueryClient();
 
@@ -188,6 +189,7 @@ function TimesheetDocumentsPage() {
       onSuccess: () => {
         toast.success("Document removed");
         qc.invalidateQueries({ queryKey: orpc.timesheetDocuments.list.key() });
+        setDeleteTarget(null);
       },
       onError: (e) => toast.error(e.message),
     }),
@@ -259,7 +261,7 @@ function TimesheetDocumentsPage() {
             {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
           </div>
         ) : (
-          <div className="rounded-lg border overflow-hidden">
+          <div className="rounded-lg border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -295,11 +297,7 @@ function TimesheetDocumentsPage() {
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         disabled={deleteMut.isPending}
-                        onClick={() => {
-                          if (confirm(`Remove "${doc.filename}"?`)) {
-                            deleteMut.mutate({ id: doc.id });
-                          }
-                        }}
+                        onClick={() => setDeleteTarget({ id: doc.id, filename: doc.filename })}
                       >
                         <Trash2 className="size-4" />
                       </Button>
@@ -320,6 +318,42 @@ function TimesheetDocumentsPage() {
       </Main>
 
       <CreateDocumentDialog open={createOpen} onClose={() => setCreateOpen(false)} />
+
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remove Timesheet Document</DialogTitle>
+            <DialogDescription>
+              Remove the document{" "}
+              <span className="font-medium text-foreground">
+                {deleteTarget?.filename}
+              </span>{" "}
+              from the registry? This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleteMut.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMut.isPending}
+              onClick={() => {
+                if (deleteTarget) deleteMut.mutate({ id: deleteTarget.id });
+              }}
+            >
+              {deleteMut.isPending ? "Removing…" : "Remove"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
