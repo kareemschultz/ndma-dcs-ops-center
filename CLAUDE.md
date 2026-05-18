@@ -82,6 +82,20 @@ cd apps/web && bunx shadcn@latest add <component>
 # To packages/ui (shared)
 cd packages/ui && bunx shadcn@latest add <component>
 ```
+**`packages/ui` is the Base UI variant of shadcn** (`@base-ui/react`, NOT Radix) —
+use the `render` prop, never `asChild`; there is no `alert-dialog` (use `Dialog` +
+`DialogDescription`). `SelectValue` hides the `_all`/`all`/`none` filter sentinels
+and accepts a `(value) => label` render function for value≠label cases.
+
+**Reuse these shared app components — do not rebuild them:**
+- `@/components/data-pagination` — `usePagination` + `<DataPagination>` for any
+  list/table over ~25 rows.
+- `@/lib/status-colors` — `TONES` + domain status→tone maps (single source of
+  truth for status colour; no green/teal).
+- `@/components/status-legend` — `<StatusLegend>` for every register.
+- `@/components/info-popover` — `<InfoPopover>` for explaining complex controls.
+- `@/components/former-tag` — `<FormerTag>` + `isFormerStatus()`.
+- `@/components/onboarding-tour` — first-run welcome tour (localStorage-gated).
 
 ## Database Schema Pattern
 - All schemas in `packages/db/src/schema/`
@@ -113,6 +127,26 @@ Do NOT disable it when adding LDAP.
 The login page must show BOTH:
 1. Email + Password form (always visible)
 2. "Sign in with Active Directory" button (LDAP, can be disabled/enabled via feature flag)
+
+### Active Directory / LDAP login (wired 2026-05)
+
+AD login is **additive** — it never replaces local email+password. Implementation:
+- **Config** lives in `packages/env` server schema as optional vars and is set in
+  `apps/server/.env` (gitignored): `LDAP_ENABLED`, `LDAP_URL`, `LDAP_DOMAIN`,
+  `LDAP_BIND_DN`, `LDAP_BIND_PASSWORD`, `LDAP_BASE_DN`, `LDAP_SEARCH_FILTER`.
+  NDMA values: `ldap://10.9.0.10:389`, domain `ndma.gov.gy`, bind
+  `infrastructure@ndma.gov.gy`, base `DC=ad,DC=egov,DC=gy`, filter
+  `(sAMAccountName=%(user)s)`. The **bind password must be filled in locally** —
+  it is not in git. AD logins fail with a clear "not configured" error until set.
+- **Flow:** login page calls `GET /api/ldap/status` to show/enable the AD button →
+  `POST /api/ldap/login` → `packages/auth/ldap.ts` `verifyLdapCredentials()` binds
+  as the service account, searches by `sAMAccountName`, re-binds as the user DN to
+  verify → `packages/auth/ldap-login.ts` `handleLdapLogin()` upserts a Better Auth
+  user (email=`mail`, name=`displayName`) and mints a session. Uses `ldapts`.
+- AD users never have a usable local password (internal hash derived from
+  `BETTER_AUTH_SECRET`). `emailAndPassword` stays enabled — see above.
+- After changing any `packages/` auth/env file, **restart the server** (`bun --hot`
+  does not reload `packages/`).
 
 ---
 
