@@ -4,17 +4,24 @@
 // ⚠️  BUG FIX: Old file called orpc.roster.maintenance.* — correct router is
 //     orpc.scheduling.maintenance.* (see fix notes below marked [FIX])
 //
+// Multi-view page (see CLAUDE.md "Multi-View Pages Pattern"):
+//   • Quarters — tasks grouped by quarter in collapsible sections (the default)
+//   • Board    — kanban grouped by completion status
+//   • List     — compact paginated table of every task
+//
 // Design changes from original:
-//   • Tasks are PRIMARY content — grouped by quarter in collapsible sections
 //   • Create form is SECONDARY — accessed via "Add Task" button → Dialog
 //   • Status badge colours: pending=muted, in_progress=amber, complete=blue, deferred=red
 //   • Each task shows assigned staff as initials chips + completion date
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { CheckCircle2, ChevronDown, ChevronRight, Pencil, Plus, Trash2, Wrench } from "lucide-react";
+import {
+  CheckCircle2, ChevronDown, ChevronRight, Columns3, LayoutGrid, List,
+  Pencil, Plus, Trash2, Wrench,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@ndma-dcs-staff-portal/ui/components/button";
@@ -27,11 +34,17 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@ndma-dcs-staff-portal/ui/components/select";
 import { Skeleton } from "@ndma-dcs-staff-portal/ui/components/skeleton";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@ndma-dcs-staff-portal/ui/components/table";
 import { Textarea } from "@ndma-dcs-staff-portal/ui/components/textarea";
+import { DataPagination, usePagination } from "@/components/data-pagination";
+import { StatusLegend } from "@/components/status-legend";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { SchedulingSubNav } from "@/components/layout/scheduling-sub-nav";
+import { TONES } from "@/lib/status-colors";
 import { orpc } from "@/utils/orpc";  // [FIX] use orpc.scheduling.maintenance.*
 
 export const Route = createFileRoute("/_authenticated/scheduling/maintenance")({
@@ -49,18 +62,37 @@ type MaintenanceTask = {
 };
 
 // ── Status badge ───────────────────────────────────────────────────────────────
+// Colours sourced from the central status-color system so a hue means the same
+// thing across the app: pending=neutral, in_progress=amber, complete=blue,
+// deferred=red.
 
-const STATUS_META: Record<CompletionStatus, { label: string; className: string }> = {
-  pending:     { label: "Pending",     className: "bg-muted text-muted-foreground" },
-  in_progress: { label: "In progress", className: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200" },
-  complete:    { label: "Complete",    className: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200" },
-  deferred:    { label: "Deferred",    className: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200" },
+type ViewMode = "quarters" | "board" | "list";
+
+const STATUS_ORDER: CompletionStatus[] = ["pending", "in_progress", "complete", "deferred"];
+
+const STATUS_META: Record<CompletionStatus, { label: string; tone: typeof TONES.amber }> = {
+  pending:     { label: "Pending",     tone: TONES.neutral },
+  in_progress: { label: "In progress", tone: TONES.amber },
+  complete:    { label: "Complete",    tone: TONES.blue },
+  deferred:    { label: "Deferred",    tone: TONES.red },
 };
+
+const STATUS_LEGEND = STATUS_ORDER.map((s) => ({
+  label: STATUS_META[s].label,
+  tone: STATUS_META[s].tone,
+}));
+
+const VIEW_OPTIONS: { mode: ViewMode; label: string; Icon: typeof List }[] = [
+  { mode: "quarters", label: "Quarters", Icon: LayoutGrid },
+  { mode: "board",    label: "Board",    Icon: Columns3 },
+  { mode: "list",     label: "List",     Icon: List },
+];
 
 function StatusBadge({ status }: { status: CompletionStatus }) {
   const meta = STATUS_META[status] ?? STATUS_META.pending;
   return (
-    <span className={`rounded px-2 py-0.5 text-[11px] font-medium ${meta.className}`}>
+    <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium ${meta.tone.badge}`}>
+      <span className={`size-1.5 rounded-full ${meta.tone.dot}`} aria-hidden />
       {meta.label}
     </span>
   );
@@ -363,13 +395,10 @@ function QuarterSection({ quarter, year, tasks, staffById, defaultOpen, onEdit, 
             tasks.map((task) => (
               <div key={task.id} className="flex items-start gap-3 px-4 py-3">
                 {/* Status dot */}
-                <span className={[
-                  "mt-1 size-2 shrink-0 rounded-full",
-                  task.completionStatus === "complete"    ? "bg-primary" :
-                  task.completionStatus === "in_progress" ? "bg-amber-500" :
-                  task.completionStatus === "deferred"    ? "bg-red-500" :
-                  "bg-muted-foreground/30",
-                ].join(" ")} />
+                <span
+                  className={`mt-1.5 size-2.5 shrink-0 rounded-full ${STATUS_META[task.completionStatus]?.tone.dot ?? TONES.neutral.dot}`}
+                  aria-hidden
+                />
 
                 <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -428,12 +457,196 @@ function QuarterSection({ quarter, year, tasks, staffById, defaultOpen, onEdit, 
   );
 }
 
+// ── Board view — kanban grouped by completion status ──────────────────────────
+
+function BoardView({ tasks, staffById, onEdit, onDelete }: {
+  tasks: MaintenanceTask[];
+  staffById: Record<string, { user?: { name?: string | null } | null }>;
+  onEdit: (task: MaintenanceTask) => void;
+  onDelete: (task: MaintenanceTask) => void;
+}) {
+  return (
+    <div className="flex gap-4 overflow-x-auto pb-2">
+      {STATUS_ORDER.map((status) => {
+        const meta = STATUS_META[status];
+        const colTasks = tasks.filter((t) => t.completionStatus === status);
+        return (
+          <section
+            key={status}
+            aria-label={`${meta.label} tasks`}
+            className="flex w-72 shrink-0 flex-col rounded-xl border bg-muted/20"
+          >
+            <header className={`flex items-center gap-2 rounded-t-xl border-b px-3 py-2.5 ${meta.tone.bg}`}>
+              <span className={`size-2 rounded-full ${meta.tone.dot}`} aria-hidden />
+              <h3 className={`text-sm font-semibold ${meta.tone.text}`}>{meta.label}</h3>
+              <span className="ml-auto rounded-full bg-background/70 px-2 py-0.5 text-xs font-medium tabular-nums">
+                {colTasks.length}
+              </span>
+            </header>
+            <div className="flex flex-col gap-2 p-2.5">
+              {colTasks.length === 0 ? (
+                <p className="px-1 py-6 text-center text-xs text-muted-foreground">No tasks</p>
+              ) : (
+                colTasks.map((task) => (
+                  <article
+                    key={task.id}
+                    className={`rounded-lg border-l-4 bg-background p-3 shadow-sm ${meta.tone.border}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-sm font-medium leading-snug">{task.taskName}</span>
+                      <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
+                        Q{task.quarter}
+                      </span>
+                    </div>
+                    {task.completionDate && (
+                      <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                        {format(parseISO(task.completionDate), "d MMM yyyy")}
+                      </p>
+                    )}
+                    {task.completionNotes && (
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{task.completionNotes}</p>
+                    )}
+                    {task.assignedStaffIds.length > 0 && (
+                      <div className="mt-2 flex flex-wrap items-center gap-1">
+                        {task.assignedStaffIds.map((id) => (
+                          <StaffInitialsChip key={id} name={staffById[id]?.user?.name} />
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-2 flex items-center justify-end gap-1 border-t pt-1.5">
+                      <Button
+                        size="icon" variant="ghost"
+                        className="size-7 text-muted-foreground hover:text-foreground"
+                        onClick={() => onEdit(task)}
+                        aria-label={`Edit ${task.taskName}`}
+                      >
+                        <Pencil className="size-3.5" />
+                      </Button>
+                      <Button
+                        size="icon" variant="ghost"
+                        className="size-7 text-destructive hover:text-destructive/80"
+                        onClick={() => onDelete(task)}
+                        aria-label={`Delete ${task.taskName}`}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── List view — compact paginated table of every task ─────────────────────────
+
+function ListView({ tasks, staffById, onEdit, onDelete }: {
+  tasks: MaintenanceTask[];
+  staffById: Record<string, { user?: { name?: string | null } | null }>;
+  onEdit: (task: MaintenanceTask) => void;
+  onDelete: (task: MaintenanceTask) => void;
+}) {
+  const sorted = useMemo(
+    () => [...tasks].sort((a, b) => a.quarter - b.quarter || a.taskName.localeCompare(b.taskName)),
+    [tasks],
+  );
+  const pagination = usePagination(sorted, 15);
+
+  if (tasks.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed py-16 text-center text-sm text-muted-foreground">
+        No maintenance tasks for this year yet.
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="overflow-x-auto rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col" className="w-16">Quarter</TableHead>
+              <TableHead scope="col">Task</TableHead>
+              <TableHead scope="col" className="w-36">Status</TableHead>
+              <TableHead scope="col">Assigned</TableHead>
+              <TableHead scope="col" className="w-32">Completed</TableHead>
+              <TableHead scope="col" className="w-20 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {pagination.pageItems.map((task) => (
+              <TableRow key={task.id}>
+                <TableCell className="font-mono font-semibold">Q{task.quarter}</TableCell>
+                <TableCell>
+                  <span className="font-medium">{task.taskName}</span>
+                  {task.completionNotes && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">{task.completionNotes}</p>
+                  )}
+                </TableCell>
+                <TableCell><StatusBadge status={task.completionStatus} /></TableCell>
+                <TableCell>
+                  {task.assignedStaffIds.length === 0 ? (
+                    <span className="text-xs italic text-muted-foreground">Unassigned</span>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-1">
+                      {task.assignedStaffIds.map((id) => (
+                        <StaffInitialsChip key={id} name={staffById[id]?.user?.name} />
+                      ))}
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  {task.completionDate ? format(parseISO(task.completionDate), "d MMM yyyy") : "—"}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      size="icon" variant="ghost"
+                      className="size-7 text-muted-foreground hover:text-foreground"
+                      onClick={() => onEdit(task)}
+                      aria-label={`Edit ${task.taskName}`}
+                    >
+                      <Pencil className="size-3.5" />
+                    </Button>
+                    <Button
+                      size="icon" variant="ghost"
+                      className="size-7 text-destructive hover:text-destructive/80"
+                      onClick={() => onDelete(task)}
+                      aria-label={`Delete ${task.taskName}`}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <DataPagination
+        page={pagination.page}
+        pageCount={pagination.pageCount}
+        total={pagination.total}
+        rangeLabel={pagination.rangeLabel}
+        onPageChange={pagination.setPage}
+        className="mt-2"
+      />
+    </>
+  );
+}
+
 // ── Main page ──────────────────────────────────────────────────────────────────
 
 function SchedulingMaintenancePage() {
   const currentYear = new Date().getFullYear();
   const currentQ    = Math.ceil((new Date().getMonth() + 1) / 3);
   const [year, setYear]           = useState(currentYear);
+  const [viewMode, setViewMode]   = useState<ViewMode>("quarters");
   const [addOpen, setAddOpen]     = useState(false);
   const [editTask, setEditTask]   = useState<MaintenanceTask | null>(null);
   const [deleteTask, setDeleteTask] = useState<MaintenanceTask | null>(null);
@@ -450,6 +663,8 @@ function SchedulingMaintenancePage() {
   const staffList = staffData ?? [];
   const staffById: Record<string, { user?: { name?: string | null } | null }> =
     Object.fromEntries(staffList.map((s) => [s.id, s]));
+
+  const allTasks = (tasks ?? []) as MaintenanceTask[];
 
   return (
     <>
@@ -473,9 +688,32 @@ function SchedulingMaintenancePage() {
               Recurring inspections, tests, and operational tasks.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* View-mode toggle */}
+            <div
+              className="inline-flex rounded-lg border p-0.5"
+              role="group"
+              aria-label="Maintenance view mode"
+            >
+              {VIEW_OPTIONS.map(({ mode, label, Icon }) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setViewMode(mode)}
+                  aria-pressed={viewMode === mode}
+                  className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                    viewMode === mode
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="size-3.5" />
+                  {label}
+                </button>
+              ))}
+            </div>
             <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-              <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[100px]" aria-label="Year"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {[currentYear - 1, currentYear, currentYear + 1].map((y) => (
                   <SelectItem key={y} value={String(y)}>{y}</SelectItem>
@@ -488,22 +726,41 @@ function SchedulingMaintenancePage() {
           </div>
         </div>
 
+        {/* Status legend */}
+        <div className="px-6 pb-3">
+          <StatusLegend label="Status" items={STATUS_LEGEND} />
+        </div>
+
         <div className="space-y-3 px-6 pb-6">
           {isLoading ? (
             Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)
-          ) : (
+          ) : viewMode === "quarters" ? (
             [1, 2, 3, 4].map((q) => (
               <QuarterSection
                 key={q}
                 quarter={q}
                 year={year}
-                tasks={(tasks ?? []).filter((t) => t.quarter === q) as MaintenanceTask[]}
+                tasks={allTasks.filter((t) => t.quarter === q)}
                 staffById={staffById}
                 defaultOpen={q === currentQ}
                 onEdit={(task) => { setEditTask(task); setAddOpen(true); }}
                 onDelete={(task) => setDeleteTask(task)}
               />
             ))
+          ) : viewMode === "board" ? (
+            <BoardView
+              tasks={allTasks}
+              staffById={staffById}
+              onEdit={(task) => { setEditTask(task); setAddOpen(true); }}
+              onDelete={(task) => setDeleteTask(task)}
+            />
+          ) : (
+            <ListView
+              tasks={allTasks}
+              staffById={staffById}
+              onEdit={(task) => { setEditTask(task); setAddOpen(true); }}
+              onDelete={(task) => setDeleteTask(task)}
+            />
           )}
         </div>
       </Main>

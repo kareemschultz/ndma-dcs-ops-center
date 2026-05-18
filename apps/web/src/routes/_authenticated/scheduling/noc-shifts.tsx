@@ -14,7 +14,7 @@
 //   • Excel import (SheetJS) → bulk-set via bulkSet mutation
 //   • PDF export (jsPDF + autotable) landscape grid
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "@/lib/auth-client";
@@ -22,9 +22,12 @@ import { format, parseISO } from "date-fns";
 import {
   ArrowLeftRight,
   CalendarDays,
+  CalendarRange,
   ChevronLeft,
   ChevronRight,
   Download,
+  LayoutGrid,
+  List,
   Search,
   TriangleAlert,
   Upload,
@@ -61,12 +64,24 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@ndma-dcs-staff-portal/ui/components/popover";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@ndma-dcs-staff-portal/ui/components/table";
+import { DataPagination, usePagination } from "@/components/data-pagination";
 import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { SchedulingSubNav } from "@/components/layout/scheduling-sub-nav";
 import { orpc } from "@/utils/orpc";
 import { getHoliday } from "@/utils/holidays";
+
+type ViewMode = "grid" | "week" | "list";
+
+const VIEW_OPTIONS: { mode: ViewMode; label: string; Icon: typeof List }[] = [
+  { mode: "grid", label: "Month grid", Icon: LayoutGrid },
+  { mode: "week", label: "Week",       Icon: CalendarRange },
+  { mode: "list", label: "List",       Icon: List },
+];
 
 export const Route = createFileRoute("/_authenticated/scheduling/noc-shifts")({
   component: NocShiftsPage,
@@ -271,10 +286,12 @@ function ShiftChip({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           disabled={pending}
+          aria-label={notes ? `${shift}: ${notes}` : `Set shift — currently ${shift ?? "Off"}`}
           title={notes ? `${shift}: ${notes}` : (shift ?? "Off")}
           className={[
-            "relative flex h-7 w-7 items-center justify-center rounded-md font-mono text-[10px] font-bold transition-all",
+            "relative flex h-8 w-8 items-center justify-center rounded-md font-mono text-[11px] font-bold transition-all",
             "hover:opacity-80 hover:ring-1 hover:ring-current/40 active:scale-95 disabled:opacity-50",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
             open ? "ring-2 ring-current/50" : "",
             config.className,
           ].join(" ")}
@@ -355,6 +372,9 @@ function NocShiftsPage() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [staffFilter, setStaffFilter] = useState("");
   const [myShiftsMode, setMyShiftsMode] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  // Week view — index (0-based) of the displayed week within the current month.
+  const [weekIndex, setWeekIndex] = useState(0);
 
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
@@ -467,6 +487,47 @@ function NocShiftsPage() {
     const holiday = getHoliday(dateStr);
     return { day: i + 1, dow, weekStart, isWeekend, isToday, holiday, dateStr };
   });
+
+  // ── Week view — split the month into Mon-anchored weeks ──────────────────────
+  type DayInfo = (typeof days)[number];
+  const weeks: DayInfo[][] = useMemo(() => {
+    const out: DayInfo[][] = [];
+    let bucket: DayInfo[] = [];
+    for (const d of days) {
+      if (d.weekStart && bucket.length > 0) {
+        out.push(bucket);
+        bucket = [];
+      }
+      bucket.push(d);
+    }
+    if (bucket.length > 0) out.push(bucket);
+    return out;
+  }, [days]);
+  const safeWeekIndex = Math.min(weekIndex, Math.max(0, weeks.length - 1));
+  const weekDays = weeks[safeWeekIndex] ?? [];
+
+  // ── List view rows — one row per scheduled shift (non-Off) ───────────────────
+  const filteredStaffIdSet = new Set(filteredStaffIds);
+  const listRows = useMemo(() => {
+    return (shifts ?? [])
+      .filter((s) => filteredStaffIdSet.has(s.staffId) && s.shiftType !== "Off")
+      .map((s) => ({
+        id: s.id ?? `${s.staffId}-${s.shiftDate}`,
+        staffId: s.staffId,
+        staffName: staffNames[s.staffId] ?? "Unknown",
+        shiftDate: s.shiftDate,
+        shiftType: s.shiftType as ShiftType,
+        notes: s.notes ?? null,
+      }))
+      .sort((a, b) =>
+        a.shiftDate === b.shiftDate
+          ? a.staffName.localeCompare(b.staffName)
+          : a.shiftDate.localeCompare(b.shiftDate),
+      );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shifts, filteredStaffIds.join(","), staffNames]);
+
+  const listPagination = usePagination(listRows, 25);
 
   // ── Navigation helpers ───────────────────────────────────────────────────────
 
@@ -794,11 +855,37 @@ function NocShiftsPage() {
           <div className="space-y-0.5">
             <h1 className="text-xl font-bold tracking-tight">NOC Shift Grid</h1>
             <p className="text-sm text-muted-foreground">
-              Click any cell to pick a shift type. Hover a cell for the quick-clear button.
+              {viewMode === "list"
+                ? "Every scheduled shift this month, paginated. Switch to the grid or week view to edit."
+                : "Click any cell to pick a shift type. Hover a cell for the quick-clear button."}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* View-mode toggle */}
+            <div
+              className="inline-flex rounded-lg border p-0.5"
+              role="group"
+              aria-label="Shift schedule view mode"
+            >
+              {VIEW_OPTIONS.map(({ mode, label, Icon }) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setViewMode(mode)}
+                  aria-pressed={viewMode === mode}
+                  className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                    viewMode === mode
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="size-3.5" />
+                  {label}
+                </button>
+              ))}
+            </div>
+
             {/* My Shifts toggle — only shown when the user has a NOC staff profile */}
             {myStaffId && allStaffIds.includes(myStaffId) && (
               <Button
@@ -933,7 +1020,39 @@ function NocShiftsPage() {
           </div>
         </div>
 
-        {/* Grid */}
+        {/* Week navigation (week view only) */}
+        {viewMode === "week" && weeks.length > 0 && (
+          <div className="flex items-center gap-2 px-6 pb-3">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1"
+              disabled={safeWeekIndex <= 0}
+              onClick={() => setWeekIndex((i) => Math.max(0, i - 1))}
+            >
+              <ChevronLeft className="h-3.5 w-3.5" /> Previous
+            </Button>
+            <span className="text-sm font-medium tabular-nums">
+              Week {safeWeekIndex + 1} of {weeks.length}
+              {weekDays.length > 0 && (
+                <span className="ml-1.5 text-muted-foreground">
+                  · {MONTHS[month - 1]} {weekDays[0]?.day}–{weekDays[weekDays.length - 1]?.day}
+                </span>
+              )}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1"
+              disabled={safeWeekIndex >= weeks.length - 1}
+              onClick={() => setWeekIndex((i) => Math.min(weeks.length - 1, i + 1))}
+            >
+              Next <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+
+        {/* Body */}
         {isLoading ? (
           <Skeleton className="mx-6 mb-6 h-64 w-auto" />
         ) : allStaffIds.length === 0 ? (
@@ -946,23 +1065,90 @@ function NocShiftsPage() {
               Import an Excel file or click a staff cell once data has been added via the API.
             </p>
           </div>
+        ) : viewMode === "list" ? (
+          /* ── List view — paginated table of every scheduled shift ──────────── */
+          <div className="mx-6 mb-6">
+            {listRows.length === 0 ? (
+              <div className="rounded-lg border border-dashed py-16 text-center text-sm text-muted-foreground">
+                No scheduled shifts {staffFilter ? `match “${staffFilter}”` : "for this month"}.
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead scope="col" className="w-36">Date</TableHead>
+                        <TableHead scope="col" className="w-20">Day</TableHead>
+                        <TableHead scope="col">Staff</TableHead>
+                        <TableHead scope="col" className="w-40">Shift</TableHead>
+                        <TableHead scope="col">Notes</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {listPagination.pageItems.map((row) => {
+                        const c = SHIFT_CHIP[row.shiftType];
+                        const dayName = format(parseISO(row.shiftDate), "EEE");
+                        return (
+                          <TableRow key={row.id}>
+                            <TableCell className="font-mono text-xs">
+                              {format(parseISO(row.shiftDate), "d MMM yyyy")}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{dayName}</TableCell>
+                            <TableCell className="font-medium">{row.staffName}</TableCell>
+                            <TableCell>
+                              <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${c.className}`}>
+                                <span className="font-mono font-bold">{c.short}</span>
+                                {c.legendLabel}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {row.notes || "—"}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+                <DataPagination
+                  page={listPagination.page}
+                  pageCount={listPagination.pageCount}
+                  total={listPagination.total}
+                  rangeLabel={listPagination.rangeLabel}
+                  onPageChange={listPagination.setPage}
+                  className="mt-2"
+                />
+              </>
+            )}
+          </div>
         ) : (
+          /* ── Grid / Week view — shared shift table, day columns vary ───────── */
           <div className="mx-6 mb-6 overflow-x-auto rounded-xl border border-border">
-            <table className="border-collapse text-[11px]">
+            <table className="w-full border-collapse text-[11px]">
+              <caption className="sr-only">
+                NOC shift schedule for {MONTHS[month - 1]} {year}
+                {viewMode === "week" ? ` — week ${safeWeekIndex + 1}` : ""}
+              </caption>
               <thead>
                 <tr className="border-b bg-muted/50">
                   {/* Staff header — sticky */}
-                  <th className="sticky left-0 z-10 w-44 min-w-[176px] bg-muted/80 px-3 py-2.5 text-left text-xs font-medium whitespace-nowrap">
+                  <th
+                    scope="col"
+                    className="sticky left-0 z-10 w-48 min-w-[192px] bg-muted/80 px-3 py-3 text-left text-xs font-semibold whitespace-nowrap"
+                  >
                     Staff
                   </th>
                   {/* Day headers */}
-                  {days.map(({ day, dow, weekStart, isWeekend, isToday, holiday }) => (
+                  {(viewMode === "week" ? weekDays : days).map(({ day, dow, weekStart, isWeekend, isToday, holiday }) => (
                     <th
                       key={day}
+                      scope="col"
                       title={holiday ?? undefined}
                       className={[
-                        "min-w-[36px] px-0 py-1.5 text-center font-medium",
-                        weekStart ? "border-l border-l-border" : "",
+                        viewMode === "week" ? "min-w-[88px] px-1 py-2" : "min-w-[40px] px-0 py-2",
+                        "text-center font-medium",
+                        weekStart && viewMode === "grid" ? "border-l border-l-border" : "",
                         holiday
                           ? "bg-amber-50 dark:bg-amber-950/20"
                           : isWeekend
@@ -977,21 +1163,27 @@ function NocShiftsPage() {
                         .filter(Boolean)
                         .join(" ")}
                     >
-                      <div className="text-[9px] uppercase leading-none">{dow}</div>
+                      <div className="text-[10px] uppercase leading-tight">{dow}</div>
                       <div
-                        className={["text-xs font-semibold", isToday ? "text-primary" : ""].join(" ")}
+                        className={["text-sm font-semibold leading-tight", isToday ? "text-primary" : ""].join(" ")}
                       >
                         {day}
                       </div>
                       {holiday && (
-                        <div className="text-[7px] font-bold leading-none text-amber-600 dark:text-amber-400">
-                          PH
+                        <div
+                          className="text-[8px] font-bold leading-none text-amber-600 dark:text-amber-400"
+                          title={holiday}
+                        >
+                          {viewMode === "week" ? holiday : "PH"}
                         </div>
                       )}
                     </th>
                   ))}
                   {/* Summary header */}
-                  <th className="border-l px-3 py-2.5 text-center text-xs font-medium whitespace-nowrap">
+                  <th
+                    scope="col"
+                    className="border-l px-3 py-3 text-center text-xs font-semibold whitespace-nowrap"
+                  >
                     D / N / S
                   </th>
                 </tr>
@@ -1000,7 +1192,7 @@ function NocShiftsPage() {
                 {filteredStaffIds.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={daysInMonth + 2}
+                      colSpan={(viewMode === "week" ? weekDays.length : daysInMonth) + 2}
                       className="py-10 text-center text-sm text-muted-foreground"
                     >
                       No staff match &ldquo;{staffFilter}&rdquo;
@@ -1018,8 +1210,9 @@ function NocShiftsPage() {
                         className={`border-b last:border-0 hover:bg-muted/30 ${isMyRow && !myShiftsMode ? "shadow-[inset_3px_0_0_0_hsl(var(--primary))] bg-blue-50/30 dark:bg-blue-950/10" : ""}`}
                       >
                         {/* Staff name — sticky, truncated with title for full name */}
-                        <td
-                          className="sticky left-0 z-10 w-44 min-w-[176px] max-w-[176px] truncate bg-background px-3 py-1 font-medium whitespace-nowrap"
+                        <th
+                          scope="row"
+                          className="sticky left-0 z-10 w-48 min-w-[192px] max-w-[192px] truncate bg-background px-3 py-2 text-left font-medium whitespace-nowrap"
                           title={displayName}
                         >
                           <span className="inline-flex items-center gap-1">
@@ -1031,22 +1224,23 @@ function NocShiftsPage() {
                                   .map((c) => `${c.date} (${c.leaveType})`)
                                   .join(", ")}`}
                               >
-                                <TriangleAlert className="size-2.5" />
+                                <TriangleAlert className="size-2.5" aria-hidden />
                                 {conflicts.length}
+                                <span className="sr-only"> leave conflicts</span>
                               </span>
                             )}
                           </span>
-                        </td>
+                        </th>
                         {/* Shift cells */}
-                        {days.map(({ day, weekStart, isWeekend, isToday, holiday }) => {
+                        {(viewMode === "week" ? weekDays : days).map(({ day, weekStart, isWeekend, isToday, holiday }) => {
                           const entry = shiftMap[staffId]?.[day];
                           return (
                             <td
                               key={day}
                               title={holiday ? holiday : undefined}
                               className={[
-                                "p-0.5",
-                                weekStart ? "border-l border-l-border" : "",
+                                viewMode === "week" ? "p-1.5" : "p-1",
+                                weekStart && viewMode === "grid" ? "border-l border-l-border" : "",
                                 holiday ? "bg-amber-50/50 dark:bg-amber-950/10" : isWeekend ? "bg-muted/20" : "",
                                 isToday
                                   ? "border-l-2 border-l-blue-400/60 bg-blue-50/40 dark:bg-blue-950/10"
@@ -1055,28 +1249,44 @@ function NocShiftsPage() {
                                 .filter(Boolean)
                                 .join(" ")}
                             >
-                              <ShiftChip
-                                shift={entry?.type}
-                                notes={entry?.notes}
-                                pending={mutation.isPending}
-                                onSelect={(type) => handleCellSelect(staffId, day, type)}
-                                onClear={() => handleClearCell(staffId, day)}
-                              />
+                              <div className={viewMode === "week" ? "flex flex-col items-center gap-1" : ""}>
+                                <ShiftChip
+                                  shift={entry?.type}
+                                  notes={entry?.notes}
+                                  pending={mutation.isPending}
+                                  onSelect={(type) => handleCellSelect(staffId, day, type)}
+                                  onClear={() => handleClearCell(staffId, day)}
+                                />
+                                {viewMode === "week" && entry?.type && entry.type !== "Off" && (
+                                  <span className="text-[9px] font-medium leading-none text-muted-foreground">
+                                    {SHIFT_CHIP[entry.type].legendLabel}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                           );
                         })}
                         {/* Summary */}
-                        <td className="border-l px-3 py-1">
-                          <div className="flex items-center gap-1 font-mono text-[10px] tabular-nums">
-                            <span className="font-semibold text-blue-700 dark:text-blue-300">
+                        <td className="border-l px-3 py-2">
+                          <div className="flex items-center gap-1 font-mono text-[11px] tabular-nums">
+                            <span
+                              className="font-semibold text-blue-700 dark:text-blue-300"
+                              title="Day shifts"
+                            >
                               {sum.D}
                             </span>
-                            <span className="text-muted-foreground">/</span>
-                            <span className="font-semibold text-purple-700 dark:text-purple-300">
+                            <span className="text-muted-foreground" aria-hidden>/</span>
+                            <span
+                              className="font-semibold text-purple-700 dark:text-purple-300"
+                              title="Night shifts"
+                            >
                               {sum.N}
                             </span>
-                            <span className="text-muted-foreground">/</span>
-                            <span className="font-semibold text-indigo-700 dark:text-indigo-300">
+                            <span className="text-muted-foreground" aria-hidden>/</span>
+                            <span
+                              className="font-semibold text-indigo-700 dark:text-indigo-300"
+                              title="Swing shifts"
+                            >
                               {sum.S}
                             </span>
                           </div>

@@ -1,18 +1,21 @@
 // /scheduling/dcs-oncall — DCS On-Call Weekly Roster
 //
-// Changes from prior version:
-//   • "Add Week" button + dialog to create a new week entry
-//   • Default view shows ALL weeks (no DEFAULT_WINDOW limit)
-//   • "Show all" toggle removed
-//   • Date column updated to Sun → Sat display using weekStartDate / weekEndDate
-//   • "No weeks" prompt updated to mention "Add Week"
-//   • Current week highlight (blue border + "Now" badge) preserved
+// Multi-view page (see CLAUDE.md "Multi-View Pages Pattern"):
+//   • List    — the existing paginated 4-role weekly table (13 weeks / page)
+//   • Timeline — a year-long "gantt" view: one row per week, one swimlane per
+//                role, current week highlighted. Best for spotting coverage
+//                gaps and who-is-on-call-when at a glance.
+//
+// Preserved: Add/Edit Week dialogs, inline role assignment, leave-conflict
+// badges, auto-jump-to-current-week-page, current week highlight.
 
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { CalendarCheck2, Pencil, Plus, TriangleAlert, User } from "lucide-react";
+import {
+  CalendarCheck2, GanttChartSquare, List, Pencil, Plus, TriangleAlert, User,
+} from "lucide-react";
 import { useSession } from "@/lib/auth-client";
 import { toast } from "sonner";
 
@@ -40,6 +43,13 @@ import { ThemeSwitch } from "@/components/theme-switch";
 import { SchedulingSubNav } from "@/components/layout/scheduling-sub-nav";
 import { orpc } from "@/utils/orpc";
 import { getHolidaysInRange } from "@/utils/holidays";
+
+type ViewMode = "list" | "timeline";
+
+const VIEW_OPTIONS: { mode: ViewMode; label: string; Icon: typeof List }[] = [
+  { mode: "list",     label: "List",     Icon: List },
+  { mode: "timeline", label: "Timeline", Icon: GanttChartSquare },
+];
 
 export const Route = createFileRoute("/_authenticated/scheduling/dcs-oncall")({
   component: DcsOnCallPage,
@@ -455,14 +465,148 @@ function EditWeekDialog({ open, onOpenChange, week, staffList }: {
   );
 }
 
+// ── Timeline ("gantt") view — year-long swimlanes, one row per week ───────────
+//
+// Each week is a row; the four roles are colour-paired columns so coverage gaps
+// (an "Unassigned" role) and the current week are visible at a glance without
+// scrolling a wide grid. The whole block is wrapped in overflow-x-auto.
+
+function TimelineView({
+  weeks, staffList, currentWeekNum, myStaffId, currentWeekRef, conflictFor, onEditWeek,
+}: {
+  weeks: WeekRow[];
+  staffList: StaffItem[];
+  currentWeekNum: number | null;
+  myStaffId: string | null;
+  currentWeekRef: React.RefObject<HTMLLIElement | null>;
+  conflictFor: (weekId: string, roleLabel: string) => LeaveConflict | undefined;
+  onEditWeek: (week: WeekRow) => void;
+}) {
+  if (weeks.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed py-16 text-center text-sm text-muted-foreground">
+        No weeks defined. Use &ldquo;Add Week&rdquo; to get started.
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-lg border">
+      <div className="min-w-[760px]">
+        {/* Column header */}
+        <div className="grid grid-cols-[7rem_repeat(4,minmax(0,1fr))] gap-px border-b bg-muted/50 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className="px-3 py-2">Week</div>
+          {ROLE_FIELDS.map((r) => (
+            <div key={r.key} className="px-3 py-2">{r.label}</div>
+          ))}
+        </div>
+        {/* Week rows */}
+        <ul className="divide-y">
+          {weeks.map((w) => {
+            const isCurrent = w.weekNum === currentWeekNum && w.year === CURRENT_YEAR;
+            const isMyWeek = myStaffId != null && (
+              w.leadEngineerId === myStaffId ||
+              w.asnSupportId === myStaffId ||
+              w.enterpriseSupportId === myStaffId ||
+              w.coreSupportId === myStaffId
+            );
+            return (
+              <li
+                key={w.id}
+                ref={isCurrent ? currentWeekRef : undefined}
+                className={`grid grid-cols-[7rem_repeat(4,minmax(0,1fr))] gap-px text-sm ${
+                  isCurrent
+                    ? "bg-blue-50/70 dark:bg-blue-950/25"
+                    : isMyWeek
+                    ? "bg-indigo-50/40 dark:bg-indigo-950/15"
+                    : "hover:bg-muted/30"
+                }`}
+              >
+                {/* Week label cell */}
+                <div
+                  className={`flex flex-col justify-center gap-0.5 px-3 py-2.5 ${
+                    isCurrent ? "border-l-2 border-l-primary" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-xs font-bold">W{w.weekNum}</span>
+                    {isCurrent && (
+                      <Badge variant="default" className="px-1.5 py-0 text-[10px]">Now</Badge>
+                    )}
+                    {isMyWeek && !isCurrent && (
+                      <Badge
+                        variant="outline"
+                        className="border-indigo-400 px-1.5 py-0 text-[10px] text-indigo-600 dark:text-indigo-300"
+                      >
+                        Me
+                      </Badge>
+                    )}
+                  </div>
+                  <span className="font-mono text-[10px] text-muted-foreground">
+                    {w.weekStartDate && w.weekEndDate
+                      ? `${format(parseISO(w.weekStartDate), "d MMM")} – ${format(parseISO(w.weekEndDate), "d MMM")}`
+                      : "—"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onEditWeek(w)}
+                    aria-label={`Edit week ${w.weekNum}`}
+                    className="mt-0.5 inline-flex w-fit items-center gap-1 rounded text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                  >
+                    <Pencil className="size-2.5" /> Edit
+                  </button>
+                </div>
+                {/* One role bar per role */}
+                {ROLE_FIELDS.map((r) => {
+                  const staffId = w[r.key] as string | null;
+                  const name = staffList.find((s) => s.id === staffId)?.user?.name ?? null;
+                  const conflict = conflictFor(w.id, r.label);
+                  return (
+                    <div key={r.key} className="flex items-center px-2 py-2.5">
+                      {name ? (
+                        <span
+                          className="inline-flex max-w-full items-center gap-1.5 truncate rounded-md bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-200"
+                          title={conflict ? `${name} — on approved ${conflict.leaveType}` : name}
+                        >
+                          <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-blue-200 text-[9px] font-bold dark:bg-blue-800">
+                            {initials(name)}
+                          </span>
+                          <span className="truncate">{name}</span>
+                          {conflict && (
+                            <TriangleAlert
+                              className="size-3 shrink-0 text-amber-600 dark:text-amber-400"
+                              aria-label="On approved leave during this week"
+                            />
+                          )}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-md border border-dashed border-amber-300 px-2 py-1 text-xs italic text-amber-700 dark:border-amber-700 dark:text-amber-400">
+                          <TriangleAlert className="size-3" aria-hidden />
+                          Unassigned
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ──────────────────────────────────────────────────────────────────
 
 function DcsOnCallPage() {
   const [year,        setYear]        = useState(CURRENT_YEAR);
+  const [viewMode,    setViewMode]    = useState<ViewMode>("list");
   const [editingWeek, setEditingWeek] = useState<WeekRow | null>(null);
   const [addOpen,     setAddOpen]     = useState(false);
   const [myOnlyMode,  setMyOnlyMode]  = useState(false);
   const currentWeekRef = useRef<HTMLTableRowElement>(null);
+  const timelineCurrentRef = useRef<HTMLLIElement>(null);
 
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
@@ -522,14 +666,16 @@ function DcsOnCallPage() {
     (w) => w.weekStartDate <= TODAY && TODAY <= w.weekEndDate
   )?.weekNum ?? null;
 
-  // Auto-scroll to current week on load
+  // Auto-scroll to current week on load (and when switching views)
   useEffect(() => {
-    if (!isLoading && currentWeekRef.current) {
+    if (isLoading) return;
+    const target = viewMode === "timeline" ? timelineCurrentRef.current : currentWeekRef.current;
+    if (target) {
       setTimeout(() => {
-        currentWeekRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 100);
     }
-  }, [isLoading]);
+  }, [isLoading, viewMode]);
 
   // Filter: all weeks, or only weeks where the current user appears in any role
   const allWeeks = weeks ?? [];
@@ -578,7 +724,30 @@ function DcsOnCallPage() {
               4-role weekly rotation. Click any role chip to reassign, or use ✎ for full edit.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* View-mode toggle */}
+            <div
+              className="inline-flex rounded-lg border p-0.5"
+              role="group"
+              aria-label="On-call roster view mode"
+            >
+              {VIEW_OPTIONS.map(({ mode, label, Icon }) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setViewMode(mode)}
+                  aria-pressed={viewMode === mode}
+                  className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                    viewMode === mode
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="size-3.5" />
+                  {label}
+                </button>
+              ))}
+            </div>
             {myStaffId && (
               <Button
                 size="sm"
@@ -590,7 +759,7 @@ function DcsOnCallPage() {
               </Button>
             )}
             <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-              <SelectTrigger className="w-[120px]">
+              <SelectTrigger className="w-[120px]" aria-label="Year">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -606,17 +775,35 @@ function DcsOnCallPage() {
           </div>
         </div>
 
-        <div className="mx-6 mb-6 overflow-hidden rounded-lg border">
+        {viewMode === "timeline" ? (
+          <div className="mx-6 mb-6">
+            {isLoading ? (
+              <Skeleton className="h-96 w-full rounded-lg" />
+            ) : (
+              <TimelineView
+                weeks={displayedWeeks}
+                staffList={staffList}
+                currentWeekNum={currentWeekNum}
+                myStaffId={myStaffId}
+                currentWeekRef={timelineCurrentRef}
+                conflictFor={conflictFor}
+                onEditWeek={(w) => setEditingWeek(w)}
+              />
+            )}
+          </div>
+        ) : (
+        <>
+        <div className="mx-6 mb-6 overflow-x-auto rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-20">Week</TableHead>
-                <TableHead className="w-44">Sun &#8594; Sat</TableHead>
-                <TableHead>Lead Engineer</TableHead>
-                <TableHead>ASN Support</TableHead>
-                <TableHead>Enterprise Support</TableHead>
-                <TableHead>CORE Support</TableHead>
-                <TableHead className="w-12" />
+                <TableHead scope="col" className="w-20">Week</TableHead>
+                <TableHead scope="col" className="w-44">Sun &#8594; Sat</TableHead>
+                <TableHead scope="col">Lead Engineer</TableHead>
+                <TableHead scope="col">ASN Support</TableHead>
+                <TableHead scope="col">Enterprise Support</TableHead>
+                <TableHead scope="col">CORE Support</TableHead>
+                <TableHead scope="col" className="w-12"><span className="sr-only">Actions</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -706,6 +893,7 @@ function DcsOnCallPage() {
                         <Button
                           variant="ghost" size="icon"
                           onClick={() => setEditingWeek(w as WeekRow)}
+                          aria-label={`Edit week ${w.weekNum}`}
                         >
                           <Pencil className="size-3.5" />
                         </Button>
@@ -726,6 +914,8 @@ function DcsOnCallPage() {
             onPageChange={pagination.setPage}
           />
         </div>
+        </>
+        )}
       </Main>
 
       <AddWeekDialog
