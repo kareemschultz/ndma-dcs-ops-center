@@ -170,6 +170,84 @@ The highest-value ones — internalise these to avoid the most common/expensive 
 
 ---
 
+## UI/UX & data conventions (2026-05 audit — apply to all new work)
+
+A full multi-agent audit + remediation pass established these rules. Follow them
+on every new page and every change — they are not optional polish.
+
+### Pagination
+- Any list/register that can exceed ~25 rows MUST paginate with
+  `usePagination` + `<DataPagination>` from `@/components/data-pagination`
+  (client-side slice of an already-fetched array). Already applied to Work,
+  Leave, TOSD, Contracts, Staff, Audit, Attendance logs, DCS on-call.
+- Board/kanban, gantt, calendar and analytics views keep the **full** set —
+  only paginate flat list/table/grid views.
+
+### Base UI Select (`packages/ui` Select)
+- `SelectValue` auto-hides the filter sentinels `_all` / `all` / `none` / `""`
+  and shows the placeholder instead — never let `_all` leak into the trigger.
+- When the option **value ≠ its label** (month number → name, staff id → name,
+  status code → label), pass function children: `<SelectValue>{(v) => label(v)}</SelectValue>`.
+  Otherwise the raw value (an `sp-…` id, a number) shows in the trigger.
+
+### Status colours & legends
+- Central system: `@/lib/status-colors` (`TONES`, domain maps, `statusTone()`).
+  Never inline ad-hoc colour maps — import from there.
+- **No green/teal.** `#14b8a6` (teal) reads as green and is banned — use cyan
+  `#06b6d4` / sky / fuchsia / indigo. Blue is "present/positive".
+- Every register page shows a visible `<StatusLegend>`. Never use cryptic
+  single-letter codes without an adjacent plain-word label (in the legend AND
+  as a `title` tooltip on the glyph). Spell shift codes out (D → Day Shift).
+
+### Dates / periods
+- Quarters: Q1 Jan–Mar, Q2 Apr–Jun, Q3 Jul–Sep, Q4 Oct–Dec. **Derive the
+  quarter from the month**, don't trust a stored `quarter` column (can be
+  null/stale). Normalise month names case-insensitively (tolerate "Apr"/"apr").
+- Period-scoped pages (lateness, NOC perf) should **default to the current
+  period** (quarter/month), not Q1/January.
+
+### Display clarity
+- Durations: render as unambiguous `"1h 30m"` / `"45m"` — never bare `"1:30"`.
+- Derived/inferred values (e.g. lateness from clock logs) must be visually
+  distinct (amber italic) **and** carry a `title` explaining the source.
+- Percentages are clamped to 0–100 — bad data must never print `134%`.
+
+### Forms, dialogs & microcopy
+- Never `window.confirm()` — use Base UI `Dialog` + `DialogDescription` for
+  every destructive confirmation.
+- Edit dialogs: a lazy `useState(() => editX ? {...} : {...})` initialiser only
+  runs once. Conditionally mount the dialog with a `key={editX?.id ?? "new"}`
+  so it re-initialises every open — otherwise the edit form opens blank.
+- A form must SEND every field it collects — audit `handleSubmit` payloads
+  against the router input schema; silently-dropped fields are a data-loss bug.
+- Icon-only buttons need a `title` / `aria-label`. Complex controls get an
+  `<InfoPopover>` (`@/components/info-popover`). Format-specific inputs get
+  helper text.
+
+### Mobile / layout
+- Wrap every wide `<Table>` in `overflow-x-auto`. The page shell (`Main`,
+  `Header` inner row) needs `min-w-0` or `SidebarInset`'s flex layout lets
+  tables push the whole page wide.
+- `PageHeader` stacks its title/actions on mobile (`flex-col sm:flex-row`).
+
+### Domain rules
+- "Former staff" / archived filters are **exclusive** views (show only those
+  rows), never additive.
+- Leave: annual entitlement is role-aware — 45 days for `manager`/`teamLead`/
+  `hrAdminOps`/`admin`, 28 for everyone else; show **taken vs remaining**.
+  "Completed" is a *derived* display status (approved + `endDate` in the past),
+  not a DB enum value.
+- Soft-delete (archive/cancel) vs hard-delete (drafts only) — label buttons so
+  the user knows which is reversible.
+
+### Verification
+- `apps/web/tests/e2e/audit.spec.ts` smoke-audits every route for console /
+  page / HTTP errors — run it after non-trivial UI changes.
+- Playwright MCP is configured in `.mcp.json` (activates on a Claude Code
+  restart) for interactive browser checks.
+
+---
+
 ## Naming Conventions
 
 - **Roster, NOT Rota** — User-facing text always uses "Roster" (e.g., "On-Call Roster", "Roster Planner"). Code identifiers (`/rota` URL paths, `orpc.rota.*`, schema table names) remain as-is for backwards compatibility.
